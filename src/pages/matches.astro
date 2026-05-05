@@ -1,0 +1,33 @@
+---
+import Layout from '../layouts/Layout.astro';
+import MatchMapIsland from '../components/MatchMapIsland.svelte';
+import PromptIsland from '../components/PromptIsland.svelte';
+---
+
+<Layout title="Find Matches | biblocal">
+  <main>
+    <h1>People Nearby</h1>
+
+    <PromptIsland client:load context="matches" />
+
+    <MatchMapIsland client:load />
+  </main>
+</Layout>
+
+<script>
+  import { isOnboarded } from '../stores/profile';
+
+  if (!isOnboarded()) {
+    window.location.href = '/';
+  }
+</script>
+
+<style>
+  main {
+    max-width: none;
+  }
+
+  h1 {
+    margin: 0 0 1rem;
+  }
+</style>
