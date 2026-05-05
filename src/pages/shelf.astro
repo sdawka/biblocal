@@ -1,0 +1,26 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AddBookIsland from '../components/AddBookIsland.svelte';
+import ShelfIsland from '../components/ShelfIsland.svelte';
+import PromptIsland from '../components/PromptIsland.svelte';
+---
+
+<Layout title="Your Shelf | biblocal">
+  <main>
+    <h1>Your Shelf</h1>
+
+    <PromptIsland client:load context="shelf" />
+
+    <AddBookIsland client:load />
+
+    <ShelfIsland client:load />
+  </main>
+</Layout>
+
+<script>
+  import { isOnboarded } from '../stores/profile';
+
+  if (!isOnboarded()) {
+    window.location.href = '/';
+  }
+</script>
