@@ -1,0 +1,601 @@
+/* Victorian Library Design System
+   A private gentleman's library circa 1880 */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+:root {
+  /* Colors — Warm, Scholarly Palette */
+  --color-burgundy: #722F37;
+  --color-burgundy-dark: #5A252C;
+  --color-burgundy-light: #8B3D47;
+
+  --color-forest: #2D4739;
+  --color-forest-dark: #1F3228;
+  --color-forest-light: #3D5F4D;
+
+  --color-gold: #B8860B;
+  --color-gold-light: #D4A84B;
+  --color-gold-pale: #E8D4A8;
+  --color-brass: #C9A227;
+
+  --color-cream: #FDF5E6;
+  --color-parchment: #F5E6D3;
+  --color-paper: #FAF6F0;
+  --color-aged-paper: #EDE4D4;
+
+  --color-mahogany: #4A2C2A;
+  --color-mahogany-light: #6B4442;
+  --color-mahogany-deep: #3A1F1E;
+  --color-walnut: #5D4037;
+  --color-oak: #8B6914;
+  --color-wood-highlight: #8B6F5C;
+
+  --color-ink: #2C1810;
+  --color-ink-faded: #6B5B4F;
+  --color-ink-light: #8B7B6F;
+
+  /* Typography */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Crimson Text', Georgia, serif;
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* Borders */
+  --border-thin: 1px solid var(--color-gold-pale);
+  --border-ornate: 2px solid var(--color-gold);
+  --border-dark: 1px solid var(--color-mahogany);
+
+  /* Shadows — Warm lamplight feel */
+  --shadow-card: 0 2px 8px rgba(74, 44, 42, 0.12);
+  --shadow-lifted: 0 6px 20px rgba(74, 44, 42, 0.18);
+  --shadow-glow: 0 0 16px rgba(184, 134, 11, 0.2);
+  --shadow-inset: inset 0 1px 3px rgba(44, 24, 16, 0.08);
+  --shadow-wood: inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+
+  /* Transitions — Gentle, organic feel */
+  --transition-gentle: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-quick: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Radii */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Wood grain pattern (reusable) */
+  --wood-grain: repeating-linear-gradient(
+    87deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px,
+    transparent 4px,
+    transparent 8px
+  ),
+  repeating-linear-gradient(
+    92deg,
+    transparent 0px,
+    transparent 20px,
+    rgba(0, 0, 0, 0.02) 20px,
+    rgba(0, 0, 0, 0.02) 40px
+  );
+
+  --wood-grain-subtle: repeating-linear-gradient(
+    88deg,
+    transparent 0px,
+    transparent 3px,
+    rgba(0, 0, 0, 0.015) 3px,
+    rgba(0, 0, 0, 0.015) 6px
+  );
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes gentlePulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes warmGlow {
+  0%, 100% { box-shadow: var(--shadow-card); }
+  50% { box-shadow: var(--shadow-card), 0 0 8px rgba(184, 134, 11, 0.15); }
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-ink);
+  background: var(--color-parchment);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle paper texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(139, 123, 111, 0.02) 3px,
+      rgba(139, 123, 111, 0.02) 6px
+    );
+  z-index: 9999;
+  opacity: 0.7;
+}
+
+/* Typography */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0 0 var(--space-md);
+  line-height: 1.3;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.125rem; }
+
+/* Links */
+a {
+  color: var(--color-burgundy);
+  text-decoration: none;
+  transition: color var(--transition-quick);
+}
+
+a:hover {
+  color: var(--color-burgundy-dark);
+}
+
+/* Main Container */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-xl);
+  position: relative;
+}
+
+/* Ornate Card — Subtle variant */
+.card-ornate {
+  background: var(--color-cream);
+  border: 1px solid var(--color-gold-pale);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  position: relative;
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-gentle);
+}
+
+/* Subtle corner accents - just dots */
+.card-ornate::before,
+.card-ornate::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--color-gold);
+  border-radius: 50%;
+  opacity: 0.35;
+  transition: opacity var(--transition-gentle);
+}
+
+.card-ornate::before {
+  top: 8px;
+  left: 8px;
+}
+
+.card-ornate::after {
+  bottom: 8px;
+  right: 8px;
+}
+
+.card-ornate:hover {
+  box-shadow: var(--shadow-lifted);
+  transform: translateY(-2px);
+  border-color: var(--color-gold);
+}
+
+.card-ornate:hover::before,
+.card-ornate:hover::after {
+  opacity: 0.6;
+}
+
+/* Decorative Divider — Subtle line with dot */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: var(--space-xl) 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-gold-pale) 20%,
+    var(--color-gold-pale) 80%,
+    transparent
+  );
+}
+
+.divider-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--color-gold);
+  border-radius: 50%;
+  opacity: 0.5;
+}
+
+/* Victorian Button */
+.btn-victorian {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: 0.625rem 1.25rem;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-cream);
+  background: linear-gradient(
+    to bottom,
+    var(--color-burgundy-light),
+    var(--color-burgundy),
+    var(--color-burgundy-dark)
+  );
+  border: 1px solid var(--color-burgundy-dark);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-gentle);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 2px 4px rgba(74, 44, 42, 0.3);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.btn-victorian:hover {
+  background: linear-gradient(
+    to bottom,
+    var(--color-burgundy),
+    var(--color-burgundy-dark),
+    #4A1F25
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 4px 8px rgba(74, 44, 42, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-victorian:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(74, 44, 42, 0.3);
+}
+
+.btn-victorian:focus {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.btn-secondary {
+  background: linear-gradient(
+    to bottom,
+    var(--color-forest-light),
+    var(--color-forest),
+    var(--color-forest-dark)
+  );
+  border-color: var(--color-forest-dark);
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(
+    to bottom,
+    var(--color-forest),
+    var(--color-forest-dark),
+    #152218
+  );
+}
+
+/* Victorian Input */
+.input-victorian {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--color-ink);
+  background: var(--color-paper);
+  border: 1px solid var(--color-gold-pale);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-quick);
+  box-shadow: var(--shadow-inset);
+}
+
+.input-victorian::placeholder {
+  color: var(--color-ink-light);
+  font-style: italic;
+}
+
+.input-victorian:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow:
+    var(--shadow-inset),
+    0 0 0 3px rgba(184, 134, 11, 0.15);
+}
+
+/* Victorian Select */
+.select-victorian {
+  appearance: none;
+  width: 100%;
+  padding: 0.625rem 2.5rem 0.625rem 0.875rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--color-ink);
+  background: var(--color-paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B5B4F' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.875rem center;
+  border: 1px solid var(--color-gold-pale);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow-inset);
+}
+
+.select-victorian:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow:
+    var(--shadow-inset),
+    0 0 0 3px rgba(184, 134, 11, 0.15);
+}
+
+/* Label */
+.label-victorian {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-ink-faded);
+  margin-bottom: var(--space-xs);
+  letter-spacing: 0.025em;
+}
+
+/* Badge — Wax Seal Style */
+.badge-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.625rem;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-cream);
+  background: var(--color-burgundy);
+  border-radius: 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.badge-seal.forest {
+  background: var(--color-forest);
+}
+
+.badge-seal.gold {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+
+/* Brass Plate Tag */
+.tag-brass {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--color-ink);
+  background: linear-gradient(
+    to bottom,
+    var(--color-gold-pale),
+    var(--color-gold-light) 50%,
+    var(--color-gold-pale)
+  );
+  border: 1px solid var(--color-gold);
+  border-radius: 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Section Header with Flourish */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.section-header h2,
+.section-header h3 {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    var(--color-gold-pale),
+    transparent
+  );
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling (webkit) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-aged-paper);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-mahogany-light);
+  border-radius: 5px;
+  border: 2px solid var(--color-aged-paper);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-mahogany);
+}
+
+/* Warm vignette on page edges — very subtle */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 65%,
+    rgba(74, 44, 42, 0.05) 100%
+  );
+  z-index: 9998;
+}
+
+/* ─── Animation Utilities ─────────────────────────────────── */
+
+.animate-in {
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-in-delayed {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-in-delayed:nth-child(1) { animation-delay: 0.05s; }
+.animate-in-delayed:nth-child(2) { animation-delay: 0.1s; }
+.animate-in-delayed:nth-child(3) { animation-delay: 0.15s; }
+.animate-in-delayed:nth-child(4) { animation-delay: 0.2s; }
+.animate-in-delayed:nth-child(5) { animation-delay: 0.25s; }
+.animate-in-delayed:nth-child(6) { animation-delay: 0.3s; }
+.animate-in-delayed:nth-child(7) { animation-delay: 0.35s; }
+.animate-in-delayed:nth-child(8) { animation-delay: 0.4s; }
+
+.fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+/* ─── Wood Surface Utility ─────────────────────────────────── */
+
+.wood-surface {
+  background-image: var(--wood-grain);
+  position: relative;
+}
+
+.wood-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--wood-grain-subtle);
+  pointer-events: none;
+}
+
+/* ─── Subtle Accent Line ─────────────────────────────────── */
+
+.accent-line {
+  position: relative;
+}
+
+.accent-line::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-gold-pale) 15%,
+    var(--color-gold) 50%,
+    var(--color-gold-pale) 85%,
+    transparent
+  );
+  opacity: 0.6;
+}
+
+/* ─── Hover Glow Effect ─────────────────────────────────── */
+
+.hover-glow {
+  transition: box-shadow var(--transition-gentle);
+}
+
+.hover-glow:hover {
+  box-shadow: var(--shadow-card), 0 0 12px rgba(184, 134, 11, 0.12);
+}

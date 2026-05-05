@@ -1,4 +1,6 @@
 ---
+import '../styles/victorian.css';
+
 interface Props {
   title: string;
 }
@@ -17,7 +19,9 @@ const currentPath = Astro.url.pathname;
   </head>
   <body>
     <nav>
-      <a href="/" class="logo">biblocal</a>
+      <a href="/" class="logo">
+        biblocal
+      </a>
       <div class="links">
         <a href="/shelf" class:list={{ active: currentPath === '/shelf' }}>Shelf</a>
         <a href="/matches" class:list={{ active: currentPath === '/matches' }}>Matches</a>
@@ -28,55 +32,150 @@ const currentPath = Astro.url.pathname;
   </body>
 </html>
 
-<style is:global>
-  * {
-    box-sizing: border-box;
-  }
-
-  body {
-    margin: 0;
-    font-family: system-ui, -apple-system, sans-serif;
-    line-height: 1.5;
-    color: #1a1a1a;
-    background: #f9fafb;
-  }
-
+<style>
   nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
-    background: white;
-    border-bottom: 1px solid #e0e0e0;
+    padding: 0.875rem 2rem;
+    background: linear-gradient(
+      to bottom,
+      var(--color-mahogany-light) 0%,
+      var(--color-mahogany) 30%,
+      var(--color-mahogany-deep) 100%
+    );
+    border-bottom: 2px solid var(--color-gold);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.15),
+      0 3px 10px rgba(44, 24, 16, 0.25);
+    position: relative;
+  }
+
+  /* Rich wood grain texture */
+  nav::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        88deg,
+        transparent 0px,
+        transparent 2px,
+        rgba(139, 111, 92, 0.04) 2px,
+        rgba(139, 111, 92, 0.04) 4px,
+        transparent 4px,
+        transparent 12px
+      ),
+      repeating-linear-gradient(
+        92deg,
+        transparent 0px,
+        transparent 30px,
+        rgba(0, 0, 0, 0.03) 30px,
+        rgba(0, 0, 0, 0.03) 60px
+      ),
+      repeating-linear-gradient(
+        85deg,
+        transparent 0px,
+        transparent 80px,
+        rgba(139, 111, 92, 0.02) 80px,
+        rgba(139, 111, 92, 0.02) 82px
+      );
+    pointer-events: none;
+  }
+
+  /* Subtle highlight on top edge */
+  nav::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(255, 255, 255, 0.1) 20%,
+      rgba(255, 255, 255, 0.1) 80%,
+      transparent
+    );
+    pointer-events: none;
   }
 
   .logo {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #0066cc;
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+    font-style: italic;
+    color: var(--color-gold);
     text-decoration: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    transition: all var(--transition-gentle);
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo:hover {
+    color: var(--color-gold-light);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 12px rgba(184, 134, 11, 0.3);
   }
 
   .links {
     display: flex;
-    gap: 1.5rem;
+    gap: 0.375rem;
+    position: relative;
+    z-index: 1;
   }
 
   .links a {
-    color: #666;
-    text-decoration: none;
+    padding: 0.5rem 1.125rem;
+    font-family: var(--font-display);
     font-size: 0.875rem;
     font-weight: 500;
+    color: var(--color-gold-pale);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-gentle);
+    position: relative;
   }
 
-  .links a:hover,
+  .links a::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    width: 0;
+    height: 1px;
+    background: var(--color-gold);
+    transition: all var(--transition-gentle);
+    transform: translateX(-50%);
+    opacity: 0;
+  }
+
+  .links a:hover {
+    color: var(--color-cream);
+  }
+
+  .links a:hover::after {
+    width: 60%;
+    opacity: 0.6;
+  }
+
   .links a.active {
-    color: #0066cc;
+    color: var(--color-ink);
+    background: linear-gradient(
+      to bottom,
+      var(--color-gold-light),
+      var(--color-gold) 60%,
+      #9A7209
+    );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.25),
+      0 1px 3px rgba(0, 0, 0, 0.25);
+    text-shadow: none;
   }
 
-  main {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
+  .links a.active::after {
+    display: none;
   }
 </style>

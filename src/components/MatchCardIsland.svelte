@@ -73,91 +73,161 @@
 </article>
 
 <style>
+  /* Subtle calling card aesthetic */
   .match-card {
-    padding: 1rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background: white;
+    padding: 1.25rem;
+    background: var(--color-cream);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-md);
     cursor: pointer;
-    transition: box-shadow 0.2s;
+    transition: all var(--transition-gentle);
+    box-shadow: var(--shadow-card);
+    position: relative;
+  }
+
+  /* Subtle top accent line */
+  .match-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 2px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--color-gold-pale) 20%,
+      var(--color-gold-pale) 80%,
+      transparent
+    );
+    opacity: 0;
+    transition: opacity var(--transition-gentle);
   }
 
   .match-card:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lifted);
+    transform: translateY(-2px);
+    border-color: var(--color-gold);
+  }
+
+  .match-card:hover::before {
+    opacity: 0.6;
   }
 
   .match-card.expanded {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-lifted);
+    border-color: var(--color-gold);
   }
 
   header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
   }
 
   h3 {
     margin: 0;
-    font-size: 1.125rem;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-style: italic;
+    color: var(--color-ink);
   }
 
   .distance {
-    font-size: 0.875rem;
-    color: #666;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--color-ink-faded);
+    padding: 0.125rem 0.5rem;
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: 2px;
   }
 
   .facets {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.375rem;
     flex-wrap: wrap;
   }
 
   .facet-badge {
-    padding: 0.25rem 0.5rem;
-    background: #f0f7ff;
-    border-radius: 4px;
-    font-size: 0.875rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    background: linear-gradient(
+      to bottom,
+      var(--color-gold-pale),
+      var(--color-gold-light) 50%,
+      var(--color-gold-pale)
+    );
+    border: 1px solid var(--color-gold);
+    border-radius: 2px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
   .details {
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--color-gold-pale);
+    animation: unfold 0.3s ease-out;
+  }
+
+  @keyframes unfold {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .facet-detail {
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
   }
 
   .facet-detail h4 {
-    margin: 0 0 0.25rem;
-    font-size: 0.875rem;
+    margin: 0 0 0.375rem;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
     font-weight: 600;
+    color: var(--color-ink);
   }
 
   .facet-detail ul {
     margin: 0;
     padding-left: 1.25rem;
+    font-family: var(--font-body);
     font-size: 0.875rem;
+    color: var(--color-ink-faded);
   }
 
   .facet-detail li {
-    margin: 0.125rem 0;
+    margin: 0.2rem 0;
+  }
+
+  .facet-detail li::marker {
+    color: var(--color-gold);
   }
 
   .more {
-    color: #666;
+    color: var(--color-ink-light);
     font-style: italic;
   }
 
   .borrow-style {
-    margin: 0.75rem 0 0;
-    padding: 0.5rem;
-    background: #f5f5f5;
-    border-radius: 4px;
-    font-size: 0.875rem;
+    margin: 1rem 0 0;
+    padding: 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
     font-style: italic;
-    color: #666;
+    color: var(--color-ink-faded);
+    background: var(--color-paper);
+    border-left: 3px solid var(--color-gold);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   }
 </style>

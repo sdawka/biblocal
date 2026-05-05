@@ -92,12 +92,15 @@
   .topic-picker {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.75rem;
   }
 
   .section h3 {
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.875rem;
+    font-family: var(--font-display);
     font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-ink-faded);
   }
 
   .curated-grid {
@@ -107,23 +110,41 @@
   }
 
   .topic-chip {
-    padding: 0.375rem 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 16px;
-    background: white;
-    font-size: 0.875rem;
+    padding: 0.375rem 0.875rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--color-ink);
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: 2px;
     cursor: pointer;
     text-transform: capitalize;
+    transition: all var(--transition-quick);
+    box-shadow: var(--shadow-inset);
+  }
+
+  .topic-chip:hover:not(:disabled) {
+    border-color: var(--color-gold);
+    background: var(--color-cream);
   }
 
   .topic-chip.selected {
-    background: #0066cc;
-    color: white;
-    border-color: #0066cc;
+    color: var(--color-cream);
+    background: linear-gradient(
+      to bottom,
+      var(--color-burgundy-light),
+      var(--color-burgundy),
+      var(--color-burgundy-dark)
+    );
+    border-color: var(--color-burgundy-dark);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      0 1px 2px rgba(74, 44, 42, 0.2);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
   }
 
   .topic-chip:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
@@ -134,35 +155,86 @@
 
   .freeform-input input {
     flex: 1;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 0.625rem 0.875rem;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--color-ink);
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-quick);
+    box-shadow: var(--shadow-inset);
+  }
+
+  .freeform-input input::placeholder {
+    color: var(--color-ink-light);
+    font-style: italic;
+  }
+
+  .freeform-input input:focus {
+    outline: none;
+    border-color: var(--color-gold);
+    box-shadow: var(--shadow-inset), 0 0 0 3px rgba(184, 134, 11, 0.15);
   }
 
   .freeform-input button {
-    padding: 0.5rem 1rem;
-    background: #0066cc;
-    color: white;
-    border: none;
-    border-radius: 4px;
+    padding: 0.625rem 1.25rem;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-cream);
+    background: linear-gradient(
+      to bottom,
+      var(--color-forest-light),
+      var(--color-forest),
+      var(--color-forest-dark)
+    );
+    border: 1px solid var(--color-forest-dark);
+    border-radius: var(--radius-sm);
     cursor: pointer;
+    transition: all var(--transition-gentle);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      0 2px 4px rgba(44, 74, 57, 0.25);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  .freeform-input button:hover {
+    background: linear-gradient(
+      to bottom,
+      var(--color-forest),
+      var(--color-forest-dark),
+      #152218
+    );
+    transform: translateY(-1px);
   }
 
   .freeform-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-top: 0.75rem;
+    margin-top: 0.875rem;
   }
 
   .tag {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    background: #e8f4f8;
-    border-radius: 4px;
-    font-size: 0.875rem;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--color-ink);
+    background: linear-gradient(
+      to bottom,
+      var(--color-gold-pale),
+      var(--color-gold-light) 50%,
+      var(--color-gold-pale)
+    );
+    border: 1px solid var(--color-gold);
+    border-radius: 2px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
   .tag button {
@@ -170,7 +242,13 @@
     border: none;
     padding: 0;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.9rem;
     line-height: 1;
+    color: var(--color-ink-faded);
+    transition: color var(--transition-quick);
+  }
+
+  .tag button:hover {
+    color: var(--color-burgundy);
   }
 </style>

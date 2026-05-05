@@ -24,20 +24,22 @@
 
     map = L.map(mapContainer).setView([40.7128, -74.006], 13);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
+    L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; Stadia Maps &copy; OpenStreetMap contributors',
     }).addTo(map);
 
     matchList.forEach((match, i) => {
       const offset = i * 0.005 - 0.01;
       L.circleMarker([40.7128 + offset, -74.006 + offset * 2], {
         radius: 8,
-        fillColor: '#0066cc',
-        fillOpacity: 0.8,
-        color: '#fff',
+        fillColor: '#B8860B',
+        fillOpacity: 0.9,
+        color: '#4A2C2A',
         weight: 2,
       })
-        .bindTooltip(match.user.name)
+        .bindTooltip(match.user.name, {
+          className: 'victorian-tooltip',
+        })
         .addTo(map);
     });
 
@@ -76,40 +78,81 @@
 <style>
   .match-map {
     display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 1rem;
+    grid-template-columns: 1fr 420px;
+    gap: 1.25rem;
     height: calc(100vh - 200px);
     min-height: 500px;
   }
 
   .map-container {
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     overflow: hidden;
+    border: 2px solid var(--color-gold);
+    box-shadow: var(--shadow-lifted);
+    /* Sepia filter for vintage map feel */
+    filter: sepia(0.15) saturate(0.9);
   }
 
   .cards-panel {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background: var(--color-cream);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-card);
+    position: relative;
   }
 
   .cards-panel h2 {
     margin: 0 0 1rem;
-    font-size: 1.25rem;
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-gold-pale);
+    position: relative;
+  }
+
+  /* Subtle dot accent */
+  .cards-panel h2::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 5px;
+    background: var(--color-gold);
+    border-radius: 50%;
+    opacity: 0.4;
   }
 
   .empty {
-    padding: 2rem;
+    padding: 2.5rem 2rem;
     text-align: center;
-    color: #666;
-    background: #f5f5f5;
-    border-radius: 8px;
+    font-family: var(--font-body);
+    font-style: italic;
+    color: var(--color-ink-faded);
+    background: var(--color-paper);
+    border: 1px dashed var(--color-gold-pale);
+    border-radius: var(--radius-md);
+  }
+
+  .empty::before {
+    content: '🔍';
+    display: block;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.6;
   }
 
   .cards-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
     overflow-y: auto;
     padding-right: 0.5rem;
   }
@@ -119,5 +162,20 @@
       grid-template-columns: 1fr;
       grid-template-rows: 300px 1fr;
     }
+  }
+
+  /* Global styles for Leaflet tooltip */
+  :global(.victorian-tooltip) {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    background: var(--color-cream);
+    border: 1px solid var(--color-gold);
+    color: var(--color-ink);
+    box-shadow: var(--shadow-card);
+    padding: 0.375rem 0.625rem;
+  }
+
+  :global(.victorian-tooltip::before) {
+    border-top-color: var(--color-gold);
   }
 </style>
