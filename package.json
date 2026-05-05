@@ -17,6 +17,7 @@
     "@astrojs/svelte": "^8.1.0",
     "@nanostores/persistent": "^1.3.4",
     "astro": "^6.2.2",
+    "drizzle-orm": "^0.45.2",
     "leaflet": "^1.9.4",
     "nanostores": "^1.3.0",
     "svelte": "^5.55.5",
@@ -25,7 +26,9 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
-    "@types/leaflet": "^1.9.21"
+    "@cloudflare/workers-types": "^4.20260505.1",
+    "@types/leaflet": "^1.9.21",
+    "drizzle-kit": "^0.31.10"
   },
   "overrides": {
     "vite": "^7"

@@ -1,18 +1,54 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import OnboardingIsland from '../components/OnboardingIsland.svelte';
+import LoginIsland from '../components/LoginIsland.svelte';
 ---
 
-<Layout title="biblocal">
-  <main>
-    <OnboardingIsland client:load />
+<Layout title="biblocal - Sign in">
+  <main class="login-page">
+    <div class="hero">
+      <h1>biblocal</h1>
+      <p>Build your living bookshelf. Find people nearby with similar taste.</p>
+    </div>
+    <LoginIsland client:load />
   </main>
 </Layout>
 
-<script>
-  import { isOnboarded } from '../stores/profile';
-
-  if (isOnboarded()) {
-    window.location.href = '/shelf';
+<style>
+  .login-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 2rem;
   }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    font-weight: 700;
+    font-style: italic;
+    color: var(--color-burgundy);
+    margin: 0 0 0.5rem;
+  }
+
+  .hero p {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    color: var(--color-ink-faded);
+    margin: 0;
+  }
+</style>
+
+<script>
+  import { checkAuth } from '../stores/auth';
+
+  checkAuth().then(user => {
+    if (user) {
+      window.location.href = '/shelf';
+    }
+  });
 </script>

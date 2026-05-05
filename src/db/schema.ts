@@ -1,0 +1,51 @@
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  name: text('name'),
+  city: text('city'),
+  radiusKm: integer('radius_km').default(5),
+  borrowStyle: text('borrow_style'),
+  currentObsessions: text('current_obsessions'), // JSON array
+  topicsCurated: text('topics_curated'), // JSON array
+  topicsFreeform: text('topics_freeform'), // JSON array
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const authCodes = sqliteTable('auth_codes', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull(),
+  code: text('code').notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  usedAt: integer('used_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const sessions = sqliteTable('sessions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const books = sqliteTable('books', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  title: text('title').notNull(),
+  author: text('author').notNull(),
+  isbn: text('isbn'),
+  coverUrl: text('cover_url'),
+  status: text('status').notNull().default('visible'),
+  addedVia: text('added_via').default('manual'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type AuthCode = typeof authCodes.$inferSelect;
+export type Session = typeof sessions.$inferSelect;
+export type Book = typeof books.$inferSelect;
+export type NewBook = typeof books.$inferInsert;

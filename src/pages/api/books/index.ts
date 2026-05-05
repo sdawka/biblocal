@@ -1,0 +1,123 @@
+import type { APIRoute } from 'astro';
+
+export const prerender = false;
+import { eq } from 'drizzle-orm';
+import { getDb } from '../../../db/client';
+import { books } from '../../../db/schema';
+import { getSessionIdFromCookie, getUserFromSession, generateId } from '../../../lib/auth';
+
+// GET /api/books - all books (public)
+// GET /api/books?mine=true - only my books (requires auth)
+export const GET: APIRoute = async ({ request, locals }) => {
+  try {
+    const db = getDb(locals.runtime.env.DB);
+    const url = new URL(request.url);
+    const mine = url.searchParams.get('mine') === 'true';
+
+    if (mine) {
+      const sessionId = getSessionIdFromCookie(request.headers.get('cookie'));
+      if (!sessionId) {
+        return new Response(JSON.stringify({ error: 'Not authenticated' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const user = await getUserFromSession(db, sessionId);
+      if (!user) {
+        return new Response(JSON.stringify({ error: 'Not authenticated' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const userBooks = await db
+        .select()
+        .from(books)
+        .where(eq(books.userId, user.id));
+
+      return new Response(JSON.stringify({ books: userBooks }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Public - all books
+    const allBooks = await db.select().from(books);
+    return new Response(JSON.stringify({ books: allBooks }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (e) {
+    console.error('Get books error:', e);
+    return new Response(JSON.stringify({ error: 'Server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
+
+// POST /api/books - add book (requires auth)
+export const POST: APIRoute = async ({ request, locals }) => {
+  try {
+    const sessionId = getSessionIdFromCookie(request.headers.get('cookie'));
+    if (!sessionId) {
+      return new Response(JSON.stringify({ error: 'Not authenticated' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const db = getDb(locals.runtime.env.DB);
+    const user = await getUserFromSession(db, sessionId);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Not authenticated' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { title, author, isbn, coverUrl, status, addedVia } = (await request.json()) as {
+      title?: string;
+      author?: string;
+      isbn?: string;
+      coverUrl?: string;
+      status?: string;
+      addedVia?: string;
+    };
+
+    if (!title || !author) {
+      return new Response(JSON.stringify({ error: 'Title and author required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const now = new Date();
+    const book = {
+      id: generateId(),
+      userId: user.id,
+      title,
+      author,
+      isbn: isbn || null,
+      coverUrl: coverUrl || null,
+      status: status || 'visible',
+      addedVia: addedVia || 'manual',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(books).values(book);
+
+    return new Response(JSON.stringify({ book }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (e) {
+    console.error('Add book error:', e);
+    return new Response(JSON.stringify({ error: 'Server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};

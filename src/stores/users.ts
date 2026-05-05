@@ -14,7 +14,7 @@ export async function loadSeedUsers(): Promise<void> {
   try {
     const res = await fetch('/api/users.json');
     if (!res.ok) throw new Error('Failed to load users');
-    const data = await res.json();
+    const data = (await res.json()) as UserProfile[];
     seedUsers.set(data);
   } catch (err) {
     usersError.set(err instanceof Error ? err.message : 'Unknown error');
