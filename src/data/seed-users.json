@@ -1,0 +1,204 @@
+[
+  {
+    "id": "seed-maya",
+    "name": "Maya",
+    "city": "Demo City",
+    "radiusKm": 5,
+    "distance": "~1.2 km",
+    "topics": {
+      "curated": ["systems-thinking", "anthropology", "fiction"],
+      "freeform": ["organizational design", "Le Guin fan"],
+      "inferred": ["sociology", "science-fiction"]
+    },
+    "shelf": [
+      {
+        "id": "maya-1",
+        "isbn": "9780300246759",
+        "title": "Seeing Like a State",
+        "author": "James C. Scott",
+        "status": "discussable",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "maya-2",
+        "isbn": "9780061054884",
+        "title": "The Dispossessed",
+        "author": "Ursula K. Le Guin",
+        "status": "borrowable",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "maya-3",
+        "isbn": "9780465026562",
+        "title": "Gödel, Escher, Bach",
+        "author": "Douglas Hofstadter",
+        "status": "discussable",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      }
+    ]
+  },
+  {
+    "id": "seed-julien",
+    "name": "Julien",
+    "city": "Demo City",
+    "radiusKm": 5,
+    "distance": "~2.8 km",
+    "topics": {
+      "curated": ["philosophy", "urbanism", "science-fiction"],
+      "freeform": ["speculative design", "solarpunk"],
+      "inferred": ["architecture", "ecology"]
+    },
+    "shelf": [
+      {
+        "id": "julien-1",
+        "isbn": "9780195019193",
+        "title": "The Timeless Way of Building",
+        "author": "Christopher Alexander",
+        "status": "borrowable",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "julien-2",
+        "isbn": "9780140449136",
+        "title": "Meditations",
+        "author": "Marcus Aurelius",
+        "status": "discussable",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      }
+    ]
+  },
+  {
+    "id": "seed-ana",
+    "name": "Ana",
+    "city": "Demo City",
+    "radiusKm": 10,
+    "distance": "~0.8 km",
+    "topics": {
+      "curated": ["education", "systems-thinking", "psychology"],
+      "freeform": ["folklore", "indigenous knowledge"],
+      "inferred": ["anthropology", "pedagogy"]
+    },
+    "borrowStyle": "generous lender, flexible returns",
+    "shelf": [
+      {
+        "id": "ana-1",
+        "isbn": "9780826412768",
+        "title": "Pedagogy of the Oppressed",
+        "author": "Paulo Freire",
+        "status": "borrowable",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "ana-2",
+        "isbn": "9780374533557",
+        "title": "Thinking, Fast and Slow",
+        "author": "Daniel Kahneman",
+        "status": "borrowable",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      }
+    ]
+  },
+  {
+    "id": "seed-kenji",
+    "name": "Kenji",
+    "city": "Demo City",
+    "radiusKm": 3,
+    "distance": "~1.5 km",
+    "topics": {
+      "curated": ["mathematics", "complexity", "economics"],
+      "freeform": ["game theory", "mechanism design"],
+      "inferred": ["systems-thinking", "technology"]
+    },
+    "shelf": [
+      {
+        "id": "kenji-1",
+        "isbn": "9780691140513",
+        "title": "The Art of Strategy",
+        "author": "Avinash Dixit",
+        "status": "class-resource",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "kenji-2",
+        "isbn": "9780465026562",
+        "title": "Gödel, Escher, Bach",
+        "author": "Douglas Hofstadter",
+        "status": "class-resource",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      }
+    ]
+  },
+  {
+    "id": "seed-priya",
+    "name": "Priya",
+    "city": "Demo City",
+    "radiusKm": 5,
+    "distance": "~3.2 km",
+    "topics": {
+      "curated": ["mysticism", "poetry", "psychology"],
+      "freeform": ["Rumi", "contemplative practice"],
+      "inferred": ["spirituality", "philosophy"]
+    },
+    "shelf": [
+      {
+        "id": "priya-1",
+        "isbn": "9780060958794",
+        "title": "The Essential Rumi",
+        "author": "Rumi (Coleman Barks)",
+        "status": "discussable",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "priya-2",
+        "isbn": "9780807014295",
+        "title": "Man's Search for Meaning",
+        "author": "Viktor Frankl",
+        "status": "borrowable",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      }
+    ]
+  },
+  {
+    "id": "seed-sam",
+    "name": "Sam",
+    "city": "Demo City",
+    "radiusKm": 7,
+    "distance": "~4.1 km",
+    "topics": {
+      "curated": ["technology", "business", "design"],
+      "freeform": ["startup culture", "product thinking"],
+      "inferred": ["management", "creativity"]
+    },
+    "shelf": [
+      {
+        "id": "sam-1",
+        "isbn": "9780300246759",
+        "title": "Seeing Like a State",
+        "author": "James C. Scott",
+        "status": "borrowable",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "sam-2",
+        "isbn": "9781591847816",
+        "title": "Designing Your Life",
+        "author": "Bill Burnett",
+        "status": "borrowable",
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      }
+    ]
+  }
+]
