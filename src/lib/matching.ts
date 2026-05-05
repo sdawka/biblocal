@@ -8,10 +8,6 @@ const WEIGHTS = {
   classChain: 1,
 };
 
-function emptyFacet(): MatchFacet {
-  return { count: 0, items: [] };
-}
-
 function calcShelfTwin(myBooks: Book[], theirBooks: Book[]): MatchFacet {
   const myIsbns = new Set(myBooks.map((b) => b.isbn).filter(Boolean));
   const shared = theirBooks.filter((b) => b.isbn && myIsbns.has(b.isbn));
