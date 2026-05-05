@@ -12,6 +12,16 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^6.2.2"
+    "@astrojs/svelte": "^8.1.0",
+    "@nanostores/persistent": "^1.3.4",
+    "astro": "^6.2.2",
+    "leaflet": "^1.9.4",
+    "nanostores": "^1.3.0",
+    "svelte": "^5.55.5",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@types/leaflet": "^1.9.21"
   }
 }
