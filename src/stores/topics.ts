@@ -1,5 +1,3 @@
-import { atom } from 'nanostores';
-
 export const CURATED_TOPICS = [
   'fiction',
   'non-fiction',
