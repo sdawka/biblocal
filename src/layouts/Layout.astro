@@ -1,0 +1,82 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <nav>
+      <a href="/" class="logo">biblocal</a>
+      <div class="links">
+        <a href="/shelf" class:list={{ active: currentPath === '/shelf' }}>Shelf</a>
+        <a href="/matches" class:list={{ active: currentPath === '/matches' }}>Matches</a>
+        <a href="/profile" class:list={{ active: currentPath === '/profile' }}>Profile</a>
+      </div>
+    </nav>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+    color: #1a1a1a;
+    background: #f9fafb;
+  }
+
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0066cc;
+    text-decoration: none;
+  }
+
+  .links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .links a {
+    color: #666;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .links a:hover,
+  .links a.active {
+    color: #0066cc;
+  }
+
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+</style>
