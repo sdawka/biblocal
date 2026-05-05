@@ -20,7 +20,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const code = await createAuthCode(db, email);
 
     const emailContent = loginCodeEmail(code);
-    const result = await sendEmail(locals.runtime.env.RESEND_API_KEY, {
+    const result = await sendEmail(locals.runtime.env.EMAIL, {
       to: email,
       ...emailContent,
     });

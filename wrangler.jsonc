@@ -16,5 +16,10 @@
 			"database_name": "biblocal-db",
 			"database_id": "e03824d4-940a-4679-8ffa-51b7d1898f47"
 		}
+	],
+	"send_email": [
+		{
+			"name": "EMAIL"
+		}
 	]
 }

@@ -1,35 +1,35 @@
+import { createMimeMessage } from 'mimetext';
+import { EmailMessage } from 'cloudflare:email';
+
 interface SendEmailOptions {
   to: string;
   subject: string;
   html: string;
+  from?: string;
 }
 
 export async function sendEmail(
-  apiKey: string,
+  emailBinding: SendEmail,
   options: SendEmailOptions
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        from: 'biblocal <auth@biblocal.app>',
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-      }),
+    const msg = createMimeMessage();
+    const fromAddr = options.from || 'auth@biblocal.app';
+
+    msg.setSender({ name: 'biblocal', addr: fromAddr });
+    msg.setRecipient(options.to);
+    msg.setSubject(options.subject);
+    msg.addMessage({
+      contentType: 'text/html',
+      data: options.html,
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      return { success: false, error };
-    }
+    const message = new EmailMessage(fromAddr, options.to, msg.asRaw());
+    await emailBinding.send(message);
 
     return { success: true };
   } catch (e) {
+    console.error('Email send error:', e);
     return { success: false, error: String(e) };
   }
 }
