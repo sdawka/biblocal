@@ -8,7 +8,18 @@ export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {
   decode: JSON.parse,
 });
 
-export const activeFilter = persistentAtom<BookStatus | 'all'>('biblocal:filter:v1', 'all');
+export type ShelfFilter = 'all' | 'lending' | 'discussing' | 'gifting' | 'seeking' | 'private';
+export const activeFilter = persistentAtom<ShelfFilter>('biblocal:filter:v2', 'all');
+
+export function bookMatchesFilter(book: Book, filter: ShelfFilter): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'private') return book.visibility === 'private';
+  if (filter === 'seeking') return book.ownership === 'seeking';
+  if (filter === 'lending') return book.intents.includes('borrowable');
+  if (filter === 'discussing') return book.intents.includes('discussable');
+  if (filter === 'gifting') return book.intents.includes('giftable');
+  return true;
+}
 
 async function syncAddBook(book: Book): Promise<void> {
   if (!currentUserId.get()) return;
@@ -22,7 +33,9 @@ async function syncAddBook(book: Book): Promise<void> {
         author: book.author,
         isbn: book.isbn,
         coverUrl: book.coverUrl,
-        status: book.status,
+        visibility: book.visibility,
+        ownership: book.ownership,
+        intents: book.intents,
         addedVia: book.addedVia,
         subjects: book.subjects,
         notes: book.notes,
@@ -80,8 +93,27 @@ export function updateBook(id: string, updates: Partial<Book>) {
   }
 }
 
-export function updateBookStatus(id: string, status: BookStatus) {
-  updateBook(id, { status });
+export function updateBookVisibility(id: string, visibility: BookVisibility) {
+  updateBook(id, { visibility });
+}
+
+export function updateBookOwnership(id: string, ownership: BookOwnership) {
+  updateBook(id, { ownership });
+}
+
+export function updateBookIntents(id: string, intents: BookIntent[]) {
+  updateBook(id, { intents });
+}
+
+export function toggleBookIntent(id: string, intent: BookIntent) {
+  const current = shelf.get();
+  const book = current[id];
+  if (book) {
+    const intents = book.intents.includes(intent)
+      ? book.intents.filter(i => i !== intent)
+      : [...book.intents, intent];
+    updateBook(id, { intents });
+  }
 }
 
 export function removeBook(id: string) {
@@ -154,8 +186,8 @@ export function getShelfStats(): ShelfStats {
   const books = Object.values(shelf.get());
   return {
     total: books.length,
-    lendable: books.filter(b => b.status === 'borrowable' || b.status === 'giftable').length,
-    discussable: books.filter(b => b.status === 'discussable').length,
+    lendable: books.filter(b => b.intents.includes('borrowable') || b.intents.includes('giftable')).length,
+    discussable: books.filter(b => b.intents.includes('discussable')).length,
   };
 }
 
