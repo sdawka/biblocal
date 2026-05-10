@@ -1,7 +1,7 @@
 import { persistentAtom } from '@nanostores/persistent';
 import type { Book, BookStatus } from '../lib/types';
 import { inferTopicsFromSubjects } from './topics';
-import { currentUser } from './auth';
+import { currentUserId } from './auth';
 
 export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {}, {
   encode: JSON.stringify,
@@ -11,7 +11,7 @@ export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {
 export const activeFilter = persistentAtom<BookStatus | 'all'>('biblocal:filter:v1', 'all');
 
 async function syncAddBook(book: Book): Promise<void> {
-  if (!currentUser.get()) return;
+  if (!currentUserId.get()) return;
   try {
     await fetch('/api/books', {
       method: 'POST',
@@ -34,7 +34,7 @@ async function syncAddBook(book: Book): Promise<void> {
 }
 
 async function syncUpdateBook(id: string, updates: Partial<Book>): Promise<void> {
-  if (!currentUser.get()) return;
+  if (!currentUserId.get()) return;
   try {
     await fetch(`/api/books/${id}`, {
       method: 'PATCH',
@@ -47,7 +47,7 @@ async function syncUpdateBook(id: string, updates: Partial<Book>): Promise<void>
 }
 
 async function syncRemoveBook(id: string): Promise<void> {
-  if (!currentUser.get()) return;
+  if (!currentUserId.get()) return;
   try {
     await fetch(`/api/books/${id}`, { method: 'DELETE' });
   } catch (e) {
@@ -101,7 +101,7 @@ interface ServerBook {
 }
 
 export async function loadBooksFromServer(): Promise<void> {
-  if (!currentUser.get()) return;
+  if (!currentUserId.get()) return;
   try {
     const res = await fetch('/api/books?mine=true');
     if (!res.ok) return;

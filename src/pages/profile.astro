@@ -1,20 +1,30 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import ProfileIsland from '../components/ProfileIsland.svelte';
+import { Show, UserButton } from '@clerk/astro/components';
 ---
 
 <Layout title="Your Profile | biblocal">
-  <main>
-    <h1>Your Profile</h1>
+  <Show when="signed-out">
+    <script>window.location.href = '/';</script>
+  </Show>
+  <Show when="signed-in">
+    <main>
+      <div class="header-row">
+        <h1>Your Profile</h1>
+        <UserButton />
+      </div>
 
-    <ProfileIsland client:load />
-  </main>
+      <ProfileIsland client:load />
+    </main>
+  </Show>
 </Layout>
 
-<script>
-  import { isOnboarded } from '../stores/profile';
-
-  if (!isOnboarded()) {
-    window.location.href = '/';
+<style>
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
   }
-</script>
+</style>

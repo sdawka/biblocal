@@ -1,12 +1,12 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-
 import svelte from '@astrojs/svelte';
-
 import cloudflare from '@astrojs/cloudflare';
+import clerk from '@clerk/astro';
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [svelte()],
-  adapter: cloudflare()
+  integrations: [svelte(), clerk()],
+  adapter: cloudflare(),
+  output: 'server',
 });

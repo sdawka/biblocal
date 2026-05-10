@@ -4,7 +4,10 @@ export const prerender = false;
 import { eq } from 'drizzle-orm';
 import { getDb } from '../../../db/client';
 import { books } from '../../../db/schema';
-import { getSessionIdFromCookie, getUserFromSession, generateId } from '../../../lib/auth';
+
+function generateId(): string {
+  return crypto.randomUUID();
+}
 
 // GET /api/books - all books (public)
 // GET /api/books?mine=true - only my books (requires auth)
@@ -15,16 +18,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const mine = url.searchParams.get('mine') === 'true';
 
     if (mine) {
-      const sessionId = getSessionIdFromCookie(request.headers.get('cookie'));
-      if (!sessionId) {
-        return new Response(JSON.stringify({ error: 'Not authenticated' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      const user = await getUserFromSession(db, sessionId);
-      if (!user) {
+      const auth = locals.auth();
+      if (!auth.userId) {
         return new Response(JSON.stringify({ error: 'Not authenticated' }), {
           status: 401,
           headers: { 'Content-Type': 'application/json' },
@@ -34,7 +29,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       const userBooks = await db
         .select()
         .from(books)
-        .where(eq(books.userId, user.id));
+        .where(eq(books.userId, auth.userId));
 
       return new Response(JSON.stringify({ books: userBooks }), {
         status: 200,
@@ -60,8 +55,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
 // POST /api/books - add book (requires auth)
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const sessionId = getSessionIdFromCookie(request.headers.get('cookie'));
-    if (!sessionId) {
+    const auth = locals.auth();
+    if (!auth.userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -69,13 +64,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const db = getDb(locals.runtime.env.DB);
-    const user = await getUserFromSession(db, sessionId);
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Not authenticated' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
 
     const body = (await request.json()) as {
       id?: string;
@@ -99,7 +87,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const now = new Date();
     const book = {
       id: body.id || generateId(),
-      userId: user.id,
+      userId: auth.userId,
       title: body.title,
       author: body.author,
       isbn: body.isbn || null,

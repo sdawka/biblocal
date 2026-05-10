@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import LoginIsland from '../components/LoginIsland.svelte';
+import { SignIn, Show } from '@clerk/astro/components';
 ---
 
 <Layout title="biblocal - Sign in">
@@ -9,7 +9,15 @@ import LoginIsland from '../components/LoginIsland.svelte';
       <h1>biblocal</h1>
       <p>Build your living bookshelf. Find people nearby with similar taste.</p>
     </div>
-    <LoginIsland client:load />
+
+    <Show when="signed-out">
+      <SignIn />
+    </Show>
+
+    <Show when="signed-in">
+      <p class="redirect-msg">Redirecting to your shelf...</p>
+      <script>window.location.href = '/shelf';</script>
+    </Show>
   </main>
 </Layout>
 
@@ -41,14 +49,10 @@ import LoginIsland from '../components/LoginIsland.svelte';
     color: var(--color-ink-faded);
     margin: 0;
   }
+
+  .redirect-msg {
+    font-family: var(--font-body);
+    color: var(--color-ink-faded);
+    font-style: italic;
+  }
 </style>
-
-<script>
-  import { checkAuth } from '../stores/auth';
-
-  checkAuth().then(user => {
-    if (user) {
-      window.location.href = '/shelf';
-    }
-  });
-</script>

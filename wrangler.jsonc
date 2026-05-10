@@ -1,11 +1,14 @@
 {
 	"compatibility_date": "2026-05-05",
-	"compatibility_flags": ["global_fetch_strictly_public", "nodejs_compat"],
+	"compatibility_flags": ["nodejs_compat", "disable_nodejs_process_v2"],
 	"name": "biblocal",
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"assets": {
 		"directory": "./dist",
 		"binding": "ASSETS"
+	},
+	"vars": {
+		"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_aHVtYW5lLWxvbmdob3JuLTY2LmNsZXJrLmFjY291bnRzLmRldiQ"
 	},
 	"observability": {
 		"enabled": true
@@ -15,11 +18,6 @@
 			"binding": "DB",
 			"database_name": "biblocal-db",
 			"database_id": "e03824d4-940a-4679-8ffa-51b7d1898f47"
-		}
-	],
-	"send_email": [
-		{
-			"name": "EMAIL"
 		}
 	]
 }

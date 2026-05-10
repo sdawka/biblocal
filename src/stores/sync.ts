@@ -1,9 +1,9 @@
-import { currentUser } from './auth';
+import { currentUserId } from './auth';
 
 const USER_ID_KEY = 'biblocal:lastUserId';
 
 export function isAuthenticated(): boolean {
-  return currentUser.get() !== null;
+  return currentUserId.get() !== null;
 }
 
 export function checkUserIdentity(userId: string): 'same' | 'different' | 'new' {

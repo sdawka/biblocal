@@ -4,13 +4,27 @@ export const prerender = false;
 import { eq } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
-import { getSessionIdFromCookie, getUserFromSession } from '../../lib/auth';
+
+async function getOrCreateUser(db: ReturnType<typeof getDb>, userId: string) {
+  const existing = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (existing.length > 0) return existing[0];
+
+  const now = new Date();
+  await db.insert(users).values({
+    id: userId,
+    email: `${userId}@clerk.user`,
+    createdAt: now,
+    updatedAt: now,
+  });
+  const created = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return created[0];
+}
 
 // GET /api/profile - get own profile (requires auth)
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ locals }) => {
   try {
-    const sessionId = getSessionIdFromCookie(request.headers.get('cookie'));
-    if (!sessionId) {
+    const auth = locals.auth();
+    if (!auth.userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -18,13 +32,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     }
 
     const db = getDb(locals.runtime.env.DB);
-    const user = await getUserFromSession(db, sessionId);
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Not authenticated' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const user = await getOrCreateUser(db, auth.userId);
 
     return new Response(JSON.stringify({ profile: user }), {
       status: 200,
@@ -42,8 +50,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
 // PATCH /api/profile - update own profile (requires auth)
 export const PATCH: APIRoute = async ({ request, locals }) => {
   try {
-    const sessionId = getSessionIdFromCookie(request.headers.get('cookie'));
-    if (!sessionId) {
+    const auth = locals.auth();
+    if (!auth.userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -51,13 +59,7 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     }
 
     const db = getDb(locals.runtime.env.DB);
-    const user = await getUserFromSession(db, sessionId);
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Not authenticated' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    await getOrCreateUser(db, auth.userId);
 
     const updates = (await request.json()) as Record<string, unknown>;
     const allowedFields = [
@@ -74,7 +76,6 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
 
     for (const field of allowedFields) {
       if (updates[field] !== undefined) {
-        // JSON stringify arrays
         if (Array.isArray(updates[field])) {
           filtered[field] = JSON.stringify(updates[field]);
         } else {
@@ -83,9 +84,9 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
       }
     }
 
-    await db.update(users).set(filtered).where(eq(users.id, user.id));
+    await db.update(users).set(filtered).where(eq(users.id, auth.userId));
 
-    const updated = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
+    const updated = await db.select().from(users).where(eq(users.id, auth.userId)).limit(1);
 
     return new Response(JSON.stringify({ profile: updated[0] }), {
       status: 200,

@@ -2,32 +2,40 @@
 import Layout from '../layouts/Layout.astro';
 import MatchMapIsland from '../components/MatchMapIsland.svelte';
 import PromptIsland from '../components/PromptIsland.svelte';
+import { Show, UserButton } from '@clerk/astro/components';
 ---
 
 <Layout title="Find Matches | biblocal">
-  <main>
-    <h1>People Nearby</h1>
+  <Show when="signed-out">
+    <script>window.location.href = '/';</script>
+  </Show>
+  <Show when="signed-in">
+    <main>
+      <div class="header-row">
+        <h1>People Nearby</h1>
+        <UserButton />
+      </div>
 
-    <PromptIsland client:load context="matches" />
+      <PromptIsland client:load context="matches" />
 
-    <MatchMapIsland client:load />
-  </main>
+      <MatchMapIsland client:load />
+    </main>
+  </Show>
 </Layout>
-
-<script>
-  import { isOnboarded } from '../stores/profile';
-
-  if (!isOnboarded()) {
-    window.location.href = '/';
-  }
-</script>
 
 <style>
   main {
     max-width: none;
   }
 
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
   h1 {
-    margin: 0 0 1rem;
+    margin: 0;
   }
 </style>

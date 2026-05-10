@@ -1,6 +1,6 @@
 import { persistentAtom } from '@nanostores/persistent';
 import type { UserProfile, UserTopics } from '../lib/types';
-import { currentUser } from './auth';
+import { currentUserId } from './auth';
 
 const DEFAULT_TOPICS: UserTopics = {
   curated: [],
@@ -26,7 +26,7 @@ export const profile = persistentAtom<UserProfile>('biblocal:profile:v1', DEFAUL
 export const dismissedPrompts = persistentAtom<string[]>('biblocal:dismissed:v1', [], jsonEncoder);
 
 async function syncProfile(updates: Partial<UserProfile>): Promise<void> {
-  if (!currentUser.get()) return;
+  if (!currentUserId.get()) return;
   const serverUpdates: Record<string, unknown> = {};
   if (updates.name !== undefined) serverUpdates.name = updates.name;
   if (updates.city !== undefined) serverUpdates.city = updates.city;
@@ -92,7 +92,7 @@ interface ServerProfile {
 }
 
 export async function loadProfileFromServer(): Promise<void> {
-  if (!currentUser.get()) return;
+  if (!currentUserId.get()) return;
   try {
     const res = await fetch('/api/profile');
     if (!res.ok) return;

@@ -4,13 +4,12 @@ export const prerender = false;
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '../../../db/client';
 import { books } from '../../../db/schema';
-import { getSessionIdFromCookie, getUserFromSession } from '../../../lib/auth';
 
 // PATCH /api/books/:id - update book (owner only)
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
   try {
-    const sessionId = getSessionIdFromCookie(request.headers.get('cookie'));
-    if (!sessionId) {
+    const auth = locals.auth();
+    if (!auth.userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -18,14 +17,6 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     }
 
     const db = getDb(locals.runtime.env.DB);
-    const user = await getUserFromSession(db, sessionId);
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Not authenticated' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
     const bookId = params.id;
     if (!bookId) {
       return new Response(JSON.stringify({ error: 'Book ID required' }), {
@@ -38,7 +29,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     const existing = await db
       .select()
       .from(books)
-      .where(and(eq(books.id, bookId), eq(books.userId, user.id)))
+      .where(and(eq(books.id, bookId), eq(books.userId, auth.userId)))
       .limit(1);
 
     if (existing.length === 0) {
@@ -79,10 +70,10 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
 };
 
 // DELETE /api/books/:id - delete book (owner only)
-export const DELETE: APIRoute = async ({ params, request, locals }) => {
+export const DELETE: APIRoute = async ({ params, locals }) => {
   try {
-    const sessionId = getSessionIdFromCookie(request.headers.get('cookie'));
-    if (!sessionId) {
+    const auth = locals.auth();
+    if (!auth.userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -90,14 +81,6 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
     }
 
     const db = getDb(locals.runtime.env.DB);
-    const user = await getUserFromSession(db, sessionId);
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Not authenticated' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
     const bookId = params.id;
     if (!bookId) {
       return new Response(JSON.stringify({ error: 'Book ID required' }), {
@@ -107,9 +90,9 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
     }
 
     // Delete only if owned by user
-    const result = await db
+    await db
       .delete(books)
-      .where(and(eq(books.id, bookId), eq(books.userId, user.id)));
+      .where(and(eq(books.id, bookId), eq(books.userId, auth.userId)));
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
