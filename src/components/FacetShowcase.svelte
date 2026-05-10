@@ -7,36 +7,36 @@
     {
       name: "Shelf Twin",
       icon: "📚",
-      tagline: "Same books, different shelf",
-      example: "You both love Middlemarch, Beloved, and The Brothers Karamazov",
+      tagline: "Suspiciously similar taste",
+      example: "You both own Small Gods, GEB, and that one weird Borges collection",
       weight: 3,
     },
     {
       name: "Reading Mentor",
       icon: "🎓",
-      tagline: "They have what you seek",
-      example: "They own 3 books on your 'looking for' list",
+      tagline: "They've read your wishlist",
+      example: "They own 3 books you've been hunting for",
       weight: 2,
     },
     {
       name: "Local Source",
       icon: "🤝",
-      tagline: "Borrow from your neighbor",
-      example: "They're 0.8km away and lending 12 books",
+      tagline: "Actually borrowable",
+      example: "0.8km away. 12 books available. No shipping required.",
       weight: 2,
     },
     {
       name: "Discussion Match",
       icon: "💬",
-      tagline: "Talk philosophy over coffee",
-      example: "Shared interests: Victorian literature, climate science",
+      tagline: "Argument-compatible",
+      example: "You'll disagree about Kundera but agree about Le Guin",
       weight: 1,
     },
     {
       name: "Class Chain",
       icon: "🎒",
-      tagline: "Alumni of the same syllabi",
-      example: "Both have class resources for Intro to Psychology",
+      tagline: "Syllabus survivors",
+      example: "Both traumatized by the same reading list",
       weight: 1,
     },
   ];
@@ -65,9 +65,9 @@
 
 <section class="facets-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
-    <h2 class="section-title">Five ways to find your people</h2>
+    <h2 class="section-title">We find your people. The algorithm is just showing off.</h2>
     <p class="section-desc">
-      Our matching algorithm finds connections through the books you read, not just the genres you like.
+      Five ways we figure out who you'd actually want to get coffee with.
     </p>
 
     <div class="facets-grid">

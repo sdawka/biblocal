@@ -3,6 +3,9 @@ import Layout from '../layouts/Layout.astro';
 import MatchMapIsland from '../components/MatchMapIsland.svelte';
 import PromptIsland from '../components/PromptIsland.svelte';
 import { UserButton } from '@clerk/astro/components';
+import { env } from 'cloudflare:workers';
+
+const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 ---
 
 <Layout title="Find Matches | biblocal">
@@ -11,7 +14,7 @@ import { UserButton } from '@clerk/astro/components';
         <h1>Nearby</h1>
         <div class="header-actions">
           <a href="/stores/new" class="add-store-link">+ Add a bookstore</a>
-          <UserButton />
+          {!isQaMode && <UserButton />}
         </div>
       </div>
 

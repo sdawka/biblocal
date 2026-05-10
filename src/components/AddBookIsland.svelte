@@ -2,7 +2,8 @@
   import { addBook } from '../stores/shelf';
   import { fetchByIsbn, isValidIsbn } from '../lib/openLibrary';
   import type { BookStatus } from '../lib/types';
-  import ScannerIsland from './ScannerIsland.svelte';
+
+  let ScannerComponent: typeof import('./ScannerIsland.svelte').default | null = $state(null);
 
   type Mode = 'isbn' | 'manual';
 
@@ -83,7 +84,11 @@
     handleIsbnSubmit();
   }
 
-  function openScanner() {
+  async function openScanner() {
+    if (!ScannerComponent) {
+      const mod = await import('./ScannerIsland.svelte');
+      ScannerComponent = mod.default;
+    }
     showScanner = true;
   }
 
@@ -159,8 +164,8 @@
     <p class="error">{error}</p>
   {/if}
 
-  {#if showScanner}
-    <ScannerIsland onScan={handleScanResult} onClose={closeScanner} />
+  {#if showScanner && ScannerComponent}
+    <ScannerComponent onScan={handleScanResult} onClose={closeScanner} />
   {/if}
 </div>
 

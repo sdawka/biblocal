@@ -4,44 +4,44 @@
 
   const demoBooks = [
     {
-      title: "East of Eden",
-      author: "John Steinbeck",
-      status: "borrowable",
-      statusLabel: "Will lend",
-      cover: "https://covers.openlibrary.org/b/isbn/0142004235-M.jpg",
-      note: "Changed how I see family"
-    },
-    {
-      title: "Thinking, Fast and Slow",
-      author: "Daniel Kahneman",
+      title: "Small Gods",
+      author: "Terry Pratchett",
       status: "discussable",
       statusLabel: "Let's discuss",
-      cover: "https://covers.openlibrary.org/b/isbn/0374533555-M.jpg",
-      note: "So many good ideas here"
+      cover: "https://covers.openlibrary.org/b/isbn/0062237373-M.jpg",
+      note: "Turtles, belief, and uncomfortable truths"
     },
     {
-      title: "Pachinko",
-      author: "Min Jin Lee",
-      status: "giftable",
-      statusLabel: "Free to good home",
-      cover: "https://covers.openlibrary.org/b/isbn/1455563935-M.jpg",
-      note: "Read twice, ready to pass on"
+      title: "Gödel, Escher, Bach",
+      author: "Douglas Hofstadter",
+      status: "borrowable",
+      statusLabel: "Will lend",
+      cover: "https://covers.openlibrary.org/b/isbn/0465026567-M.jpg",
+      note: "I understood about 40% and loved 100%"
     },
     {
-      title: "The Body Keeps the Score",
-      author: "Bessel van der Kolk",
-      status: "seeking",
-      statusLabel: "Looking for this",
-      cover: "https://covers.openlibrary.org/b/isbn/0143127748-M.jpg",
-      note: "Heard great things!"
-    },
-    {
-      title: "Piranesi",
-      author: "Susanna Clarke",
+      title: "The Unbearable Lightness of Being",
+      author: "Milan Kundera",
       status: "visible",
       statusLabel: "On my shelf",
-      cover: "https://covers.openlibrary.org/b/isbn/1635575636-M.jpg",
-      note: "Pure wonder"
+      cover: "https://covers.openlibrary.org/b/isbn/0061148520-M.jpg",
+      note: "Still thinking about it, honestly"
+    },
+    {
+      title: "Guards! Guards!",
+      author: "Terry Pratchett",
+      status: "giftable",
+      statusLabel: "Free to good home",
+      cover: "https://covers.openlibrary.org/b/isbn/0062225758-M.jpg",
+      note: "Own 3 copies. This is a problem."
+    },
+    {
+      title: "The Dispossessed",
+      author: "Ursula K. Le Guin",
+      status: "seeking",
+      statusLabel: "Looking for this",
+      cover: "https://covers.openlibrary.org/b/isbn/0061054887-M.jpg",
+      note: "Been hunting for months"
     },
   ];
 
@@ -60,9 +60,10 @@
 
 <section class="bookshelf-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
-    <h2 class="section-title">Your books, your intentions</h2>
+    <h2 class="section-title">A book is just a book. Unless you'd actually lend it.</h2>
     <p class="section-desc">
-      Not just what you own—what you're willing to share, discuss, or seek.
+      Mark what you'll share, what you'll debate until 2am, and what you're hunting for.<br/>
+      Your shelf becomes less "collection" and more "personality test."
     </p>
 
     <div class="shelf-container">
@@ -174,7 +175,7 @@
   .books-row {
     display: flex;
     justify-content: center;
-    gap: var(--space-md);
+    gap: var(--space-xl);
     position: relative;
     z-index: 2;
     padding-bottom: var(--space-md);
@@ -213,11 +214,17 @@
     transform: translateY(30px);
     transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     transition-delay: var(--delay);
+    position: relative;
+    z-index: 1;
   }
 
   .visible .book-spine {
     opacity: 1;
     transform: translateY(0);
+  }
+
+  .book-spine:hover {
+    z-index: 10;
   }
 
   .book-front {
@@ -287,7 +294,7 @@
     position: absolute;
     top: 10px;
     left: 100%;
-    width: 100px;
+    width: 90px;
     height: 160px;
     background: var(--color-aged-paper);
     border-radius: 0 2px 2px 0;
@@ -299,7 +306,7 @@
     transform: translateX(-20px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.15s;
     box-shadow: inset 2px 0 8px rgba(0, 0, 0, 0.1);
-    z-index: -1;
+    z-index: 5;
   }
 
   .book-spine:hover .book-page {

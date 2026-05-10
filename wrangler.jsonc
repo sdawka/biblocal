@@ -19,5 +19,23 @@
 			"database_name": "biblocal-db",
 			"database_id": "e03824d4-940a-4679-8ffa-51b7d1898f47"
 		}
-	]
+	],
+	"env": {
+		"qa": {
+			"name": "biblocal-qa",
+			"vars": {
+				"QA_MODE": "true",
+				"QA_USER_ID": "qa-test-user",
+				"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_aHVtYW5lLWxvbmdob3JuLTY2LmNsZXJrLmFjY291bnRzLmRldiQ"
+			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "biblocal-qa-db",
+					"database_id": "44e7e517-033b-40ea-a540-ca66ee777ea1",
+					"migrations_dir": "drizzle"
+				}
+			]
+		}
+	}
 }

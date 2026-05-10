@@ -2,13 +2,16 @@
 import Layout from '../layouts/Layout.astro';
 import ProfileIsland from '../components/ProfileIsland.svelte';
 import { UserButton } from '@clerk/astro/components';
+import { env } from 'cloudflare:workers';
+
+const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 ---
 
 <Layout title="Your Profile | biblocal">
   <main>
       <div class="header-row">
         <h1>Your Profile</h1>
-        <UserButton />
+        {!isQaMode && <UserButton />}
       </div>
 
       <ProfileIsland client:load />

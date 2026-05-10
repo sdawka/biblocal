@@ -27,13 +27,13 @@
 <section class="local-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
     <div class="text-content">
-      <h2 class="section-title">Real books.<br/>Real neighbors.</h2>
+      <h2 class="section-title">Your next favorite book<br/>is probably within walking distance.</h2>
       <p class="section-desc">
-        Every match is someone you could actually meet. A bookstore you could walk to.
-        A neighbor who might become a friend.
+        These are real people. The kind who'll lend you a book and actually
+        remember to ask what you thought. The kind worth knowing.
       </p>
       <p class="section-aside">
-        Because some connections deserve a coffee shop, not a chat window.
+        No shipping fees. No waiting. Just humans being decent to each other.
       </p>
     </div>
 

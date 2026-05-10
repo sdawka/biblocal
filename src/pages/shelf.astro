@@ -4,13 +4,16 @@ import AddBookIsland from '../components/AddBookIsland.svelte';
 import ShelfContainer from '../components/ShelfContainer.svelte';
 import PromptIsland from '../components/PromptIsland.svelte';
 import { UserButton } from '@clerk/astro/components';
+import { env } from 'cloudflare:workers';
+
+const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 ---
 
 <Layout title="Your Shelf | biblocal">
   <main>
       <div class="header-row">
         <h1>Your Shelf</h1>
-        <UserButton />
+        {!isQaMode && <UserButton />}
       </div>
 
       <PromptIsland client:load context="shelf" />

@@ -7,12 +7,15 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "dev:qa": "QA_MODE=true QA_USER_ID=qa-test-user astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "deploy:qa": "bash scripts/deploy-qa.sh",
+    "seed:qa": "wrangler d1 execute biblocal-qa-db --env qa --file=scripts/seed-qa.sql",
     "generate-types": "wrangler types",
     "seed:stores": "curl -X POST http://localhost:4321/api/seed-stores"
   },

@@ -2,22 +2,35 @@
 import Layout from '../../layouts/Layout.astro';
 import AddStoreIsland from '../../components/AddStoreIsland.svelte';
 import { Show, UserButton } from '@clerk/astro/components';
+import { env } from 'cloudflare:workers';
+
+const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 ---
 
 <Layout title="Add a Bookstore | biblocal">
-  <Show when="signed-out">
-    <script>window.location.href = '/';</script>
-  </Show>
-  <Show when="signed-in">
+  {isQaMode ? (
     <main>
       <div class="header-row">
         <a href="/matches" class="back-link">← Back to matches</a>
-        <UserButton />
       </div>
-
       <AddStoreIsland client:load />
     </main>
-  </Show>
+  ) : (
+    <>
+      <Show when="signed-out">
+        <script>window.location.href = '/';</script>
+      </Show>
+      <Show when="signed-in">
+        <main>
+          <div class="header-row">
+            <a href="/matches" class="back-link">← Back to matches</a>
+            <UserButton />
+          </div>
+          <AddStoreIsland client:load />
+        </main>
+      </Show>
+    </>
+  )}
 </Layout>
 
 <style>
