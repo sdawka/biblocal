@@ -1,6 +1,7 @@
 import { persistentAtom } from '@nanostores/persistent';
-import type { UserProfile, UserTopics } from '../lib/types';
+import type { UserProfile, UserTopics, BookIntent } from '../lib/types';
 import { currentUserId } from './auth';
+import { shelf } from './shelf';
 
 const DEFAULT_TOPICS: UserTopics = {
   curated: [],
@@ -127,4 +128,52 @@ export function dismissPrompt(promptId: string): void {
 
 export function isPromptDismissed(promptId: string): boolean {
   return dismissedPrompts.get().includes(promptId);
+}
+
+export function deriveLendingPersonality(): string {
+  const books = Object.values(shelf.get());
+  const ownedBooks = books.filter(b => b.ownership === 'have');
+  if (ownedBooks.length === 0) return '';
+
+  const intentCounts: Record<BookIntent, number> = {
+    borrowable: 0,
+    discussable: 0,
+    giftable: 0,
+    'class-resource': 0,
+  };
+
+  for (const book of ownedBooks) {
+    for (const intent of book.intents) {
+      intentCounts[intent]++;
+    }
+  }
+
+  const total = ownedBooks.length;
+  const borrowableRatio = intentCounts.borrowable / total;
+  const discussableRatio = intentCounts.discussable / total;
+  const giftableRatio = intentCounts.giftable / total;
+
+  if (borrowableRatio > 0.5) return 'Generous lender';
+  if (giftableRatio > 0.3) return 'Loves to gift books';
+  if (discussableRatio > borrowableRatio) return 'Discussion-focused';
+  if (borrowableRatio > 0.2) return 'Selective lender';
+  if (borrowableRatio > 0) return 'Occasional lender';
+  return 'Private collector';
+}
+
+export function updateLendingPersonality(personality: string, isOverride: boolean = true): void {
+  updateProfile({
+    lendingPersonality: personality,
+    lendingPersonalityOverride: isOverride,
+  });
+}
+
+export function refreshDerivedProfile(): void {
+  const current = profile.get();
+  if (!current.lendingPersonalityOverride) {
+    const derived = deriveLendingPersonality();
+    if (derived && derived !== current.lendingPersonality) {
+      profile.set({ ...current, lendingPersonality: derived });
+    }
+  }
 }

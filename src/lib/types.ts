@@ -49,6 +49,9 @@ export interface UserProfile {
   currentObsessions?: string[];
   shelf?: Book[];
   distance?: string;
+  // Lending personality (auto-derived from shelf intents)
+  lendingPersonality?: string;
+  lendingPersonalityOverride?: boolean;
   // Entity type
   type?: EntityType;
   // Store-specific fields
