@@ -154,10 +154,10 @@ describe('Shelf Store', () => {
 
   describe('getShelfStats', () => {
     it('calculates correct stats', () => {
-      addBook({ title: 'Private', author: 'A', status: 'private' as BookStatus, addedVia: 'manual' });
-      addBook({ title: 'Borrowable', author: 'B', status: 'borrowable' as BookStatus, addedVia: 'manual' });
-      addBook({ title: 'Giftable', author: 'C', status: 'giftable' as BookStatus, addedVia: 'manual' });
-      addBook({ title: 'Discussable', author: 'D', status: 'discussable' as BookStatus, addedVia: 'manual' });
+      addBook({ title: 'Private', author: 'A', visibility: 'private', ownership: 'have', intents: [], addedVia: 'manual' });
+      addBook({ title: 'Borrowable', author: 'B', ownership: 'have', intents: ['borrowable'], addedVia: 'manual' });
+      addBook({ title: 'Giftable', author: 'C', ownership: 'have', intents: ['giftable'], addedVia: 'manual' });
+      addBook({ title: 'Discussable', author: 'D', ownership: 'have', intents: ['discussable'], addedVia: 'manual' });
 
       const stats = getShelfStats();
 

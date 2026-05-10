@@ -1,13 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { calculateMatches } from '../../src/lib/matching';
-import type { Book, UserProfile, BookStatus } from '../../src/lib/types';
+import type { Book, UserProfile, BookVisibility, BookOwnership, BookIntent } from '../../src/lib/types';
 
 function makeBook(overrides: Partial<Book> = {}): Book {
   return {
     id: 'book-' + Math.random().toString(36).slice(2),
     title: 'Test Book',
     author: 'Test Author',
-    status: 'visible' as BookStatus,
+    visibility: 'visible' as BookVisibility,
+    ownership: 'have' as BookOwnership,
+    intents: [] as BookIntent[],
     addedVia: 'manual',
     addedAt: Date.now(),
     ...overrides,
@@ -70,12 +72,12 @@ describe('calculateMatches', () => {
   describe('readingMentor facet', () => {
     it('finds users who have books I seek and can discuss/lend', () => {
       const myBooks = [
-        makeBook({ isbn: '123', status: 'seeking-home', title: 'Want This' }),
+        makeBook({ isbn: '123', ownership: 'seeking', title: 'Want This' }),
       ];
 
       const mentor = makeUser({
         shelf: [
-          makeBook({ isbn: '123', status: 'discussable', title: 'Want This' }),
+          makeBook({ isbn: '123', ownership: 'have', intents: ['discussable'], title: 'Want This' }),
         ],
       });
 
@@ -87,12 +89,12 @@ describe('calculateMatches', () => {
 
     it('includes borrowable books', () => {
       const myBooks = [
-        makeBook({ isbn: '123', status: 'seeking-home' }),
+        makeBook({ isbn: '123', ownership: 'seeking' }),
       ];
 
       const lender = makeUser({
         shelf: [
-          makeBook({ isbn: '123', status: 'borrowable' }),
+          makeBook({ isbn: '123', ownership: 'have', intents: ['borrowable'] }),
         ],
       });
 
@@ -103,38 +105,53 @@ describe('calculateMatches', () => {
 
     it('excludes private books from readingMentor', () => {
       const myBooks = [
-        makeBook({ isbn: '123', status: 'seeking-home' }),
+        makeBook({ isbn: '123', ownership: 'seeking' }),
       ];
 
       const hoarder = makeUser({
         shelf: [
-          makeBook({ isbn: '123', status: 'private' }),
+          makeBook({ isbn: '123', ownership: 'have', visibility: 'private', intents: [] }),
         ],
       });
 
       const matches = calculateMatches(myBooks, [], [hoarder]);
 
-      // Still matches as shelfTwin (both have same ISBN)
-      // but NOT as readingMentor (private books can't be discussed/borrowed)
-      expect(matches).toHaveLength(1);
-      expect(matches[0].facets.readingMentor.count).toBe(0);
-      expect(matches[0].facets.shelfTwin.count).toBe(1);
+      // No match because seeking books don't match with have books for shelfTwin,
+      // and no intents means no readingMentor match
+      expect(matches).toHaveLength(0);
     });
   });
 
   describe('localSource facet', () => {
     it('finds borrowable books I seek', () => {
       const myBooks = [
-        makeBook({ isbn: '123', status: 'seeking-home', title: 'Need This' }),
+        makeBook({ isbn: '123', ownership: 'seeking', title: 'Need This' }),
       ];
 
       const lender = makeUser({
         shelf: [
-          makeBook({ isbn: '123', status: 'borrowable', title: 'Need This' }),
+          makeBook({ isbn: '123', ownership: 'have', intents: ['borrowable'], title: 'Need This' }),
         ],
       });
 
       const matches = calculateMatches(myBooks, [], [lender]);
+
+      expect(matches[0].facets.localSource.count).toBe(1);
+      expect(matches[0].facets.localSource.items).toContain('Need This');
+    });
+
+    it('finds giftable books I seek', () => {
+      const myBooks = [
+        makeBook({ isbn: '123', ownership: 'seeking', title: 'Need This' }),
+      ];
+
+      const gifter = makeUser({
+        shelf: [
+          makeBook({ isbn: '123', ownership: 'have', intents: ['giftable'], title: 'Need This' }),
+        ],
+      });
+
+      const matches = calculateMatches(myBooks, [], [gifter]);
 
       expect(matches[0].facets.localSource.count).toBe(1);
       expect(matches[0].facets.localSource.items).toContain('Need This');
@@ -181,12 +198,12 @@ describe('calculateMatches', () => {
   describe('classChain facet', () => {
     it('finds shared class resources', () => {
       const myBooks = [
-        makeBook({ isbn: '123', status: 'class-resource', title: 'Textbook' }),
+        makeBook({ isbn: '123', intents: ['class-resource'], title: 'Textbook' }),
       ];
 
       const classmate = makeUser({
         shelf: [
-          makeBook({ isbn: '123', status: 'class-resource', title: 'Textbook' }),
+          makeBook({ isbn: '123', intents: ['class-resource'], title: 'Textbook' }),
         ],
       });
 
@@ -197,12 +214,12 @@ describe('calculateMatches', () => {
 
     it('finds users who have my class resources', () => {
       const myBooks = [
-        makeBook({ isbn: '123', status: 'class-resource', title: 'Textbook' }),
+        makeBook({ isbn: '123', intents: ['class-resource'], title: 'Textbook' }),
       ];
 
       const hasBook = makeUser({
         shelf: [
-          makeBook({ isbn: '123', status: 'visible', title: 'Textbook' }),
+          makeBook({ isbn: '123', intents: [], title: 'Textbook' }),
         ],
       });
 

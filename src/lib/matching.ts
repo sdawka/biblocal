@@ -9,18 +9,29 @@ const WEIGHTS = {
 };
 
 function calcShelfTwin(myBooks: Book[], theirBooks: Book[]): MatchFacet {
-  const myIsbns = new Set(myBooks.map((b) => b.isbn).filter(Boolean));
-  const shared = theirBooks.filter((b) => b.isbn && myIsbns.has(b.isbn));
+  const myIsbns = new Set(
+    myBooks
+      .filter((b) => b.ownership === 'have')
+      .map((b) => b.isbn)
+      .filter(Boolean)
+  );
+  const shared = theirBooks.filter(
+    (b) => b.isbn && b.ownership === 'have' && myIsbns.has(b.isbn)
+  );
   return {
     count: shared.length,
     items: shared.map((b) => b.title),
   };
 }
 
+function hasIntent(book: Book, intent: string): boolean {
+  return Array.isArray(book.intents) && book.intents.includes(intent as Book['intents'][number]);
+}
+
 function calcReadingMentor(myBooks: Book[], theirBooks: Book[]): MatchFacet {
   const myWants = new Set(
     myBooks
-      .filter((b) => b.status === 'seeking-home')
+      .filter((b) => b.ownership === 'seeking')
       .map((b) => b.isbn)
       .filter(Boolean)
   );
@@ -28,7 +39,8 @@ function calcReadingMentor(myBooks: Book[], theirBooks: Book[]): MatchFacet {
     (b) =>
       b.isbn &&
       myWants.has(b.isbn) &&
-      (b.status === 'borrowable' || b.status === 'discussable')
+      b.ownership === 'have' &&
+      (hasIntent(b, 'borrowable') || hasIntent(b, 'discussable'))
   );
   return {
     count: theyHave.length,
@@ -39,16 +51,20 @@ function calcReadingMentor(myBooks: Book[], theirBooks: Book[]): MatchFacet {
 function calcLocalSource(myBooks: Book[], theirBooks: Book[]): MatchFacet {
   const myWants = new Set(
     myBooks
-      .filter((b) => b.status === 'seeking-home')
+      .filter((b) => b.ownership === 'seeking')
       .map((b) => b.isbn)
       .filter(Boolean)
   );
-  const canBorrow = theirBooks.filter(
-    (b) => b.isbn && myWants.has(b.isbn) && b.status === 'borrowable'
+  const canObtain = theirBooks.filter(
+    (b) =>
+      b.isbn &&
+      myWants.has(b.isbn) &&
+      b.ownership === 'have' &&
+      (hasIntent(b, 'borrowable') || hasIntent(b, 'giftable'))
   );
   return {
-    count: canBorrow.length,
-    items: canBorrow.map((b) => b.title),
+    count: canObtain.length,
+    items: canObtain.map((b) => b.title),
   };
 }
 
@@ -67,16 +83,16 @@ function calcDiscussionMatch(
 function calcClassChain(myBooks: Book[], theirBooks: Book[]): MatchFacet {
   const myClassIsbns = new Set(
     myBooks
-      .filter((b) => b.status === 'class-resource')
+      .filter((b) => hasIntent(b, 'class-resource'))
       .map((b) => b.isbn)
       .filter(Boolean)
   );
 
   const shared = theirBooks.filter(
-    (b) => b.isbn && b.status === 'class-resource' && myClassIsbns.has(b.isbn)
+    (b) => b.isbn && hasIntent(b, 'class-resource') && myClassIsbns.has(b.isbn)
   );
   const theyHaveMyClass = theirBooks.filter(
-    (b) => b.isbn && myClassIsbns.has(b.isbn) && b.status !== 'class-resource'
+    (b) => b.isbn && myClassIsbns.has(b.isbn) && !hasIntent(b, 'class-resource')
   );
 
   const all = [...shared, ...theyHaveMyClass];
