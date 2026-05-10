@@ -131,6 +131,21 @@ export function getBookCount(): number {
   return Object.keys(shelf.get()).length;
 }
 
+export interface ShelfStats {
+  total: number;
+  lendable: number;
+  discussable: number;
+}
+
+export function getShelfStats(): ShelfStats {
+  const books = Object.values(shelf.get());
+  return {
+    total: books.length,
+    lendable: books.filter(b => b.status === 'borrowable' || b.status === 'giftable').length,
+    discussable: books.filter(b => b.status === 'discussable').length,
+  };
+}
+
 export function getInferredTopics(): string[] {
   const books = Object.values(shelf.get());
   const allSubjects = books.flatMap(b => b.subjects ?? []);
