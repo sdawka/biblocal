@@ -1,8 +1,13 @@
 <script lang="ts">
-  import { profile, updateProfile } from '../stores/profile';
-  import { getInferredTopics } from '../stores/shelf';
+  import { profile, updateProfile, deriveLendingPersonality, updateLendingPersonality } from '../stores/profile';
+  import { shelf, getInferredTopics } from '../stores/shelf';
   import type { UserProfile } from '../lib/types';
   import TopicPickerIsland from './TopicPickerIsland.svelte';
+  import InterestConstellation from './InterestConstellation.svelte';
+
+  let isEditing = $state(false);
+  let editingPersonality = $state(false);
+  let personalityInput = $state('');
 
   let profileData = $state<UserProfile>({
     id: '',
@@ -14,6 +19,12 @@
 
   let borrowStyle = $state('');
   let obsessions = $state('');
+
+  let hasTopics = $derived(
+    profileData.topics.curated.length +
+    profileData.topics.freeform.length +
+    profileData.topics.inferred.length > 0
+  );
 
   $effect(() =>
     profile.subscribe((p) => {
@@ -33,6 +44,32 @@
       });
     }
   });
+
+  $effect(() => {
+    const _ = $shelf; // subscribe to changes
+    const current = $profile;
+    if (!current.lendingPersonalityOverride) {
+      const derived = deriveLendingPersonality();
+      if (derived && derived !== current.lendingPersonality) {
+        updateLendingPersonality(derived, false);
+      }
+    }
+  });
+
+  function startEditPersonality() {
+    personalityInput = $profile.lendingPersonality || '';
+    editingPersonality = true;
+  }
+
+  function savePersonality() {
+    updateLendingPersonality(personalityInput, true);
+    editingPersonality = false;
+  }
+
+  function clearPersonalityOverride() {
+    const derived = deriveLendingPersonality();
+    updateLendingPersonality(derived, false);
+  }
 
   function handleSave() {
     updateProfile({
@@ -60,84 +97,165 @@
   ];
 </script>
 
-<div class="profile">
-  <section>
-    <h2>Your Profile</h2>
-
-    <div class="field">
-      <label for="name">Name</label>
-      <input
-        id="name"
-        type="text"
-        bind:value={profileData.name}
-        onblur={handleSave}
-      />
-    </div>
-
-    <div class="field">
-      <label for="city">City</label>
-      <select id="city" bind:value={profileData.city} onchange={handleSave}>
-        {#each CITIES as city}
-          <option value={city}>{city}</option>
-        {/each}
-      </select>
-    </div>
-
-    <div class="field">
-      <label for="radius">Search radius: {profileData.radiusKm} km</label>
-      <input
-        id="radius"
-        type="range"
-        min="1"
-        max="20"
-        bind:value={profileData.radiusKm}
-        onchange={handleSave}
-      />
-    </div>
-  </section>
-
-  <section>
-    <h2>Your Interests</h2>
-    <TopicPickerIsland mode="both" maxCurated={5} />
-
-    {#if profileData.topics.inferred.length > 0}
-      <div class="inferred">
-        <h3>Inferred from your books</h3>
-        <div class="tags">
-          {#each profileData.topics.inferred as topic}
-            <span class="tag">{topic.replace('-', ' ')}</span>
-          {/each}
-        </div>
+{#if isEditing}
+  <!-- Edit Mode -->
+  <div class="profile">
+    <section>
+      <div class="section-header">
+        <h2>Edit Profile</h2>
+        <button class="btn-done" onclick={() => isEditing = false}>Done</button>
       </div>
+
+      <div class="field">
+        <label for="name">Name</label>
+        <input
+          id="name"
+          type="text"
+          bind:value={profileData.name}
+          onblur={handleSave}
+        />
+      </div>
+
+      <div class="field">
+        <label for="city">City</label>
+        <select id="city" bind:value={profileData.city} onchange={handleSave}>
+          {#each CITIES as city}
+            <option value={city}>{city}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="radius">Search radius: {profileData.radiusKm} km</label>
+        <input
+          id="radius"
+          type="range"
+          min="1"
+          max="20"
+          bind:value={profileData.radiusKm}
+          onchange={handleSave}
+        />
+      </div>
+    </section>
+
+    <section>
+      <h2>Your Interests</h2>
+      <TopicPickerIsland mode="both" maxCurated={5} />
+
+      <div class="constellation-wrapper">
+        <h3>Your Interest Constellation</h3>
+        <InterestConstellation
+          curated={profileData.topics.curated}
+          freeform={profileData.topics.freeform}
+          inferred={profileData.topics.inferred}
+        />
+      </div>
+    </section>
+
+    <section>
+      <h2>Optional Details</h2>
+
+      <div class="field">
+        <label for="borrow">Lending style</label>
+        <input
+          id="borrow"
+          type="text"
+          bind:value={borrowStyle}
+          placeholder="e.g., careful, notes welcome, 3-week returns"
+          onblur={handleSave}
+        />
+      </div>
+
+      <div class="field">
+        <label for="obsessions">Current obsessions (comma-separated)</label>
+        <input
+          id="obsessions"
+          type="text"
+          bind:value={obsessions}
+          placeholder="e.g., program theory, parables, coordination"
+          onblur={handleSave}
+        />
+      </div>
+    </section>
+
+    <section class="profile-section">
+      <h2>Lending Style</h2>
+      {#if editingPersonality}
+        <div class="edit-row">
+          <input type="text" bind:value={personalityInput} placeholder="e.g., Generous lender" />
+          <button onclick={savePersonality}>Save</button>
+          <button class="secondary" onclick={() => editingPersonality = false}>Cancel</button>
+        </div>
+      {:else}
+        <div class="derived-value">
+          <span class="value">{$profile.lendingPersonality || 'Add some books to see your style'}</span>
+          {#if $profile.lendingPersonality}
+            <button class="edit-btn" onclick={startEditPersonality}>Edit</button>
+            {#if $profile.lendingPersonalityOverride}
+              <button class="clear-btn" onclick={clearPersonalityOverride}>Reset to auto</button>
+            {/if}
+          {/if}
+        </div>
+      {/if}
+    </section>
+  </div>
+{:else}
+  <!-- View Mode -->
+  <div class="profile-view">
+    <header class="profile-header">
+      <div class="identity">
+        <h1 class="name">{profileData.name || 'Your Profile'}</h1>
+        {#if profileData.city}
+          <span class="location">{profileData.city} · {profileData.radiusKm} km radius</span>
+        {/if}
+      </div>
+      <button class="btn-edit" onclick={() => isEditing = true}>
+        <span class="edit-icon">✎</span> Edit
+      </button>
+    </header>
+
+    <section class="constellation-hero">
+      {#if hasTopics}
+        <InterestConstellation
+          curated={profileData.topics.curated}
+          freeform={profileData.topics.freeform}
+          inferred={profileData.topics.inferred}
+        />
+      {:else}
+        <div class="empty-constellation">
+          <p>Your interest constellation awaits</p>
+          <button class="btn-add-interests" onclick={() => isEditing = true}>
+            Add interests
+          </button>
+        </div>
+      {/if}
+    </section>
+
+    {#if borrowStyle || obsessions}
+      <section class="profile-details">
+        {#if borrowStyle}
+          <blockquote class="lending-style">"{borrowStyle}"</blockquote>
+        {/if}
+        {#if obsessions}
+          <p class="obsessions">
+            <span class="label">Currently obsessing over:</span>
+            <span class="value">{obsessions}</span>
+          </p>
+        {/if}
+      </section>
     {/if}
-  </section>
 
-  <section>
-    <h2>Optional Details</h2>
-
-    <div class="field">
-      <label for="borrow">Lending style</label>
-      <input
-        id="borrow"
-        type="text"
-        bind:value={borrowStyle}
-        placeholder="e.g., careful, notes welcome, 3-week returns"
-        onblur={handleSave}
-      />
-    </div>
-
-    <div class="field">
-      <label for="obsessions">Current obsessions (comma-separated)</label>
-      <input
-        id="obsessions"
-        type="text"
-        bind:value={obsessions}
-        placeholder="e.g., program theory, parables, coordination"
-        onblur={handleSave}
-      />
-    </div>
-  </section>
-</div>
+    {#if $profile.lendingPersonality}
+      <section class="profile-details lending-personality-view">
+        <p class="personality-label">Lending Personality</p>
+        <p class="personality-value">{$profile.lendingPersonality}</p>
+        {#if $profile.lendingPersonalityOverride}
+          <span class="override-badge">custom</span>
+        {/if}
+      </section>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .profile {
@@ -309,34 +427,320 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
-  .inferred {
+  .constellation-wrapper {
     margin-top: 1.5rem;
     padding-top: 1rem;
     border-top: 1px solid var(--color-gold-pale);
   }
 
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+  .constellation-wrapper h3 {
+    margin: 0 0 0.75rem;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-ink-faded);
+    text-align: center;
   }
 
-  .tag {
-    padding: 0.2rem 0.625rem;
-    font-family: var(--font-body);
-    font-size: 0.8rem;
+  /* View Mode Styles */
+  .profile-view {
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .profile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.5rem;
+    background: var(--color-cream);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+  }
+
+  .identity {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .name {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 600;
     color: var(--color-ink);
+  }
+
+  .location {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--color-ink-faded);
+  }
+
+  .btn-edit, .btn-done {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-ink);
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .btn-edit:hover, .btn-done:hover {
+    border-color: var(--color-gold);
+    background: var(--color-gold-pale);
+  }
+
+  .edit-icon {
+    font-size: 1rem;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-gold-pale);
+  }
+
+  .section-header h2 {
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .constellation-hero {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-lifted);
+  }
+
+  .empty-constellation {
+    padding: 3rem 2rem;
+    text-align: center;
     background: linear-gradient(
-      to bottom,
-      var(--color-gold-pale),
-      var(--color-gold-light) 50%,
-      var(--color-gold-pale)
+      135deg,
+      var(--color-ink) 0%,
+      #1a1612 50%,
+      var(--color-mahogany-deep) 100%
     );
-    border: 1px solid var(--color-gold);
-    border-radius: 2px;
-    text-transform: capitalize;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.4),
-      0 1px 2px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius-md);
+  }
+
+  .empty-constellation p {
+    margin: 0 0 1rem;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    color: var(--color-gold-pale);
+    font-style: italic;
+  }
+
+  .btn-add-interests {
+    padding: 0.625rem 1.25rem;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-ink);
+    background: linear-gradient(to bottom, var(--color-gold-pale), var(--color-gold));
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .btn-add-interests:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3);
+  }
+
+  .profile-details {
+    padding: 1.5rem;
+    background: var(--color-cream);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+  }
+
+  .lending-style {
+    margin: 0 0 1rem;
+    padding: 0.75rem 1rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--color-ink);
+    background: var(--color-paper);
+    border-left: 3px solid var(--color-gold);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  }
+
+  .lending-style:last-child {
+    margin-bottom: 0;
+  }
+
+  .obsessions {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--color-ink);
+  }
+
+  .obsessions .label {
+    color: var(--color-ink-faded);
+    font-weight: 500;
+  }
+
+  .obsessions .value {
+    font-style: italic;
+  }
+
+  /* Lending Style Section (Edit Mode) */
+  .profile-section h2 {
+    margin: 0 0 1rem;
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-gold-pale);
+  }
+
+  .derived-value {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .derived-value .value {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--color-ink);
+    font-style: italic;
+  }
+
+  .edit-btn,
+  .clear-btn {
+    padding: 0.375rem 0.75rem;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .edit-btn {
+    color: var(--color-ink);
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+  }
+
+  .edit-btn:hover {
+    border-color: var(--color-gold);
+    background: var(--color-gold-pale);
+  }
+
+  .clear-btn {
+    color: var(--color-ink-faded);
+    background: transparent;
+    border: 1px dashed var(--color-gold-pale);
+  }
+
+  .clear-btn:hover {
+    border-color: var(--color-gold);
+    color: var(--color-ink);
+  }
+
+  .edit-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .edit-row input[type='text'] {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .edit-row button {
+    padding: 0.625rem 1rem;
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .edit-row button:first-of-type {
+    color: var(--color-cream);
+    background: var(--color-mahogany);
+    border: 1px solid var(--color-mahogany);
+  }
+
+  .edit-row button:first-of-type:hover {
+    background: var(--color-mahogany-light);
+  }
+
+  .edit-row button.secondary {
+    color: var(--color-ink);
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+  }
+
+  .edit-row button.secondary:hover {
+    border-color: var(--color-gold);
+    background: var(--color-gold-pale);
+  }
+
+  /* Lending Personality View Mode */
+  .lending-personality-view {
+    position: relative;
+  }
+
+  .personality-label {
+    margin: 0 0 0.25rem;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-ink-faded);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .personality-value {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--color-ink);
+  }
+
+  .override-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.25rem 0.5rem;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--color-ink-faded);
+    background: var(--color-gold-pale);
+    border-radius: var(--radius-xs, 3px);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 </style>

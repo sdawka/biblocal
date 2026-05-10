@@ -5,18 +5,18 @@
   const scenarios = [
     {
       icon: "📖",
-      title: "Lend without the awkwardness",
-      description: "Mark it 'will lend' and let people come to you. No more forgetting who has your copy of Dune."
+      title: "Lend it properly this time",
+      description: "Mark it 'will lend' — and actually remember who borrowed it. Revolutionary, we know."
     },
     {
       icon: "🔍",
-      title: "Find that book you've been hunting",
-      description: "Someone nearby probably owns it. We'll introduce you."
+      title: "Find that elusive copy",
+      description: "The universe put it on someone's shelf three streets away. We just connect the dots."
     },
     {
       icon: "🎁",
-      title: "Give books a second life",
-      description: "Some books need new homes. Mark them 'free to good home' and make someone's week."
+      title: "Let it go (kindly)",
+      description: "Some books have done their work. Send them off to change someone else's mind."
     }
   ];
 
@@ -35,9 +35,9 @@
 
 <section class="lending-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
-    <h2 class="section-title">Books were meant to circulate.</h2>
+    <h2 class="section-title">Books move. That's sort of their thing.</h2>
     <p class="section-desc">
-      The best books don't gather dust—they gather miles, coffee stains, and marginalia from three different owners.
+      A book on a shelf is just waiting. The interesting part happens when it changes hands.
     </p>
 
     <div class="scenarios-grid">
@@ -51,7 +51,7 @@
     </div>
 
     <p class="section-note marginalia">
-      No shipping fees. No waiting for delivery. Just humans handing each other books like civilized primates.
+      No shipping. No waiting. Just people handing each other books, the way it worked before algorithms.
     </p>
   </div>
 </section>

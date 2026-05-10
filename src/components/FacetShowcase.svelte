@@ -7,36 +7,36 @@
     {
       name: "Shelf Twin",
       icon: "📚",
-      tagline: "Suspiciously similar taste",
-      example: "You both own Small Gods, GEB, and that one weird Borges collection",
+      tagline: "Suspiciously similar shelves",
+      example: "You both kept the same obscure Calvino. Coincidence doesn't cover it.",
       weight: 3,
     },
     {
-      name: "Reading Mentor",
-      icon: "🎓",
-      tagline: "They've read your wishlist",
-      example: "They own 3 books you've been hunting for",
+      name: "Book Scout",
+      icon: "🔭",
+      tagline: "They've been where you're going",
+      example: "Owns three books on your maybe-someday list",
       weight: 2,
     },
     {
-      name: "Local Source",
-      icon: "🤝",
-      tagline: "Actually borrowable",
-      example: "0.8km away. 12 books available. No shipping required.",
+      name: "Neighbor",
+      icon: "🏡",
+      tagline: "Walking distance",
+      example: "800 meters away. Has the book. Likes coffee.",
       weight: 2,
     },
     {
-      name: "Discussion Match",
-      icon: "💬",
-      tagline: "Argument-compatible",
-      example: "You'll disagree about Kundera but agree about Le Guin",
+      name: "Debate Partner",
+      icon: "☕",
+      tagline: "Productive disagreement",
+      example: "You'll argue about Kundera for an hour and both enjoy it",
       weight: 1,
     },
     {
-      name: "Class Chain",
-      icon: "🎒",
-      tagline: "Syllabus survivors",
-      example: "Both traumatized by the same reading list",
+      name: "Syllabus Survivor",
+      icon: "📝",
+      tagline: "Shared academic scars",
+      example: "Both required to read it. Both actually did.",
       weight: 1,
     },
   ];
@@ -65,9 +65,9 @@
 
 <section class="facets-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
-    <h2 class="section-title">Reading is solitary. Talking about reading doesn't have to be.</h2>
+    <h2 class="section-title">You know that feeling when someone actually gets the reference?</h2>
     <p class="section-desc">
-      We match you with people who'll get your references, debate your hot takes, and lend you that book you've been hunting.
+      We find those people. The ones who read the footnotes. Who have opinions about translation choices. Who understand why you kept that paperback.
     </p>
 
     <div class="facets-grid">
@@ -120,7 +120,7 @@
     </svg>
 
     <p class="facets-note">
-      <span class="marginalia">The more dots, the stronger the signal</span>
+      <span class="marginalia">More dots = stronger connection. Simple as that.</span>
     </p>
   </div>
 </section>

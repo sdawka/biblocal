@@ -16,13 +16,15 @@
     })
   );
 
+  const MONTREAL = { lat: 45.5017, lng: -73.5673 };
+
   onMount(async () => {
     await loadSeedUsers();
 
     const L = await import('leaflet');
     await import('leaflet/dist/leaflet.css');
 
-    map = L.map(mapContainer).setView([40.7128, -74.006], 13);
+    map = L.map(mapContainer).setView([MONTREAL.lat, MONTREAL.lng], 13);
 
     L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; Stadia Maps &copy; OpenStreetMap contributors',
@@ -32,7 +34,7 @@
       const offset = i * 0.005 - 0.01;
       const isStore = match.user.type === 'bookstore';
 
-      L.circleMarker([40.7128 + offset, -74.006 + offset * 2], {
+      L.circleMarker([MONTREAL.lat + offset, MONTREAL.lng + offset * 2], {
         radius: isStore ? 10 : 8,
         fillColor: isStore ? '#722F37' : '#B8860B',
         fillOpacity: 0.9,

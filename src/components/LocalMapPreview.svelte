@@ -27,13 +27,13 @@
 <section class="local-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
     <div class="text-content">
-      <h2 class="section-title">Your next favorite book<br/>is probably within walking distance.</h2>
+      <h2 class="section-title">It turns out books are easier<br/>to share in person.</h2>
       <p class="section-desc">
-        These are real people. The kind who'll lend you a book and actually
-        remember to ask what you thought. The kind worth knowing.
+        Here's who's nearby. Some have books you want. Some want books you have.
+        All of them read, which is already a good sign.
       </p>
       <p class="section-aside">
-        No shipping fees. No waiting. Just humans being decent to each other.
+        Turns out the internet is pretty good at connecting neighbors.
       </p>
     </div>
 

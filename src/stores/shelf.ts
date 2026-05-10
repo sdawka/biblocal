@@ -93,6 +93,10 @@ export function updateBook(id: string, updates: Partial<Book>) {
   }
 }
 
+export function updateBookStatus(id: string, status: BookStatus) {
+  updateBook(id, { status });
+}
+
 export function updateBookVisibility(id: string, visibility: BookVisibility) {
   updateBook(id, { visibility });
 }

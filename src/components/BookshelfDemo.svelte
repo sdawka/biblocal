@@ -9,7 +9,7 @@
       status: "discussable",
       statusLabel: "Let's discuss",
       cover: "https://covers.openlibrary.org/b/isbn/0062237373-M.jpg",
-      note: "Turtles, belief, and uncomfortable truths"
+      note: "Om is my favorite tortoise philosopher"
     },
     {
       title: "Gödel, Escher, Bach",
@@ -17,7 +17,7 @@
       status: "borrowable",
       statusLabel: "Will lend",
       cover: "https://covers.openlibrary.org/b/isbn/0465026567-M.jpg",
-      note: "I understood about 40% and loved 100%"
+      note: "You'll either love it or pretend to"
     },
     {
       title: "The Unbearable Lightness of Being",
@@ -25,7 +25,7 @@
       status: "visible",
       statusLabel: "On my shelf",
       cover: "https://covers.openlibrary.org/b/isbn/0061148520-M.jpg",
-      note: "Still thinking about it, honestly"
+      note: "Every reading reveals something new"
     },
     {
       title: "Guards! Guards!",
@@ -33,7 +33,7 @@
       status: "giftable",
       statusLabel: "Free to good home",
       cover: "https://covers.openlibrary.org/b/isbn/0062225758-M.jpg",
-      note: "Own 3 copies. This is a problem."
+      note: "Own too many copies. A good problem."
     },
     {
       title: "The Dispossessed",
@@ -41,7 +41,7 @@
       status: "seeking",
       statusLabel: "Looking for this",
       cover: "https://covers.openlibrary.org/b/isbn/0061054887-M.jpg",
-      note: "Been hunting for months"
+      note: "The ambiguous utopia awaits"
     },
   ];
 
@@ -60,10 +60,10 @@
 
 <section class="bookshelf-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
-    <h2 class="section-title">You are what you read. Mostly.</h2>
+    <h2 class="section-title">Start with your shelf. The rest follows.</h2>
     <p class="section-desc">
-      Your shelf tells people who you are—or at least who you'd like them to think you are.<br/>
-      Each book gets a status. Each status tells a story.
+      Add the books that matter. Mark the ones you'd lend, discuss, or give away.<br/>
+      The rest is just connecting people who should probably meet.
     </p>
 
     <div class="shelf-container">
