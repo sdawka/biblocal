@@ -1,5 +1,6 @@
 ---
 import '../styles/victorian.css';
+import { SignOutButton } from '@clerk/astro/components';
 
 interface Props {
   title: string;
@@ -26,6 +27,7 @@ const currentPath = Astro.url.pathname;
         <a href="/shelf" class:list={{ active: currentPath === '/shelf' }}>Shelf</a>
         <a href="/matches" class:list={{ active: currentPath === '/matches' }}>Matches</a>
         <a href="/profile" class:list={{ active: currentPath === '/profile' }}>Profile</a>
+        <SignOutButton class="logout-btn">Log out</SignOutButton>
       </div>
     </nav>
     <slot />
@@ -177,5 +179,25 @@ const currentPath = Astro.url.pathname;
 
   .links a.active::after {
     display: none;
+  }
+
+  .links :global(.logout-btn) {
+    padding: 0.5rem 1.125rem;
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gold-pale);
+    text-decoration: none;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-gentle);
+    opacity: 0.7;
+  }
+
+  .links :global(.logout-btn:hover) {
+    color: var(--color-cream);
+    opacity: 1;
   }
 </style>
