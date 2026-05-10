@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import AddBookIsland from '../components/AddBookIsland.svelte';
-import ShelfIsland from '../components/ShelfIsland.svelte';
+import ShelfContainer from '../components/ShelfContainer.svelte';
 import PromptIsland from '../components/PromptIsland.svelte';
 import { Show, UserButton } from '@clerk/astro/components';
 ---
@@ -19,9 +19,11 @@ import { Show, UserButton } from '@clerk/astro/components';
 
       <PromptIsland client:load context="shelf" />
 
-      <AddBookIsland client:load />
+      <div class="add-book-section">
+        <AddBookIsland client:load />
+      </div>
 
-      <ShelfIsland client:load />
+      <ShelfContainer client:load />
     </main>
   </Show>
 </Layout>
