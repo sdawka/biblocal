@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -12,6 +12,15 @@ export const users = sqliteTable('users', {
   topicsFreeform: text('topics_freeform'), // JSON array
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+  // Entity type: 'person' (default) or 'bookstore'
+  type: text('type').default('person'),
+  // Store-specific fields (nullable, only used when type='bookstore')
+  address: text('address'),
+  neighborhood: text('neighborhood'),
+  website: text('website'),
+  phone: text('phone'),
+  specialties: text('specialties'), // JSON array
+  addedBy: text('added_by'),
 });
 
 export const authCodes = sqliteTable('auth_codes', {

@@ -30,15 +30,17 @@
 
     matchList.forEach((match, i) => {
       const offset = i * 0.005 - 0.01;
+      const isStore = match.user.type === 'bookstore';
+
       L.circleMarker([40.7128 + offset, -74.006 + offset * 2], {
-        radius: 8,
-        fillColor: '#B8860B',
+        radius: isStore ? 10 : 8,
+        fillColor: isStore ? '#722F37' : '#B8860B',
         fillOpacity: 0.9,
-        color: '#4A2C2A',
+        color: isStore ? '#4A1C24' : '#4A2C2A',
         weight: 2,
       })
-        .bindTooltip(match.user.name, {
-          className: 'victorian-tooltip',
+        .bindTooltip(isStore ? `🏪 ${match.user.name}` : match.user.name, {
+          className: isStore ? 'victorian-tooltip store-tooltip' : 'victorian-tooltip',
         })
         .addTo(map);
     });
@@ -57,7 +59,7 @@
   <div class="map-container" bind:this={mapContainer}></div>
 
   <div class="cards-panel">
-    <h2>People Nearby ({matchList.length})</h2>
+    <h2>Nearby ({matchList.length})</h2>
 
     {#if matchList.length === 0}
       <p class="empty">Add some books to find matches!</p>
@@ -177,5 +179,13 @@
 
   :global(.victorian-tooltip::before) {
     border-top-color: var(--color-gold);
+  }
+
+  :global(.store-tooltip) {
+    border-color: #722F37;
+  }
+
+  :global(.store-tooltip::before) {
+    border-top-color: #722F37;
   }
 </style>

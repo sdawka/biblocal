@@ -3,6 +3,7 @@
 interface Env {
   DB: D1Database;
   EMAIL: SendEmail;
+  SEED_KEY?: string;
 }
 
 declare namespace App {

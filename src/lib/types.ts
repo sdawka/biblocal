@@ -7,6 +7,8 @@ export type BookStatus =
   | 'class-resource'
   | 'seeking-home';
 
+export type EntityType = 'person' | 'bookstore';
+
 export interface Book {
   id: string;
   isbn?: string;
@@ -36,6 +38,15 @@ export interface UserProfile {
   currentObsessions?: string[];
   shelf?: Book[];
   distance?: string;
+  // Entity type
+  type?: EntityType;
+  // Store-specific fields
+  address?: string;
+  neighborhood?: string;
+  website?: string;
+  phone?: string;
+  specialties?: string[];
+  addedBy?: string;
 }
 
 export interface MatchFacet {

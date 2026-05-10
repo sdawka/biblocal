@@ -1,0 +1,43 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import StoreDetailIsland from '../../components/StoreDetailIsland.svelte';
+import { Show, UserButton } from '@clerk/astro/components';
+
+const { id } = Astro.params;
+---
+
+<Layout title="Bookstore | biblocal">
+  <Show when="signed-out">
+    <script>window.location.href = '/';</script>
+  </Show>
+  <Show when="signed-in">
+    <main>
+      <div class="header-row">
+        <a href="/matches" class="back-link">← Back to matches</a>
+        <UserButton />
+      </div>
+
+      <StoreDetailIsland storeId={id!} client:load />
+    </main>
+  </Show>
+</Layout>
+
+<style>
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .back-link {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--color-ink-faded);
+    text-decoration: none;
+  }
+
+  .back-link:hover {
+    color: var(--color-ink);
+  }
+</style>

@@ -2,25 +2,23 @@
 import Layout from '../layouts/Layout.astro';
 import MatchMapIsland from '../components/MatchMapIsland.svelte';
 import PromptIsland from '../components/PromptIsland.svelte';
-import { Show, UserButton } from '@clerk/astro/components';
+import { UserButton } from '@clerk/astro/components';
 ---
 
 <Layout title="Find Matches | biblocal">
-  <Show when="signed-out">
-    <script>window.location.href = '/';</script>
-  </Show>
-  <Show when="signed-in">
-    <main>
+  <main>
       <div class="header-row">
-        <h1>People Nearby</h1>
-        <UserButton />
+        <h1>Nearby</h1>
+        <div class="header-actions">
+          <a href="/stores/new" class="add-store-link">+ Add a bookstore</a>
+          <UserButton />
+        </div>
       </div>
 
       <PromptIsland client:load context="matches" />
 
       <MatchMapIsland client:load />
     </main>
-  </Show>
 </Layout>
 
 <style>
@@ -37,5 +35,27 @@ import { Show, UserButton } from '@clerk/astro/components';
 
   h1 {
     margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .add-store-link {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--color-burgundy, #722f37);
+    text-decoration: none;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--color-burgundy, #722f37);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-quick);
+  }
+
+  .add-store-link:hover {
+    background: var(--color-burgundy, #722f37);
+    color: var(--color-cream);
   }
 </style>

@@ -10,7 +10,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "generate-types": "wrangler types"
+    "generate-types": "wrangler types",
+    "seed:stores": "curl -X POST http://localhost:4321/api/seed-stores"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.3.1",

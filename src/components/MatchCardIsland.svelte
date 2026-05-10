@@ -9,6 +9,8 @@
 
   let { match, expanded = false, onToggle }: Props = $props();
 
+  let isStore = $derived(match.user.type === 'bookstore');
+
   const FACET_LABELS: Record<string, { label: string; icon: string }> = {
     shelfTwin: { label: 'Shelf Twin', icon: '📚' },
     readingMentor: { label: 'Reading Mentor', icon: '🎓' },
@@ -17,28 +19,63 @@
     classChain: { label: 'Class Chain', icon: '🎒' },
   };
 
+  const STORE_FACET_LABELS: Record<string, { label: string; icon: string }> = {
+    shelfTwin: { label: 'Books in Common', icon: '📚' },
+    readingMentor: { label: 'Has What You Seek', icon: '🔍' },
+    localSource: { label: 'Available Here', icon: '🏪' },
+    discussionMatch: { label: 'Your Interests', icon: '💬' },
+    classChain: { label: 'Class Resources', icon: '🎒' },
+  };
+
   function getActiveFacets(): {
     key: string;
     facet: MatchFacet;
     meta: { label: string; icon: string };
   }[] {
+    const labels = isStore ? STORE_FACET_LABELS : FACET_LABELS;
     return Object.entries(match.facets)
       .filter(([_, f]) => f.count > 0)
       .map(([key, facet]) => ({
         key,
         facet,
-        meta: FACET_LABELS[key],
+        meta: labels[key],
       }));
   }
 
   let activeFacets = $derived(getActiveFacets());
+
+  let specialties = $derived(
+    isStore && match.user.specialties ? match.user.specialties : []
+  );
 </script>
 
-<article class="match-card" class:expanded onclick={onToggle}>
+<article class="match-card" class:expanded class:store={isStore} onclick={onToggle}>
   <header>
-    <h3>{match.user.name}</h3>
-    <span class="distance">{match.user.distance}</span>
+    <div class="title-row">
+      {#if isStore}
+        <span class="store-badge">🏪</span>
+      {/if}
+      <h3>{match.user.name}</h3>
+    </div>
+    <span class="distance">
+      {#if isStore && match.user.neighborhood}
+        {match.user.neighborhood}
+      {:else}
+        {match.user.distance}
+      {/if}
+    </span>
   </header>
+
+  {#if isStore && specialties.length > 0}
+    <div class="specialties">
+      {#each specialties.slice(0, 4) as specialty}
+        <span class="specialty-tag">{specialty}</span>
+      {/each}
+      {#if specialties.length > 4}
+        <span class="specialty-tag more">+{specialties.length - 4}</span>
+      {/if}
+    </div>
+  {/if}
 
   <div class="facets">
     {#each activeFacets as { key, facet, meta }}
@@ -51,6 +88,26 @@
 
   {#if expanded}
     <div class="details">
+      {#if isStore}
+        <div class="store-info">
+          {#if match.user.address}
+            <p class="address">📍 {match.user.address}</p>
+          {/if}
+          {#if match.user.website}
+            <p class="website">
+              <a href={match.user.website} target="_blank" rel="noopener" onclick={(e) => e.stopPropagation()}>
+                Visit website →
+              </a>
+            </p>
+          {/if}
+          <p class="view-store">
+            <a href={`/store/${match.user.id}`} onclick={(e) => e.stopPropagation()}>
+              View store details →
+            </a>
+          </p>
+        </div>
+      {/if}
+
       {#each activeFacets as { key, facet, meta }}
         <div class="facet-detail">
           <h4>{meta.icon} {meta.label}</h4>
@@ -65,7 +122,7 @@
         </div>
       {/each}
 
-      {#if match.user.borrowStyle}
+      {#if !isStore && match.user.borrowStyle}
         <p class="borrow-style">"{match.user.borrowStyle}"</p>
       {/if}
     </div>
@@ -229,5 +286,79 @@
     background: var(--color-paper);
     border-left: 3px solid var(--color-gold);
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  }
+
+  /* Store-specific styles */
+  .match-card.store {
+    border-left: 3px solid var(--color-burgundy, #722f37);
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .store-badge {
+    font-size: 1.1rem;
+  }
+
+  .specialties {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .specialty-tag {
+    padding: 0.125rem 0.375rem;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    color: var(--color-ink-faded);
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: 2px;
+  }
+
+  .specialty-tag.more {
+    font-style: italic;
+    color: var(--color-ink-light);
+  }
+
+  .store-info {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px dashed var(--color-gold-pale);
+  }
+
+  .store-info p {
+    margin: 0.25rem 0;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--color-ink-faded);
+  }
+
+  .store-info .address {
+    font-style: italic;
+  }
+
+  .store-info a {
+    color: var(--color-burgundy, #722f37);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .store-info a:hover {
+    text-decoration: underline;
+  }
+
+  .view-store {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--color-gold-pale);
+  }
+
+  .view-store a {
+    font-weight: 500;
   }
 </style>
