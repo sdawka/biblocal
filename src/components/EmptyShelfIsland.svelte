@@ -38,6 +38,16 @@
     </div>
   </div>
 
+  <!-- Ghost Books Preview -->
+  <div class="ghost-shelf">
+    <div class="ghost-books">
+      <div class="ghost-book gold"></div>
+      <div class="ghost-book burgundy"></div>
+      <div class="ghost-book forest"></div>
+    </div>
+    <p class="ghost-hint">Your books will appear here</p>
+  </div>
+
   <!-- Choice Cards -->
   <div class="choices">
     <button type="button" class="choice-card primary" onclick={scrollToAddBook}>
@@ -212,6 +222,51 @@
   .choice-card:focus {
     outline: 2px solid var(--color-gold);
     outline-offset: 2px;
+  }
+
+  /* Ghost Books Preview */
+  .ghost-shelf {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .ghost-books {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  .ghost-book {
+    width: 50px;
+    height: 75px;
+    border-radius: 3px;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .ghost-book.gold {
+    background: linear-gradient(180deg, var(--color-gold-light) 0%, var(--color-brass) 100%);
+    opacity: 0.5;
+  }
+
+  .ghost-book.burgundy {
+    background: linear-gradient(180deg, var(--color-burgundy-light) 0%, var(--color-burgundy) 100%);
+    opacity: 0.35;
+  }
+
+  .ghost-book.forest {
+    background: linear-gradient(180deg, var(--color-forest-light) 0%, var(--color-forest) 100%);
+    opacity: 0.25;
+  }
+
+  .ghost-hint {
+    margin: 1rem 0 0;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-style: italic;
+    color: var(--color-ink-light);
   }
 
   /* Responsive */
