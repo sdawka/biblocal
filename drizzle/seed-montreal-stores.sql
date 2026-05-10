@@ -1,0 +1,8 @@
+INSERT OR IGNORE INTO users (id, email, name, city, type, neighborhood, address, website, specialties, created_at, updated_at)
+VALUES
+  ('store-argo', 'store-argo@biblocal.local', 'Argo Bookshop', 'Montreal', 'bookstore', 'Shaughnessy Village', '1915 Ste-Catherine O, Montreal', 'https://argobookshop.ca', '["poetry","philosophy","linguistics","Japan","marginalized voices"]', unixepoch(), unixepoch()),
+  ('store-dandq', 'store-dandq@biblocal.local', 'Librairie Drawn & Quarterly', 'Montreal', 'bookstore', 'Mile End', '176 Bernard O, Montreal', 'https://mtl.drawnandquarterly.com', '["graphic novels","comics","indie lit","art books"]', unixepoch(), unixepoch()),
+  ('store-theword', 'store-theword@biblocal.local', 'The Word', 'Montreal', 'bookstore', 'McGill Ghetto', '469 Milton, Montreal', NULL, '["used books","literature","philosophy","poetry"]', unixepoch(), unixepoch()),
+  ('store-sainthenri', 'store-sainthenri@biblocal.local', 'Librairie Saint-Henri Books', 'Montreal', 'bookstore', 'Saint-Henri', '3820 Notre-Dame O, Montreal', 'https://www.sainthenribooks.com', '["diverse voices","POC authors","queer lit","Indigenous authors"]', unixepoch(), unixepoch()),
+  ('store-pulp', 'store-pulp@biblocal.local', 'Pulp Books & Café', 'Montreal', 'bookstore', 'Verdun', '4401 Wellington, Montreal', 'https://pulpbooks.ca', '["contemporary fiction","graphic novels","café"]', unixepoch(), unixepoch()),
+  ('store-swwelch', 'store-swwelch@biblocal.local', 'S.W. Welch', 'Montreal', 'bookstore', 'Mile End', '225 St-Viateur O, Montreal', NULL, '["used books","rare books","eclectic"]', unixepoch(), unixepoch());
