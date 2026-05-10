@@ -1,31 +1,32 @@
 <script lang="ts">
-  import type { Book, BookStatus } from '../lib/types';
+  import type { Book, BookIntent, BookVisibility, BookOwnership } from '../lib/types';
 
   interface Props {
     book: Book;
-    onStatusChange?: (status: BookStatus) => void;
+    onIntentsChange?: (intents: BookIntent[]) => void;
+    onVisibilityChange?: (visibility: BookVisibility) => void;
+    onOwnershipChange?: (ownership: BookOwnership) => void;
     readonly?: boolean;
   }
 
-  let { book, onStatusChange, readonly = false }: Props = $props();
+  let { book, onIntentsChange, onVisibilityChange, onOwnershipChange, readonly = false }: Props = $props();
 
-  const STATUS_LABELS: Record<BookStatus, string> = {
-    private: 'Private',
-    visible: 'Visible',
-    borrowable: 'Will lend',
-    discussable: 'Will discuss',
-    giftable: 'Free to good home',
-    'class-resource': 'Class resource',
-    'seeking-home': 'Looking for this',
+  const INTENT_LABELS: Record<BookIntent, string> = {
+    borrowable: 'Lend',
+    discussable: 'Discuss',
+    giftable: 'Gift',
+    'class-resource': 'Class',
   };
 
-  function handleStatusChange(e: Event) {
-    const select = e.target as HTMLSelectElement;
-    onStatusChange?.(select.value as BookStatus);
+  function toggleIntent(intent: BookIntent) {
+    const newIntents = book.intents.includes(intent)
+      ? book.intents.filter(i => i !== intent)
+      : [...book.intents, intent];
+    onIntentsChange?.(newIntents);
   }
 </script>
 
-<article class="book-card">
+<article class="book-card" class:seeking={book.ownership === 'seeking'}>
   {#if book.coverUrl}
     <img src={book.coverUrl} alt="{book.title} cover" class="cover" />
   {:else}
@@ -38,15 +39,23 @@
     <h3 class="title">{book.title}</h3>
     <p class="author">{book.author}</p>
 
-    {#if readonly}
-      <span class="status-badge">{STATUS_LABELS[book.status]}</span>
-    {:else}
-      <select value={book.status} onchange={handleStatusChange}>
-        {#each Object.entries(STATUS_LABELS) as [value, label]}
-          <option {value}>{label}</option>
-        {/each}
-      </select>
-    {/if}
+    <div class="badges">
+      {#if book.ownership === 'seeking'}
+        <span class="badge seeking">Seeking</span>
+      {/if}
+      {#if book.visibility === 'private'}
+        <span class="badge private">Private</span>
+      {/if}
+      {#each book.intents as intent}
+        {#if readonly}
+          <span class="badge intent">{INTENT_LABELS[intent]}</span>
+        {:else}
+          <button class="badge intent active" onclick={() => toggleIntent(intent)}>
+            {INTENT_LABELS[intent]} ✕
+          </button>
+        {/if}
+      {/each}
+    </div>
 
     {#if book.addedVia === 'scan'}
       <span class="verified" title="Added via ISBN scan">✓</span>
@@ -65,6 +74,10 @@
     position: relative;
     box-shadow: var(--shadow-card);
     transition: all var(--transition-gentle);
+  }
+
+  .book-card.seeking {
+    border-left: 3px solid var(--color-burgundy);
   }
 
   /* Subtle corner dots */
@@ -149,43 +162,51 @@
     color: var(--color-ink-faded);
   }
 
-  select {
-    padding: 0.3rem 1.75rem 0.3rem 0.5rem;
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    color: var(--color-ink);
-    background: var(--color-paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%236B5B4F' d='M5 7L1 3h8z'/%3E%3C/svg%3E") no-repeat right 0.5rem center;
-    border: 1px solid var(--color-gold-pale);
-    border-radius: 2px;
-    cursor: pointer;
-    appearance: none;
-    transition: all var(--transition-quick);
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
   }
 
-  select:hover {
-    border-color: var(--color-gold);
-  }
-
-  select:focus {
-    outline: none;
-    border-color: var(--color-gold);
-    box-shadow: 0 0 0 2px rgba(184, 134, 11, 0.2);
-  }
-
-  .status-badge {
+  .badge {
     display: inline-block;
-    padding: 0.2rem 0.5rem;
+    padding: 0.15rem 0.4rem;
     font-family: var(--font-display);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: var(--color-cream);
-    background: var(--color-burgundy);
     border-radius: 2px;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.1),
-      0 1px 2px rgba(0, 0, 0, 0.15);
+    border: none;
+    cursor: default;
+  }
+
+  .badge.seeking {
+    background: var(--color-burgundy);
+    color: var(--color-cream);
+  }
+
+  .badge.private {
+    background: var(--color-ink-faded);
+    color: var(--color-cream);
+  }
+
+  .badge.intent {
+    background: var(--color-gold-pale);
+    color: var(--color-forest-dark);
+  }
+
+  .badge.intent.active {
+    cursor: pointer;
+    transition: opacity var(--transition-quick);
+  }
+
+  .badge.intent.active:hover {
+    opacity: 0.8;
+  }
+
+  button.badge {
+    font-family: inherit;
   }
 
   .verified {
