@@ -1,22 +1,13 @@
 <script lang="ts">
   import { shelf, getShelfStats, type ShelfStats } from '../stores/shelf';
-  import { profile } from '../stores/profile';
-  import type { UserProfile } from '../lib/types';
 
   let stats = $state<ShelfStats>({ total: 0, lendable: 0, discussable: 0 });
-  let userProfile = $state<UserProfile | null>(null);
 
   $effect(() => {
-    const unsubShelf = shelf.subscribe(() => {
+    const unsub = shelf.subscribe(() => {
       stats = getShelfStats();
     });
-    const unsubProfile = profile.subscribe((p) => {
-      userProfile = p;
-    });
-    return () => {
-      unsubShelf();
-      unsubProfile();
-    };
+    return unsub;
   });
 
   function scrollToAddBook() {
@@ -49,7 +40,7 @@
 
   <!-- Choice Cards -->
   <div class="choices">
-    <button class="choice-card primary" onclick={scrollToAddBook}>
+    <button type="button" class="choice-card primary" onclick={scrollToAddBook}>
       <span class="corner-dot top-left"></span>
       <span class="corner-dot top-right"></span>
       <span class="icon">📖</span>
@@ -57,7 +48,7 @@
       <span class="subtitle">Scan barcode or search by title</span>
     </button>
 
-    <button class="choice-card secondary" onclick={goToExplore}>
+    <button type="button" class="choice-card secondary" onclick={goToExplore}>
       <span class="corner-dot top-left"></span>
       <span class="corner-dot top-right"></span>
       <span class="icon">🔍</span>
