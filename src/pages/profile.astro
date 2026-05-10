@@ -1,15 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import ProfileIsland from '../components/ProfileIsland.svelte';
-import { Show, UserButton } from '@clerk/astro/components';
+import { UserButton } from '@clerk/astro/components';
 ---
 
 <Layout title="Your Profile | biblocal">
-  <Show when="signed-out">
-    <script>window.location.href = '/';</script>
-  </Show>
-  <Show when="signed-in">
-    <main>
+  <main>
       <div class="header-row">
         <h1>Your Profile</h1>
         <UserButton />
@@ -17,7 +13,6 @@ import { Show, UserButton } from '@clerk/astro/components';
 
       <ProfileIsland client:load />
     </main>
-  </Show>
 </Layout>
 
 <style>

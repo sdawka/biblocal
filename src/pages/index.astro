@@ -14,10 +14,6 @@ import { SignIn, Show } from '@clerk/astro/components';
       <SignIn />
     </Show>
 
-    <Show when="signed-in">
-      <p class="redirect-msg">Redirecting to your shelf...</p>
-      <script>window.location.href = '/shelf';</script>
-    </Show>
   </main>
 </Layout>
 

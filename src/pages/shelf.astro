@@ -3,15 +3,11 @@ import Layout from '../layouts/Layout.astro';
 import AddBookIsland from '../components/AddBookIsland.svelte';
 import ShelfContainer from '../components/ShelfContainer.svelte';
 import PromptIsland from '../components/PromptIsland.svelte';
-import { Show, UserButton } from '@clerk/astro/components';
+import { UserButton } from '@clerk/astro/components';
 ---
 
 <Layout title="Your Shelf | biblocal">
-  <Show when="signed-out">
-    <script>window.location.href = '/';</script>
-  </Show>
-  <Show when="signed-in">
-    <main>
+  <main>
       <div class="header-row">
         <h1>Your Shelf</h1>
         <UserButton />
@@ -25,7 +21,6 @@ import { Show, UserButton } from '@clerk/astro/components';
 
       <ShelfContainer client:load />
     </main>
-  </Show>
 </Layout>
 
 <style>
