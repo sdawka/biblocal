@@ -1,5 +1,5 @@
 import { persistentAtom } from '@nanostores/persistent';
-import type { Book, BookStatus } from '../lib/types';
+import type { Book, BookStatus, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
 import { inferTopicsFromSubjects } from './topics';
 import { currentUserId } from './auth';
 
@@ -58,6 +58,10 @@ async function syncRemoveBook(id: string): Promise<void> {
 export function addBook(book: Omit<Book, 'id' | 'addedAt'> & { id?: string }): Book {
   const fullBook: Book = {
     ...book,
+    // Defaults for new three-dimension model (if not provided)
+    visibility: book.visibility ?? 'visible',
+    ownership: book.ownership ?? 'have',
+    intents: book.intents ?? [],
     id: book.id ?? crypto.randomUUID(),
     addedAt: Date.now(),
   };
@@ -94,6 +98,10 @@ interface ServerBook {
   isbn: string | null;
   coverUrl: string | null;
   status: string;
+  // New three-dimension model
+  visibility: string | null;
+  ownership: string | null;
+  intents: string | null;
   addedVia: string | null;
   subjects: string | null;
   notes: string | null;
@@ -113,6 +121,11 @@ export async function loadBooksFromServer(): Promise<void> {
         isbn: b.isbn || undefined,
         title: b.title,
         author: b.author,
+        // New three-dimension model with fallbacks
+        visibility: (b.visibility || 'visible') as BookVisibility,
+        ownership: (b.ownership || 'have') as BookOwnership,
+        intents: b.intents ? JSON.parse(b.intents) as BookIntent[] : [],
+        // Legacy status kept for migration
         status: b.status as BookStatus,
         coverUrl: b.coverUrl || undefined,
         subjects: b.subjects ? JSON.parse(b.subjects) : undefined,

@@ -1,3 +1,9 @@
+// New three-dimension model
+export type BookVisibility = 'private' | 'visible';
+export type BookOwnership = 'have' | 'seeking';
+export type BookIntent = 'borrowable' | 'discussable' | 'giftable' | 'class-resource';
+
+// Legacy status type - kept for migration compatibility
 export type BookStatus =
   | 'private'
   | 'visible'
@@ -14,7 +20,12 @@ export interface Book {
   isbn?: string;
   title: string;
   author: string;
-  status: BookStatus;
+  // New three-dimension model
+  visibility: BookVisibility;
+  ownership: BookOwnership;
+  intents: BookIntent[];
+  // Legacy status - kept during migration period
+  status?: BookStatus;
   notes?: string;
   coverUrl?: string;
   subjects?: string[];

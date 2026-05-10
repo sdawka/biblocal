@@ -46,7 +46,12 @@ export const books = sqliteTable('books', {
   author: text('author').notNull(),
   isbn: text('isbn'),
   coverUrl: text('cover_url'),
+  // Legacy status column - kept for migration period
   status: text('status').notNull().default('visible'),
+  // New three-dimension model
+  visibility: text('visibility').notNull().default('visible'),
+  ownership: text('ownership').notNull().default('have'),
+  intents: text('intents').notNull().default('[]'), // JSON array
   addedVia: text('added_via').default('manual'),
   subjects: text('subjects'),
   notes: text('notes'),
