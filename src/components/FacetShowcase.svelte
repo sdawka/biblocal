@@ -65,9 +65,9 @@
 
 <section class="facets-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
-    <h2 class="section-title">We find your people. The algorithm is just showing off.</h2>
+    <h2 class="section-title">Reading is solitary. Talking about reading doesn't have to be.</h2>
     <p class="section-desc">
-      Five ways we figure out who you'd actually want to get coffee with.
+      We match you with people who'll get your references, debate your hot takes, and lend you that book you've been hunting.
     </p>
 
     <div class="facets-grid">
@@ -373,15 +373,29 @@
 
   @media (max-width: 600px) {
     .facets-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
     }
 
     .facet-card {
-      height: 240px;
+      height: auto;
+      min-height: 200px;
+    }
+
+    .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front {
+      display: none;
     }
 
     .connection-lines {
       display: none;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
     }
   }
 </style>

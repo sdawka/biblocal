@@ -1,6 +1,9 @@
 import type { APIRoute } from 'astro';
 
 export const prerender = false;
+import { env } from 'cloudflare:workers';
+
+type Env = { DB: D1Database };
 
 import { eq } from 'drizzle-orm';
 import { getDb } from '../../../../db/client';
@@ -25,7 +28,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    const db = getDb(locals.runtime.env.DB);
+    const db = getDb((env as Env).DB);
     const storeId = params.id;
 
     if (!storeId) {

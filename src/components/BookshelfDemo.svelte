@@ -60,10 +60,10 @@
 
 <section class="bookshelf-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
-    <h2 class="section-title">A book is just a book. Unless you'd actually lend it.</h2>
+    <h2 class="section-title">You are what you read. Mostly.</h2>
     <p class="section-desc">
-      Mark what you'll share, what you'll debate until 2am, and what you're hunting for.<br/>
-      Your shelf becomes less "collection" and more "personality test."
+      Your shelf tells people who you are—or at least who you'd like them to think you are.<br/>
+      Each book gets a status. Each status tells a story.
     </p>
 
     <div class="shelf-container">

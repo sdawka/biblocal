@@ -1,6 +1,9 @@
 import type { APIRoute } from 'astro';
 
 export const prerender = false;
+import { env } from 'cloudflare:workers';
+
+type Env = { DB: D1Database; SEED_KEY?: string };
 
 import { eq } from 'drizzle-orm';
 import { getDb } from '../../db/client';
@@ -71,7 +74,7 @@ const MONTREAL_STORES = [
 
 export const POST: APIRoute = async ({ locals, request }) => {
   const seedKey = request.headers.get('x-seed-key');
-  const expectedKey = locals.runtime.env.SEED_KEY;
+  const expectedKey = (env as Env).SEED_KEY;
 
   if (expectedKey && seedKey !== expectedKey) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -81,7 +84,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
   }
 
   try {
-    const db = getDb(locals.runtime.env.DB);
+    const db = getDb((env as Env).DB);
     const now = new Date();
     const results: string[] = [];
 

@@ -2,21 +2,25 @@ import type { APIRoute } from 'astro';
 
 export const prerender = false;
 import { eq, and } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
 import { getDb } from '../../../db/client';
 import { books } from '../../../db/schema';
+import { getUserId } from '../../../lib/auth';
+
+type Env = { DB: D1Database };
 
 // PATCH /api/books/:id - update book (owner only)
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
   try {
-    const auth = locals.auth();
-    if (!auth.userId) {
+    const userId = getUserId(locals);
+    if (!userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const db = getDb(locals.runtime.env.DB);
+    const db = getDb((env as Env).DB);
     const bookId = params.id;
     if (!bookId) {
       return new Response(JSON.stringify({ error: 'Book ID required' }), {
@@ -29,7 +33,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     const existing = await db
       .select()
       .from(books)
-      .where(and(eq(books.id, bookId), eq(books.userId, auth.userId)))
+      .where(and(eq(books.id, bookId), eq(books.userId, userId)))
       .limit(1);
 
     if (existing.length === 0) {
@@ -72,15 +76,15 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
 // DELETE /api/books/:id - delete book (owner only)
 export const DELETE: APIRoute = async ({ params, locals }) => {
   try {
-    const auth = locals.auth();
-    if (!auth.userId) {
+    const userId = getUserId(locals);
+    if (!userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const db = getDb(locals.runtime.env.DB);
+    const db = getDb((env as Env).DB);
     const bookId = params.id;
     if (!bookId) {
       return new Response(JSON.stringify({ error: 'Book ID required' }), {
@@ -92,7 +96,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     // Delete only if owned by user
     await db
       .delete(books)
-      .where(and(eq(books.id, bookId), eq(books.userId, auth.userId)));
+      .where(and(eq(books.id, bookId), eq(books.userId, userId)));
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

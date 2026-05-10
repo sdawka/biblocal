@@ -2,8 +2,12 @@ import type { APIRoute } from 'astro';
 
 export const prerender = false;
 import { eq } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
 import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
+import { getUserId } from '../../lib/auth';
+
+type Env = { DB: D1Database };
 
 async function getOrCreateUser(db: ReturnType<typeof getDb>, userId: string) {
   const existing = await db.select().from(users).where(eq(users.id, userId)).limit(1);
@@ -23,16 +27,16 @@ async function getOrCreateUser(db: ReturnType<typeof getDb>, userId: string) {
 // GET /api/profile - get own profile (requires auth)
 export const GET: APIRoute = async ({ locals }) => {
   try {
-    const auth = locals.auth();
-    if (!auth.userId) {
+    const userId = getUserId(locals);
+    if (!userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const db = getDb(locals.runtime.env.DB);
-    const user = await getOrCreateUser(db, auth.userId);
+    const db = getDb((env as Env).DB);
+    const user = await getOrCreateUser(db, userId);
 
     return new Response(JSON.stringify({ profile: user }), {
       status: 200,
@@ -50,16 +54,16 @@ export const GET: APIRoute = async ({ locals }) => {
 // PATCH /api/profile - update own profile (requires auth)
 export const PATCH: APIRoute = async ({ request, locals }) => {
   try {
-    const auth = locals.auth();
-    if (!auth.userId) {
+    const userId = getUserId(locals);
+    if (!userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const db = getDb(locals.runtime.env.DB);
-    await getOrCreateUser(db, auth.userId);
+    const db = getDb((env as Env).DB);
+    await getOrCreateUser(db, userId);
 
     const updates = (await request.json()) as Record<string, unknown>;
     const allowedFields = [
@@ -84,9 +88,9 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
       }
     }
 
-    await db.update(users).set(filtered).where(eq(users.id, auth.userId));
+    await db.update(users).set(filtered).where(eq(users.id, userId));
 
-    const updated = await db.select().from(users).where(eq(users.id, auth.userId)).limit(1);
+    const updated = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 
     return new Response(JSON.stringify({ profile: updated[0] }), {
       status: 200,

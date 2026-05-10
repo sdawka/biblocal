@@ -1,6 +1,9 @@
 import type { APIRoute } from 'astro';
 
 export const prerender = false;
+import { env } from 'cloudflare:workers';
+
+type Env = { DB: D1Database };
 
 import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
@@ -34,7 +37,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    const db = getDb(locals.runtime.env.DB);
+    const db = getDb((env as Env).DB);
     const now = new Date();
     const storeId = `store-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 

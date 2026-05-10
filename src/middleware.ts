@@ -4,6 +4,7 @@ import { env } from 'cloudflare:workers';
 
 const isPublicRoute = createRouteMatcher([
   '/',
+  '/how-it-works',
   '/api/(.*)',
 ]);
 

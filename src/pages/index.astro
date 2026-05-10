@@ -2,21 +2,41 @@
 import LandingLayout from '../layouts/LandingLayout.astro';
 import LandingHero from '../components/LandingHero.svelte';
 import BookshelfDemo from '../components/BookshelfDemo.svelte';
+import LendingSection from '../components/LendingSection.svelte';
 import FacetShowcase from '../components/FacetShowcase.svelte';
+import AppPreview from '../components/AppPreview.svelte';
 import LocalMapPreview from '../components/LocalMapPreview.svelte';
-import HowItWorks from '../components/HowItWorks.astro';
+import HowItWorksLink from '../components/HowItWorksLink.astro';
 import SignInSection from '../components/SignInSection.astro';
 import Footer from '../components/Footer.astro';
 ---
 
-<LandingLayout title="biblocal — Find your people through what you read">
+<LandingLayout title="biblocal — You are what you read">
   <main>
+    <!-- 1. Hook -->
     <LandingHero client:load />
+
+    <!-- 2. Personal: Organize your shelf -->
     <BookshelfDemo client:visible />
+
+    <!-- 3. Transactional: Lend and borrow -->
+    <LendingSection client:visible />
+
+    <!-- 4. Preview: See what you're building -->
+    <AppPreview client:visible />
+
+    <!-- 5. Community: Find your people -->
     <FacetShowcase client:visible />
+
+    <!-- 6. Local: It's all nearby -->
     <LocalMapPreview client:visible />
-    <HowItWorks />
+
+    <!-- 7. Learn more -->
+    <HowItWorksLink />
+
+    <!-- 8. Sign up -->
     <SignInSection />
+
     <Footer />
   </main>
 </LandingLayout>

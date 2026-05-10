@@ -1,0 +1,298 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<LandingLayout title="How It Works — biblocal">
+  <main>
+    <section class="hero-mini">
+      <a href="/" class="back-link">← Back to home</a>
+      <h1>You are what you read.<br/>So let's see what you've got.</h1>
+      <p class="subtitle">Three chapters. One shelf. Infinite possibilities for showing off your taste.</p>
+    </section>
+
+    <section class="chapter" id="chapter-1">
+      <div class="chapter-header">
+        <span class="chapter-number">Chapter One</span>
+        <h2>Build your shelf</h2>
+        <p class="chapter-intro">First, the confession. Every book you add says something about who you are—or who you're pretending to be. We don't judge. Much.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h3>Scan or type</h3>
+          <p>Point your camera at a barcode, or type a title like a civilized person. Either way, we'll find it.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📚</div>
+          <h3>Your whole collection</h3>
+          <p>That shelf in the bedroom. The boxes in storage. The "to-read" pile that's become a structural hazard. All of it.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🏷️</div>
+          <h3>Set your intentions</h3>
+          <p>Each book gets a status: will lend, want to discuss, giving away, or hunting for. Because owning isn't the same as sharing.</p>
+        </div>
+      </div>
+
+      <div class="chapter-aside">
+        <span class="marginalia">"The library is a growing organism." — Ranganathan's Fifth Law. Also applicable to that corner of your bedroom.</span>
+      </div>
+    </section>
+
+    <section class="chapter alt" id="chapter-2">
+      <div class="chapter-header">
+        <span class="chapter-number">Chapter Two</span>
+        <h2>Lend, borrow, repeat</h2>
+        <p class="chapter-intro">Books were meant to travel. The best ones come back dog-eared, coffee-stained, and loved. The very best don't come back at all—they've found a new home.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🤝</div>
+          <h3>No shipping, no hassle</h3>
+          <p>Your matches are nearby. Walk over. Have coffee. Hand them the book. Remember what human interaction feels like.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <h3>Find what you seek</h3>
+          <p>Mark a book as "hunting for" and we'll tell you when someone nearby has it. No more refreshing used bookstore websites.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎁</div>
+          <h3>Give books away</h3>
+          <p>Some books need to move on. Mark them "free to good home" and let someone else fall in love with them.</p>
+        </div>
+      </div>
+
+      <div class="chapter-aside">
+        <span class="marginalia">"A book is a gift you can open again and again." — Garrison Keillor. Or in this case, a gift you can give again and again.</span>
+      </div>
+    </section>
+
+    <section class="chapter" id="chapter-3">
+      <div class="chapter-header">
+        <span class="chapter-number">Chapter Three</span>
+        <h2>Find your people</h2>
+        <p class="chapter-intro">Here's the thing about readers: we're desperate to talk about what we've read. The right person will understand why you cried at that ending. We help you find them.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">👯</div>
+          <h3>Shelf twins</h3>
+          <p>People with suspiciously similar taste. The kind who'll finish your sentences about obscure plot points.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h3>Discussion matches</h3>
+          <p>Mark a book "want to discuss" and find others who need to process that ending with another human.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🏘️</div>
+          <h3>Local bookstores too</h3>
+          <p>Independent shops with character. The kind where the owner actually reads and has opinions.</p>
+        </div>
+      </div>
+
+      <div class="chapter-aside">
+        <span class="marginalia">"No two persons ever read the same book." — Edmund Wilson. But some people read it similarly enough to become friends.</span>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <h2>Ready to see who's reading near you?</h2>
+      <p>Your shelf is waiting. Your people are out there. Let's introduce you.</p>
+      <a href="/" class="btn-victorian">Build Your Shelf</a>
+    </section>
+
+    <Footer />
+  </main>
+</LandingLayout>
+
+<style>
+  main {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .hero-mini {
+    padding: var(--space-2xl) var(--space-2xl) var(--space-xl);
+    text-align: center;
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(184, 134, 11, 0.08) 0%,
+      transparent 60%
+    );
+  }
+
+  .back-link {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--color-burgundy);
+    text-decoration: none;
+    margin-bottom: var(--space-lg);
+    transition: color var(--transition-quick);
+  }
+
+  .back-link:hover {
+    color: var(--color-burgundy-dark);
+  }
+
+  .hero-mini h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 600;
+    font-style: italic;
+    color: var(--color-ink);
+    line-height: 1.2;
+    margin: 0 0 var(--space-md);
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .subtitle {
+    font-family: var(--font-body);
+    font-size: 1.15rem;
+    color: var(--color-ink-faded);
+    margin: 0;
+  }
+
+  .chapter {
+    padding: var(--space-2xl);
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .chapter.alt {
+    background: var(--color-aged-paper);
+  }
+
+  .chapter-header {
+    text-align: center;
+    margin-bottom: var(--space-2xl);
+  }
+
+  .chapter-number {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--color-burgundy);
+    margin-bottom: var(--space-sm);
+  }
+
+  .chapter-header h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 600;
+    color: var(--color-ink);
+    margin: 0 0 var(--space-md);
+  }
+
+  .chapter-intro {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    color: var(--color-ink-faded);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  .feature-card {
+    background: var(--color-cream);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    text-align: center;
+    box-shadow: var(--shadow-card);
+    transition: all var(--transition-gentle);
+  }
+
+  .feature-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lifted);
+  }
+
+  .feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--space-md);
+  }
+
+  .feature-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    margin: 0 0 var(--space-sm);
+  }
+
+  .feature-card p {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--color-ink-faded);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .chapter-aside {
+    text-align: center;
+    padding: var(--space-lg);
+    border-top: 1px dashed var(--color-gold-pale);
+  }
+
+  .marginalia {
+    font-family: var(--font-handwritten);
+    font-size: 1.1rem;
+    color: var(--color-ink-light);
+    font-style: italic;
+  }
+
+  .cta-section {
+    text-align: center;
+    padding: var(--space-2xl);
+    background: linear-gradient(
+      to bottom,
+      var(--color-parchment),
+      var(--color-aged-paper)
+    );
+  }
+
+  .cta-section h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-weight: 600;
+    color: var(--color-ink);
+    margin: 0 0 var(--space-md);
+  }
+
+  .cta-section p {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    color: var(--color-ink-faded);
+    margin: 0 0 var(--space-xl);
+  }
+
+  @media (max-width: 600px) {
+    .chapter {
+      padding: var(--space-xl) var(--space-md);
+    }
+
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

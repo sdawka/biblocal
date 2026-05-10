@@ -1,0 +1,127 @@
+<h2>Hybrid Layout: Profile Preview + Clear Choices</h2>
+<p class="subtitle">Combining the stats sidebar with obvious path choices</p>
+
+<div class="cards">
+  <div class="card" data-choice="hybrid-a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #FAF6F0; padding: 20px;">
+      <div style="display: flex; gap: 20px; font-family: Georgia, serif;">
+        <!-- Main action area -->
+        <div style="flex: 2;">
+          <div style="font-size: 18px; color: #722F37; margin-bottom: 16px;">What brings you here today?</div>
+
+          <!-- Two clear choice cards -->
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: #2D4739; color: white; padding: 16px; border-radius: 6px; cursor: pointer;">
+              <div style="font-size: 16px; font-weight: bold;">📖 Add a book to my shelf</div>
+              <div style="font-size: 12px; opacity: 0.85; margin-top: 4px;">Scan barcode or enter by name</div>
+            </div>
+            <div style="background: white; border: 2px solid #722F37; color: #722F37; padding: 16px; border-radius: 6px; cursor: pointer;">
+              <div style="font-size: 16px; font-weight: bold;">🔍 Explore what's nearby</div>
+              <div style="font-size: 12px; opacity: 0.7; margin-top: 4px;">See books and readers in your area</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile sidebar -->
+        <div style="flex: 1; background: white; border: 1px solid #ddd; border-radius: 6px; padding: 12px; font-size: 12px;">
+          <div style="font-weight: bold; color: #722F37; margin-bottom: 8px;">Your Profile</div>
+          <div style="color: #888; font-size: 11px; margin-bottom: 12px;">🔒 Private</div>
+          <div style="border-top: 1px solid #eee; padding-top: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span>Available to lend</span>
+              <span style="color: #666;">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span>Open to discuss</span>
+              <span style="color: #666;">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Topics</span>
+              <span style="color: #666;">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Stacked Choices + Sidebar</h3>
+      <p>Two clear paths as stacked cards (primary filled, secondary outlined). Profile stats on the right showing what they're building toward.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="hybrid-b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #FAF6F0; padding: 20px;">
+      <div style="font-family: Georgia, serif;">
+        <!-- Profile bar at top -->
+        <div style="background: white; border: 1px solid #ddd; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+          <div><strong>Your Shelf</strong> <span style="background: #f0f0f0; padding: 2px 8px; border-radius: 10px; margin-left: 6px;">🔒 Private</span></div>
+          <div style="display: flex; gap: 16px; color: #666;">
+            <span>📚 0 to lend</span>
+            <span>💬 0 to discuss</span>
+            <span>🏷️ No topics</span>
+          </div>
+        </div>
+
+        <!-- Choice cards side by side -->
+        <div style="display: flex; gap: 12px;">
+          <div style="flex: 1; background: linear-gradient(135deg, #2D4739, #1f3329); color: white; padding: 20px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 28px; margin-bottom: 8px;">📖</div>
+            <div style="font-size: 14px; font-weight: bold;">Add a Book</div>
+            <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">Scan or search</div>
+          </div>
+          <div style="flex: 1; background: white; border: 2px solid #722F37; color: #722F37; padding: 20px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 28px; margin-bottom: 8px;">🔍</div>
+            <div style="font-size: 14px; font-weight: bold;">Explore Nearby</div>
+            <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Books & readers</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Top Stats Bar + Side-by-Side</h3>
+      <p>Profile stats as a compact bar at top. Two choices as equal-sized cards below. Clean, scannable.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="hybrid-c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #FAF6F0; padding: 20px;">
+      <div style="font-family: Georgia, serif;">
+        <!-- Hero with embedded profile -->
+        <div style="background: linear-gradient(to right, #722F37, #8B3A42); color: white; padding: 20px; border-radius: 8px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <div style="font-size: 18px; font-weight: bold;">Build Your Living Bookshelf</div>
+              <div style="font-size: 12px; opacity: 0.85; margin-top: 4px;">Currently private — go public after 3 books</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); padding: 8px 12px; border-radius: 6px; font-size: 11px; text-align: right;">
+              <div>0 to lend · 0 to discuss</div>
+              <div style="opacity: 0.7;">No topics yet</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Choices below hero -->
+        <div style="display: flex; gap: 12px;">
+          <div style="flex: 3; background: #2D4739; color: white; padding: 14px 18px; border-radius: 6px; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 24px;">📖</span>
+            <div>
+              <div style="font-weight: bold;">Add your first book</div>
+              <div style="font-size: 11px; opacity: 0.8;">Barcode or title search</div>
+            </div>
+          </div>
+          <div style="flex: 2; background: white; border: 1px solid #ccc; color: #666; padding: 14px 18px; border-radius: 6px; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 24px;">🔍</span>
+            <div>
+              <div style="font-weight: bold; color: #333;">Explore nearby</div>
+              <div style="font-size: 11px;">See what's around</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Hero Banner + Weighted Choices</h3>
+      <p>Profile stats embedded in burgundy hero. Choices below with clear primary/secondary weighting (add book larger).</p>
+    </div>
+  </div>
+</div>

@@ -3,29 +3,46 @@
   let heroElement: HTMLElement;
 
   const demoBooks = [
-    { title: "Small Gods", cover: "https://covers.openlibrary.org/b/isbn/0062237373-M.jpg", side: "left", top: 8, size: "large" },
-    { title: "Gödel, Escher, Bach", cover: "https://covers.openlibrary.org/b/isbn/0465026567-M.jpg", side: "right", top: 12, size: "medium" },
-    { title: "Night Watch", cover: "https://covers.openlibrary.org/b/isbn/0060013125-M.jpg", side: "left", top: 25, size: "medium" },
-    { title: "One Hundred Years of Solitude", cover: "https://covers.openlibrary.org/b/isbn/0060883286-M.jpg", side: "right", top: 30, size: "large" },
-    { title: "The Unbearable Lightness of Being", cover: "https://covers.openlibrary.org/b/isbn/0061148520-M.jpg", side: "left", top: 45, size: "small" },
-    { title: "Going Postal", cover: "https://covers.openlibrary.org/b/isbn/0060502932-M.jpg", side: "right", top: 50, size: "medium" },
-    { title: "Beloved", cover: "https://covers.openlibrary.org/b/isbn/1400033411-M.jpg", side: "left", top: 62, size: "medium" },
-    { title: "Guards! Guards!", cover: "https://covers.openlibrary.org/b/isbn/0062225758-M.jpg", side: "right", top: 68, size: "small" },
-    { title: "The Master and Margarita", cover: "https://covers.openlibrary.org/b/isbn/0140455469-M.jpg", side: "left", top: 80, size: "small" },
-    { title: "Mort", cover: "https://covers.openlibrary.org/b/isbn/0062225715-M.jpg", side: "right", top: 85, size: "medium" },
-    { title: "The Dispossessed", cover: "https://covers.openlibrary.org/b/isbn/0061054887-M.jpg", side: "left", top: 18, size: "small" },
-    { title: "If on a winter's night a traveler", cover: "https://covers.openlibrary.org/b/isbn/0156439611-M.jpg", side: "right", top: 40, size: "small" },
+    // Wave 1: Outer edges - appear first, drift inward
+    { title: "Small Gods", cover: "https://covers.openlibrary.org/b/isbn/0062237373-M.jpg", x: 2, y: 8, endX: 18, size: "medium", delay: 0.1 },
+    { title: "Gödel, Escher, Bach", cover: "https://covers.openlibrary.org/b/isbn/0465026567-M.jpg", x: 98, y: 12, endX: 82, size: "large", delay: 0.15 },
+    { title: "Night Watch", cover: "https://covers.openlibrary.org/b/isbn/0060013125-M.jpg", x: 1, y: 78, endX: 20, size: "small", delay: 0.2 },
+    { title: "One Hundred Years", cover: "https://covers.openlibrary.org/b/isbn/0060883286-M.jpg", x: 99, y: 75, endX: 80, size: "medium", delay: 0.25 },
+    { title: "Dune", cover: "https://covers.openlibrary.org/b/isbn/0441172717-M.jpg", x: 3, y: 45, endX: 22, size: "small", delay: 0.3 },
+    { title: "House of Leaves", cover: "https://covers.openlibrary.org/b/isbn/0375703764-M.jpg", x: 97, y: 50, endX: 78, size: "medium", delay: 0.35 },
+
+    // Wave 2: Mid-distance - crowd closer
+    { title: "Beloved", cover: "https://covers.openlibrary.org/b/isbn/1400033411-M.jpg", x: 8, y: 25, endX: 28, size: "medium", delay: 0.6 },
+    { title: "Going Postal", cover: "https://covers.openlibrary.org/b/isbn/0060502932-M.jpg", x: 92, y: 30, endX: 72, size: "small", delay: 0.65 },
+    { title: "The Unbearable Lightness", cover: "https://covers.openlibrary.org/b/isbn/0061148520-M.jpg", x: 5, y: 60, endX: 26, size: "small", delay: 0.7 },
+    { title: "Guards! Guards!", cover: "https://covers.openlibrary.org/b/isbn/0062225758-M.jpg", x: 95, y: 65, endX: 74, size: "medium", delay: 0.75 },
+    { title: "Piranesi", cover: "https://covers.openlibrary.org/b/isbn/1635575636-M.jpg", x: 10, y: 85, endX: 30, size: "tiny", delay: 0.8 },
+    { title: "Kafka on the Shore", cover: "https://covers.openlibrary.org/b/isbn/1400079276-M.jpg", x: 90, y: 88, endX: 70, size: "tiny", delay: 0.85 },
+
+    // Wave 3: Getting close - tighten the circle
+    { title: "Mort", cover: "https://covers.openlibrary.org/b/isbn/0062225715-M.jpg", x: 15, y: 18, endX: 32, size: "small", delay: 1.1 },
+    { title: "Master and Margarita", cover: "https://covers.openlibrary.org/b/isbn/0140455469-M.jpg", x: 85, y: 20, endX: 68, size: "small", delay: 1.15 },
+    { title: "The Dispossessed", cover: "https://covers.openlibrary.org/b/isbn/0061054887-M.jpg", x: 12, y: 70, endX: 30, size: "small", delay: 1.2 },
+    { title: "If on a winter's night", cover: "https://covers.openlibrary.org/b/isbn/0156439611-M.jpg", x: 88, y: 72, endX: 70, size: "small", delay: 1.25 },
+    { title: "Invisible Cities", cover: "https://covers.openlibrary.org/b/isbn/0156453800-M.jpg", x: 18, y: 40, endX: 34, size: "tiny", delay: 1.3 },
+    { title: "The Name of the Rose", cover: "https://covers.openlibrary.org/b/isbn/0156001314-M.jpg", x: 82, y: 42, endX: 66, size: "tiny", delay: 1.35 },
+
+    // Wave 4: Final crush - crowd the center
+    { title: "Borges", cover: "https://covers.openlibrary.org/b/isbn/0140286802-M.jpg", x: 22, y: 32, endX: 38, size: "tiny", delay: 1.6 },
+    { title: "Sapiens", cover: "https://covers.openlibrary.org/b/isbn/0062316095-M.jpg", x: 78, y: 35, endX: 62, size: "tiny", delay: 1.65 },
+    { title: "Zen and the Art", cover: "https://covers.openlibrary.org/b/isbn/0060839872-M.jpg", x: 25, y: 55, endX: 40, size: "tiny", delay: 1.7 },
+    { title: "Confederacy of Dunces", cover: "https://covers.openlibrary.org/b/isbn/0802130208-M.jpg", x: 75, y: 58, endX: 60, size: "tiny", delay: 1.75 },
+    { title: "Slaughterhouse-Five", cover: "https://covers.openlibrary.org/b/isbn/0385333846-M.jpg", x: 28, y: 68, endX: 42, size: "tiny", delay: 1.8 },
+    { title: "Catch-22", cover: "https://covers.openlibrary.org/b/isbn/0684833395-M.jpg", x: 72, y: 70, endX: 58, size: "tiny", delay: 1.85 },
   ];
 
   $effect(() => {
     if (!heroElement) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => { visible = entry.isIntersecting; },
       { threshold: 0.2 }
     );
     observer.observe(heroElement);
-
     return () => observer.disconnect();
   });
 
@@ -38,8 +55,13 @@
   <div class="floating-books">
     {#each demoBooks as book, i}
       <div
-        class="floating-book {book.side} {book.size}"
-        style="--delay: {0.2 + i * 0.25}s; top: {book.top}%;"
+        class="floating-book {book.size}"
+        style="
+          --start-x: {book.x}%;
+          --end-x: {book.endX}%;
+          --y: {book.y}%;
+          --delay: {book.delay}s;
+        "
       >
         <img src={book.cover} alt={book.title} />
       </div>
@@ -48,10 +70,10 @@
 
   <div class="hero-content">
     <p class="eyebrow">For people whose "to-read" pile has structural concerns</p>
-    <h1>Your bookshelf<br/>is a conversation waiting to happen.</h1>
+    <h1>You are what you read.<br/>Let's find out who else is.</h1>
     <p class="subhead">
-      Find the neighbors who also ugly-cried at that ending.<br/>
-      Lend the book you can't shut up about. Finally meet your people.
+      Turn your shelf into a signal. Find neighbors who ugly-cried at the same endings.<br/>
+      Lend the book that changed you. Meet the people who get your references.
     </p>
     <button class="cta btn-victorian" onclick={scrollToSignIn}>
       Build Your Shelf
@@ -69,12 +91,13 @@
 <style>
   .hero {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: var(--space-2xl);
+    padding: var(--space-xl);
     position: relative;
     overflow: hidden;
     background: radial-gradient(
@@ -100,14 +123,15 @@
     position: relative;
     z-index: 10;
     max-width: 700px;
+    padding: 0 var(--space-md);
   }
 
   .eyebrow {
     font-family: var(--font-display);
-    font-size: 0.9rem;
+    font-size: clamp(0.7rem, 2vw, 0.9rem);
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.1em;
     color: var(--color-burgundy);
     margin: 0 0 var(--space-md);
     opacity: 0;
@@ -122,7 +146,7 @@
 
   h1 {
     font-family: var(--font-display);
-    font-size: clamp(2.5rem, 7vw, 4.2rem);
+    font-size: clamp(1.8rem, 6vw, 4rem);
     font-weight: 600;
     font-style: italic;
     color: var(--color-ink);
@@ -140,7 +164,7 @@
 
   .subhead {
     font-family: var(--font-body);
-    font-size: clamp(1.1rem, 2.5vw, 1.3rem);
+    font-size: clamp(0.95rem, 2.5vw, 1.25rem);
     color: var(--color-ink-faded);
     line-height: 1.7;
     margin: 0 0 var(--space-xl);
@@ -155,8 +179,8 @@
   }
 
   .cta {
-    font-size: 1.1rem;
-    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    padding: 0.75rem 1.75rem;
     opacity: 0;
     transform: translateY(20px);
     transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s;
@@ -176,35 +200,50 @@
 
   .floating-book {
     position: absolute;
+    left: var(--start-x);
+    top: var(--y);
     opacity: 0;
-    transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-    transition-delay: var(--delay);
-    filter: drop-shadow(0 8px 24px rgba(74, 44, 42, 0.2));
+    transform: translateX(0) rotate(0deg) scale(0.5);
+    filter: drop-shadow(0 8px 20px rgba(74, 44, 42, 0.25));
+    animation: floatInward 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: var(--delay);
+    animation-play-state: paused;
   }
 
-  .floating-book.left {
-    left: 3%;
-    transform: translateX(-100px) rotate(-15deg) scale(0.8);
+  .visible .floating-book {
+    animation-play-state: running;
   }
 
-  .floating-book.right {
-    right: 3%;
-    transform: translateX(100px) rotate(15deg) scale(0.8);
+  @keyframes floatInward {
+    0% {
+      opacity: 0;
+      left: var(--start-x);
+      transform: rotate(-12deg) scale(0.5);
+    }
+    20% {
+      opacity: 0.95;
+      transform: rotate(-4deg) scale(1.05);
+    }
+    60% {
+      opacity: 0.9;
+      left: var(--end-x);
+      transform: rotate(1deg) scale(1);
+    }
+    100% {
+      opacity: 0.8;
+      left: var(--end-x);
+      transform: rotate(var(--final-rotate, 2deg)) scale(1);
+    }
   }
 
-  .visible .floating-book.left {
-    opacity: 0.85;
-    transform: translateX(0) rotate(-4deg) scale(1);
-  }
+  .floating-book:nth-child(odd) { --final-rotate: 3deg; }
+  .floating-book:nth-child(even) { --final-rotate: -2deg; }
+  .floating-book:nth-child(3n) { --final-rotate: -4deg; }
 
-  .visible .floating-book.right {
-    opacity: 0.85;
-    transform: translateX(0) rotate(4deg) scale(1);
-  }
-
-  .floating-book.large img { width: 110px; }
-  .floating-book.medium img { width: 90px; }
-  .floating-book.small img { width: 70px; }
+  .floating-book.large img { width: 100px; }
+  .floating-book.medium img { width: 80px; }
+  .floating-book.small img { width: 65px; }
+  .floating-book.tiny img { width: 50px; }
 
   .floating-book img {
     height: auto;
@@ -216,16 +255,16 @@
 
   .scroll-hint {
     position: absolute;
-    bottom: var(--space-xl);
+    bottom: var(--space-lg);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
     color: var(--color-ink-light);
     font-family: var(--font-body);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-style: italic;
     opacity: 0;
     animation: fadeIn 1s ease 3s forwards;
@@ -240,18 +279,34 @@
     50% { transform: translateY(6px); }
   }
 
-  @media (max-width: 900px) {
-    .floating-book.large img { width: 85px; }
-    .floating-book.medium img { width: 70px; }
-    .floating-book.small img { width: 55px; }
-
-    .floating-book.left { left: 1%; }
-    .floating-book.right { right: 1%; }
+  @keyframes fadeIn {
+    to { opacity: 1; }
   }
 
+  /* Tablet */
+  @media (max-width: 900px) {
+    .floating-book.large img { width: 80px; }
+    .floating-book.medium img { width: 65px; }
+    .floating-book.small img { width: 50px; }
+    .floating-book.tiny img { width: 40px; }
+  }
+
+  /* Mobile */
   @media (max-width: 600px) {
+    .hero {
+      padding: var(--space-lg) var(--space-md);
+    }
+
     .floating-book {
       display: none;
+    }
+
+    .subhead br {
+      display: none;
+    }
+
+    .scroll-hint {
+      bottom: var(--space-md);
     }
   }
 </style>

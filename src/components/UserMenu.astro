@@ -1,0 +1,36 @@
+---
+import { UserButton } from '@clerk/astro/components';
+
+const runtime = Astro.locals.runtime as { env?: { QA_MODE?: string } } | undefined;
+const isQaMode = runtime?.env?.QA_MODE === 'true';
+---
+
+{isQaMode ? (
+  <div class="qa-user-badge" title="QA Test User">
+    <span class="avatar">QA</span>
+  </div>
+) : (
+  <UserButton />
+)}
+
+<style>
+  .qa-user-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--color-burgundy, #722f37);
+    color: var(--color-cream, #f5f0e6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: var(--font-display);
+  }
+</style>

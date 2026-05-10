@@ -2,8 +2,12 @@ import type { APIRoute } from 'astro';
 
 export const prerender = false;
 import { eq } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
 import { getDb } from '../../../db/client';
 import { books } from '../../../db/schema';
+import { getUserId } from '../../../lib/auth';
+
+type Env = { DB: D1Database };
 
 function generateId(): string {
   return crypto.randomUUID();
@@ -13,13 +17,13 @@ function generateId(): string {
 // GET /api/books?mine=true - only my books (requires auth)
 export const GET: APIRoute = async ({ request, locals }) => {
   try {
-    const db = getDb(locals.runtime.env.DB);
+    const db = getDb((env as Env).DB);
     const url = new URL(request.url);
     const mine = url.searchParams.get('mine') === 'true';
 
     if (mine) {
-      const auth = locals.auth();
-      if (!auth.userId) {
+      const userId = getUserId(locals);
+      if (!userId) {
         return new Response(JSON.stringify({ error: 'Not authenticated' }), {
           status: 401,
           headers: { 'Content-Type': 'application/json' },
@@ -29,7 +33,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       const userBooks = await db
         .select()
         .from(books)
-        .where(eq(books.userId, auth.userId));
+        .where(eq(books.userId, userId));
 
       return new Response(JSON.stringify({ books: userBooks }), {
         status: 200,
@@ -55,15 +59,15 @@ export const GET: APIRoute = async ({ request, locals }) => {
 // POST /api/books - add book (requires auth)
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const auth = locals.auth();
-    if (!auth.userId) {
+    const userId = getUserId(locals);
+    if (!userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const db = getDb(locals.runtime.env.DB);
+    const db = getDb((env as Env).DB);
 
     const body = (await request.json()) as {
       id?: string;
@@ -87,7 +91,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const now = new Date();
     const book = {
       id: body.id || generateId(),
-      userId: auth.userId,
+      userId: userId,
       title: body.title,
       author: body.author,
       isbn: body.isbn || null,
