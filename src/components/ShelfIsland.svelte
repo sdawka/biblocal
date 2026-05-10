@@ -1,59 +1,43 @@
 <script lang="ts">
-  import { shelf, updateBookStatus, removeBook, activeFilter } from '../stores/shelf';
-  import type { Book, BookStatus } from '../lib/types';
+  import { shelf, activeFilter, bookMatchesFilter, updateBookIntents, type ShelfFilter } from '../stores/shelf';
   import BookCard from './BookCard.svelte';
+  import type { BookIntent } from '../lib/types';
 
-  const FILTER_OPTIONS: { value: BookStatus | 'all'; label: string }[] = [
-    { value: 'all', label: 'All books' },
-    { value: 'borrowable', label: 'Will lend' },
-    { value: 'discussable', label: 'Will discuss' },
-    { value: 'seeking-home', label: 'Looking for' },
-    { value: 'class-resource', label: 'Class resources' },
+  const FILTER_OPTIONS: { value: ShelfFilter; label: string }[] = [
+    { value: 'all', label: 'All' },
+    { value: 'lending', label: 'Lending' },
+    { value: 'discussing', label: 'Discussing' },
+    { value: 'gifting', label: 'Gifting' },
+    { value: 'seeking', label: 'Seeking' },
+    { value: 'private', label: 'Private' },
   ];
 
-  let books = $state<Book[]>([]);
-  let filter = $state<BookStatus | 'all'>('all');
-
-  $effect(() => {
-    const unsubShelf = shelf.subscribe((s) => {
-      books = Object.values(s);
-    });
-    const unsubFilter = activeFilter.subscribe((f) => {
-      filter = f;
-    });
-    return () => {
-      unsubShelf();
-      unsubFilter();
-    };
-  });
-
-  let filteredBooks = $derived(
-    filter === 'all' ? books : books.filter((b) => b.status === filter)
+  let filter = $derived($activeFilter);
+  let books = $derived(
+    Object.values($shelf).filter(book => bookMatchesFilter(book, filter))
   );
-
-  function handleStatusChange(id: string, status: BookStatus) {
-    updateBookStatus(id, status);
-  }
-
-  function handleFilterChange(e: Event) {
-    const select = e.target as HTMLSelectElement;
-    activeFilter.set(select.value as BookStatus | 'all');
-  }
+  let totalBooks = $derived(Object.values($shelf).length);
 </script>
 
 <section class="shelf">
   <div class="header">
-    <h2>Your Shelf ({books.length} books)</h2>
-    <select value={filter} onchange={handleFilterChange}>
+    <h2>Your Shelf ({totalBooks} books)</h2>
+    <div class="filter-pills">
       {#each FILTER_OPTIONS as opt}
-        <option value={opt.value}>{opt.label}</option>
+        <button
+          class="filter-pill"
+          class:active={filter === opt.value}
+          onclick={() => activeFilter.set(opt.value)}
+        >
+          {opt.label}
+        </button>
       {/each}
-    </select>
+    </div>
   </div>
 
-  {#if filteredBooks.length === 0}
+  {#if books.length === 0}
     <p class="empty">
-      {#if books.length === 0}
+      {#if totalBooks === 0}
         No books yet. Add your first book above.
       {:else}
         No books match this filter.
@@ -61,11 +45,11 @@
     </p>
   {:else}
     <div class="grid">
-      {#each filteredBooks as book, i (book.id)}
+      {#each books as book, i (book.id)}
         <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
           <BookCard
             {book}
-            onStatusChange={(status) => handleStatusChange(book.id, status)}
+            onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
           />
         </div>
       {/each}
@@ -80,8 +64,10 @@
 
   .header {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--color-gold-pale);
@@ -110,28 +96,37 @@
     color: var(--color-ink);
   }
 
-  select {
-    padding: 0.5rem 2rem 0.5rem 0.75rem;
+  .filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .filter-pill {
+    padding: 0.4rem 0.9rem;
     font-family: var(--font-body);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--color-ink);
-    background: var(--color-paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%236B5B4F' d='M5 7L1 3h8z'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
+    background: var(--color-paper);
     border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
+    border-radius: 9999px;
     cursor: pointer;
-    appearance: none;
     transition: all var(--transition-quick);
-    box-shadow: var(--shadow-inset);
   }
 
-  select:hover {
+  .filter-pill:hover {
     border-color: var(--color-gold);
+    background: var(--color-cream);
   }
 
-  select:focus {
-    outline: none;
-    border-color: var(--color-gold);
-    box-shadow: var(--shadow-inset), 0 0 0 3px rgba(184, 134, 11, 0.15);
+  .filter-pill.active {
+    background: var(--color-forest);
+    color: var(--color-cream);
+    border-color: var(--color-forest);
+  }
+
+  .filter-pill.active:hover {
+    background: var(--color-forest-dark, #1a4a2e);
   }
 
   .empty {
