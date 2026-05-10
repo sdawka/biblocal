@@ -1,0 +1,40 @@
+---
+import '../styles/victorian.css';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content="Build your living bookshelf. Find people nearby with similar taste. Borrow, discuss, and discover locally." />
+    <title>{title}</title>
+  </head>
+  <body class="landing">
+    <slot />
+  </body>
+</html>
+
+<style>
+  body.landing {
+    overflow-x: hidden;
+  }
+
+  body.landing::before {
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(139, 123, 111, 0.015) 2px,
+        rgba(139, 123, 111, 0.015) 4px
+      );
+  }
+</style>

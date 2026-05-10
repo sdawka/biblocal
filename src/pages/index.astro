@@ -1,54 +1,30 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import { SignIn, Show } from '@clerk/astro/components';
+import LandingLayout from '../layouts/LandingLayout.astro';
+import LandingHero from '../components/LandingHero.svelte';
+import BookshelfDemo from '../components/BookshelfDemo.svelte';
+import FacetShowcase from '../components/FacetShowcase.svelte';
+import LocalMapPreview from '../components/LocalMapPreview.svelte';
+import HowItWorks from '../components/HowItWorks.astro';
+import SignInSection from '../components/SignInSection.astro';
+import Footer from '../components/Footer.astro';
 ---
 
-<Layout title="biblocal - Sign in">
-  <main class="login-page">
-    <div class="hero">
-      <h1>biblocal</h1>
-      <p>Build your living bookshelf. Find people nearby with similar taste.</p>
-    </div>
-
-    <Show when="signed-out">
-      <SignIn />
-    </Show>
-
+<LandingLayout title="biblocal — Find your people through what you read">
+  <main>
+    <LandingHero client:load />
+    <BookshelfDemo client:visible />
+    <FacetShowcase client:visible />
+    <LocalMapPreview client:visible />
+    <HowItWorks />
+    <SignInSection />
+    <Footer />
   </main>
-</Layout>
+</LandingLayout>
 
 <style>
-  .login-page {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 2rem;
-  }
-
-  .hero {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-
-  .hero h1 {
-    font-family: var(--font-display);
-    font-size: 3rem;
-    font-weight: 700;
-    font-style: italic;
-    color: var(--color-burgundy);
-    margin: 0 0 0.5rem;
-  }
-
-  .hero p {
-    font-family: var(--font-body);
-    font-size: 1.1rem;
-    color: var(--color-ink-faded);
+  main {
+    max-width: none;
     margin: 0;
-  }
-
-  .redirect-msg {
-    font-family: var(--font-body);
-    color: var(--color-ink-faded);
-    font-style: italic;
+    padding: 0;
   }
 </style>

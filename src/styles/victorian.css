@@ -1,7 +1,7 @@
 /* Victorian Library Design System
    A private gentleman's library circa 1880 */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Caveat:wght@400;500;600&display=swap');
 
 :root {
   /* Colors — Warm, Scholarly Palette */
@@ -37,6 +37,7 @@
   /* Typography */
   --font-display: 'Playfair Display', Georgia, serif;
   --font-body: 'Crimson Text', Georgia, serif;
+  --font-handwritten: 'Caveat', cursive;
 
   /* Spacing */
   --space-xs: 0.25rem;
@@ -598,4 +599,159 @@ body::after {
 
 .hover-glow:hover {
   box-shadow: var(--shadow-card), 0 0 12px rgba(184, 134, 11, 0.12);
+}
+
+/* ─── Landing Page Cinematic Animations ─────────────────────── */
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px) rotate(-2deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes floatInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-60px) rotate(-8deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) rotate(-3deg);
+  }
+}
+
+@keyframes floatInRight {
+  from {
+    opacity: 0;
+    transform: translateX(60px) rotate(8deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) rotate(3deg);
+  }
+}
+
+@keyframes flipIn {
+  from {
+    opacity: 0;
+    transform: perspective(800px) rotateY(-90deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(800px) rotateY(0deg);
+  }
+}
+
+@keyframes drawLine {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(184, 134, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(184, 134, 11, 0.4);
+  }
+}
+
+@keyframes gentleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Landing-specific utilities */
+.landing-section {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-2xl);
+  position: relative;
+}
+
+.landing-headline {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 600;
+  font-style: italic;
+  color: var(--color-ink);
+  line-height: 1.2;
+  margin: 0 0 var(--space-lg);
+}
+
+.landing-subhead {
+  font-family: var(--font-body);
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  color: var(--color-ink-faded);
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+.marginalia {
+  font-family: var(--font-handwritten);
+  font-size: 1.1rem;
+  color: var(--color-ink-faded);
+  transform: rotate(-2deg);
+}
+
+.catalog-card {
+  background: var(--color-cream);
+  border: 1px solid var(--color-gold-pale);
+  border-radius: var(--radius-sm);
+  padding: var(--space-lg);
+  position: relative;
+  box-shadow: var(--shadow-card);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.catalog-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    to right,
+    var(--color-burgundy),
+    var(--color-gold) 50%,
+    var(--color-burgundy)
+  );
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .landing-section,
+  .catalog-card,
+  [class*="float"],
+  [class*="flip"] {
+    animation: none !important;
+    transition: none !important;
+  }
 }

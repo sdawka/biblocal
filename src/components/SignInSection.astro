@@ -1,0 +1,146 @@
+---
+import { SignIn, Show } from '@clerk/astro/components';
+---
+
+<section id="signin-section" class="signin-section">
+  <div class="section-content">
+    <div class="faded-spines left">
+      <div class="spine"></div>
+      <div class="spine"></div>
+      <div class="spine"></div>
+    </div>
+
+    <div class="signin-card">
+      <h2 class="section-title">Your local library of readers awaits.</h2>
+      <p class="section-desc">Join readers in your neighborhood who share your taste.</p>
+
+      <Show when="signed-out">
+        <div class="clerk-container">
+          <SignIn />
+        </div>
+      </Show>
+    </div>
+
+    <div class="faded-spines right">
+      <div class="spine"></div>
+      <div class="spine"></div>
+      <div class="spine"></div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .signin-section {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2xl);
+    background: linear-gradient(
+      to bottom,
+      var(--color-parchment) 0%,
+      var(--color-aged-paper) 50%,
+      var(--color-parchment) 100%
+    );
+    position: relative;
+  }
+
+  .section-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2xl);
+    max-width: 1000px;
+    width: 100%;
+  }
+
+  .faded-spines {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    opacity: 0.15;
+  }
+
+  .faded-spines.left {
+    align-items: flex-end;
+  }
+
+  .faded-spines.right {
+    align-items: flex-start;
+  }
+
+  .spine {
+    width: 30px;
+    height: 160px;
+    background: linear-gradient(
+      to right,
+      var(--color-mahogany-light),
+      var(--color-mahogany),
+      var(--color-mahogany-light)
+    );
+    border-radius: 2px;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .faded-spines .spine:nth-child(1) {
+    height: 140px;
+    transform: rotate(-2deg);
+  }
+
+  .faded-spines .spine:nth-child(2) {
+    height: 180px;
+    background: linear-gradient(
+      to right,
+      var(--color-forest-light),
+      var(--color-forest),
+      var(--color-forest-light)
+    );
+  }
+
+  .faded-spines .spine:nth-child(3) {
+    height: 150px;
+    transform: rotate(1deg);
+    background: linear-gradient(
+      to right,
+      var(--color-burgundy-light),
+      var(--color-burgundy),
+      var(--color-burgundy-light)
+    );
+  }
+
+  .signin-card {
+    text-align: center;
+    max-width: 400px;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-weight: 600;
+    font-style: italic;
+    color: var(--color-ink);
+    margin: 0 0 var(--space-md);
+  }
+
+  .section-desc {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--color-ink-faded);
+    margin: 0 0 var(--space-xl);
+  }
+
+  .clerk-container {
+    display: flex;
+    justify-content: center;
+  }
+
+  @media (max-width: 800px) {
+    .faded-spines {
+      display: none;
+    }
+
+    .signin-card {
+      max-width: 100%;
+    }
+  }
+</style>
