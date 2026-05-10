@@ -29,7 +29,7 @@ export interface Book {
   notes?: string;
   coverUrl?: string;
   subjects?: string[];
-  addedVia: 'scan' | 'manual';
+  addedVia: 'scan' | 'manual' | 'goodreads';
   addedAt: number;
 }
 

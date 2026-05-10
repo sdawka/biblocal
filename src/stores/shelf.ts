@@ -8,6 +8,7 @@ export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {
   decode: JSON.parse,
 });
 
+// Legacy single-select filter (deprecated, kept for migration)
 export type ShelfFilter = 'all' | 'lending' | 'discussing' | 'gifting' | 'seeking' | 'private';
 export const activeFilter = persistentAtom<ShelfFilter>('biblocal:filter:v2', 'all');
 
@@ -19,6 +20,71 @@ export function bookMatchesFilter(book: Book, filter: ShelfFilter): boolean {
   if (filter === 'discussing') return book.intents.includes('discussable');
   if (filter === 'gifting') return book.intents.includes('giftable');
   return true;
+}
+
+// New multi-dimensional filter system
+export interface ShelfFilters {
+  visibility: BookVisibility[];
+  ownership: BookOwnership[];
+  intents: BookIntent[];
+}
+
+const DEFAULT_FILTERS: ShelfFilters = {
+  visibility: [],
+  ownership: [],
+  intents: [],
+};
+
+export const activeFilters = persistentAtom<ShelfFilters>(
+  'biblocal:filter:v3',
+  DEFAULT_FILTERS,
+  { encode: JSON.stringify, decode: JSON.parse }
+);
+
+export function bookMatchesFilters(book: Book, filters: ShelfFilters): boolean {
+  if (filters.visibility.length > 0 && !filters.visibility.includes(book.visibility)) {
+    return false;
+  }
+  if (filters.ownership.length > 0 && !filters.ownership.includes(book.ownership)) {
+    return false;
+  }
+  if (filters.intents.length > 0 && !book.intents.some(i => filters.intents.includes(i))) {
+    return false;
+  }
+  return true;
+}
+
+export function toggleVisibilityFilter(value: BookVisibility): void {
+  const current = activeFilters.get();
+  const visibility = current.visibility.includes(value)
+    ? current.visibility.filter(v => v !== value)
+    : [...current.visibility, value];
+  activeFilters.set({ ...current, visibility });
+}
+
+export function toggleOwnershipFilter(value: BookOwnership): void {
+  const current = activeFilters.get();
+  const ownership = current.ownership.includes(value)
+    ? current.ownership.filter(o => o !== value)
+    : [...current.ownership, value];
+  activeFilters.set({ ...current, ownership });
+}
+
+export function toggleIntentFilter(value: BookIntent): void {
+  const current = activeFilters.get();
+  const intents = current.intents.includes(value)
+    ? current.intents.filter(i => i !== value)
+    : [...current.intents, value];
+  activeFilters.set({ ...current, intents });
+}
+
+export function clearAllFilters(): void {
+  activeFilters.set(DEFAULT_FILTERS);
+}
+
+export function hasActiveFilters(): boolean {
+  const f = activeFilters.get();
+  return f.visibility.length > 0 || f.ownership.length > 0 || f.intents.length > 0;
 }
 
 async function syncAddBook(book: Book): Promise<void> {
@@ -166,7 +232,7 @@ export async function loadBooksFromServer(): Promise<void> {
         coverUrl: b.coverUrl || undefined,
         subjects: b.subjects ? JSON.parse(b.subjects) : undefined,
         notes: b.notes || undefined,
-        addedVia: (b.addedVia || 'manual') as 'scan' | 'manual',
+        addedVia: (b.addedVia || 'manual') as 'scan' | 'manual' | 'goodreads',
         addedAt: new Date(b.createdAt).getTime(),
       };
     }
