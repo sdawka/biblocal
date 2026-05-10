@@ -44,7 +44,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     }
 
     const updates = (await request.json()) as Record<string, unknown>;
-    const allowedFields = ['title', 'author', 'isbn', 'coverUrl', 'status', 'notes'];
+    const allowedFields = ['title', 'author', 'isbn', 'coverUrl', 'status', 'visibility', 'ownership', 'notes'];
     const filtered: Record<string, unknown> = { updatedAt: new Date() };
 
     for (const field of allowedFields) {
@@ -54,6 +54,9 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     }
     if (updates.subjects !== undefined) {
       filtered.subjects = Array.isArray(updates.subjects) ? JSON.stringify(updates.subjects) : updates.subjects;
+    }
+    if (updates.intents !== undefined) {
+      filtered.intents = Array.isArray(updates.intents) ? JSON.stringify(updates.intents) : updates.intents;
     }
 
     await db.update(books).set(filtered).where(eq(books.id, bookId));

@@ -76,6 +76,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       isbn?: string;
       coverUrl?: string;
       status?: string;
+      visibility?: 'private' | 'visible';
+      ownership?: 'have' | 'seeking';
+      intents?: string[] | string;
       addedVia?: string;
       subjects?: string[];
       notes?: string;
@@ -97,6 +100,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       isbn: body.isbn || null,
       coverUrl: body.coverUrl || null,
       status: body.status || 'visible',
+      visibility: body.visibility || 'visible',
+      ownership: body.ownership || 'have',
+      intents: body.intents ? (Array.isArray(body.intents) ? JSON.stringify(body.intents) : body.intents) : '[]',
       addedVia: body.addedVia || 'manual',
       subjects: body.subjects ? JSON.stringify(body.subjects) : null,
       notes: body.notes || null,
