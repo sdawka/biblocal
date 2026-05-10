@@ -101,63 +101,63 @@ VALUES (
 -- THE BOOKS (Sam's Shelf)
 -- ═══════════════════════════════════════════════════════════════════════════
 
-INSERT INTO books (id, user_id, title, author, isbn, status, cover_url, subjects, notes, added_via, created_at, updated_at)
+INSERT INTO books (id, user_id, title, author, isbn, visibility, ownership, intents, cover_url, subjects, notes, added_via, created_at, updated_at)
 VALUES
   -- The lending pile
-  ('book-geb', 'qa-test-user', 'Gödel, Escher, Bach', 'Douglas Hofstadter', '9780465026562', 'borrowable',
+  ('book-geb', 'qa-test-user', 'Gödel, Escher, Bach', 'Douglas Hofstadter', '9780465026562', 'visible', 'have', '["borrowable"]',
    'https://covers.openlibrary.org/b/isbn/0465026567-M.jpg',
    '["philosophy", "mathematics", "consciousness", "recursion"]',
    'Warning: may cause spontaneous conversations about strange loops',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-dispossessed', 'qa-test-user', 'The Dispossessed', 'Ursula K. Le Guin', '9780061054884', 'borrowable',
+  ('book-dispossessed', 'qa-test-user', 'The Dispossessed', 'Ursula K. Le Guin', '9780061054884', 'visible', 'have', '["borrowable", "discussable"]',
    'https://covers.openlibrary.org/b/isbn/0061054887-M.jpg',
    '["science fiction", "philosophy", "politics", "anarchism"]',
    'The ambiguous utopia. Pairs well with late-night walks.',
    'manual', unixepoch(), unixepoch()),
 
   -- Want to discuss these
-  ('book-master', 'qa-test-user', 'The Master and Margarita', 'Mikhail Bulgakov', '9780140455465', 'discussable',
+  ('book-master', 'qa-test-user', 'The Master and Margarita', 'Mikhail Bulgakov', '9780140455465', 'visible', 'have', '["discussable"]',
    'https://covers.openlibrary.org/b/isbn/0140455469-M.jpg',
    '["literary fiction", "satire", "philosophy", "magical realism"]',
    'Manuscripts don''t burn. Looking for someone who gets the cat jokes.',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-borges', 'qa-test-user', 'Collected Fictions', 'Jorge Luis Borges', '9780140286809', 'discussable',
+  ('book-borges', 'qa-test-user', 'Collected Fictions', 'Jorge Luis Borges', '9780140286809', 'visible', 'have', '["discussable"]',
    'https://covers.openlibrary.org/b/isbn/0140286802-M.jpg',
    '["literary fiction", "philosophy", "short stories", "labyrinths"]',
    'The library of Babel lives in my head rent-free',
    'manual', unixepoch(), unixepoch()),
 
-  -- Just on the shelf
-  ('book-calvino', 'qa-test-user', 'If on a winter''s night a traveler', 'Italo Calvino', '9780156439619', 'visible',
+  -- Just on the shelf (visible, no intents)
+  ('book-calvino', 'qa-test-user', 'If on a winter''s night a traveler', 'Italo Calvino', '9780156439619', 'visible', 'have', '[]',
    'https://covers.openlibrary.org/b/isbn/0156439611-M.jpg',
    '["literary fiction", "metafiction", "postmodern"]',
    'You are about to begin reading',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-lightness', 'qa-test-user', 'The Unbearable Lightness of Being', 'Milan Kundera', '9780061148521', 'visible',
+  ('book-lightness', 'qa-test-user', 'The Unbearable Lightness of Being', 'Milan Kundera', '9780061148521', 'visible', 'have', '[]',
    'https://covers.openlibrary.org/b/isbn/0061148520-M.jpg',
    '["literary fiction", "philosophy", "love"]',
    'Einmal ist keinmal',
    'manual', unixepoch(), unixepoch()),
 
   -- Free to good home
-  ('book-solitude', 'qa-test-user', 'One Hundred Years of Solitude', 'Gabriel García Márquez', '9780060883287', 'giftable',
+  ('book-solitude', 'qa-test-user', 'One Hundred Years of Solitude', 'Gabriel García Márquez', '9780060883287', 'visible', 'have', '["giftable"]',
    'https://covers.openlibrary.org/b/isbn/0060883286-M.jpg',
    '["literary fiction", "magical realism", "family saga"]',
    'Read it twice. Time for it to find a new reader.',
    'manual', unixepoch(), unixepoch()),
 
-  -- Looking for this one
-  ('book-small-gods', 'qa-test-user', 'Small Gods', 'Terry Pratchett', '9780062237378', 'seeking-home',
+  -- Looking for this one (seeking)
+  ('book-small-gods', 'qa-test-user', 'Small Gods', 'Terry Pratchett', '9780062237378', 'visible', 'seeking', '["borrowable"]',
    'https://covers.openlibrary.org/b/isbn/0062237373-M.jpg',
    '["fantasy", "satire", "philosophy", "religion"]',
    'Lost my copy. The turtle moves.',
    'manual', unixepoch(), unixepoch()),
 
   -- Private (doesn't show to others)
-  ('book-beloved', 'qa-test-user', 'Beloved', 'Toni Morrison', '9781400033416', 'private',
+  ('book-beloved', 'qa-test-user', 'Beloved', 'Toni Morrison', '9781400033416', 'private', 'have', '[]',
    'https://covers.openlibrary.org/b/isbn/1400033411-M.jpg',
    '["literary fiction", "history", "American literature"]',
    'Not lending this one. Too many notes in the margins.',
@@ -167,34 +167,34 @@ VALUES
 -- ESME'S SHELF (The Shelf Twin)
 -- ═══════════════════════════════════════════════════════════════════════════
 
-INSERT INTO books (id, user_id, title, author, isbn, status, cover_url, subjects, notes, added_via, created_at, updated_at)
+INSERT INTO books (id, user_id, title, author, isbn, visibility, ownership, intents, cover_url, subjects, notes, added_via, created_at, updated_at)
 VALUES
   -- Shared taste! Also has GEB and Borges
-  ('book-esme-geb', 'user-esme', 'Gödel, Escher, Bach', 'Douglas Hofstadter', '9780465026562', 'discussable',
+  ('book-esme-geb', 'user-esme', 'Gödel, Escher, Bach', 'Douglas Hofstadter', '9780465026562', 'visible', 'have', '["discussable"]',
    'https://covers.openlibrary.org/b/isbn/0465026567-M.jpg',
    '["philosophy", "mathematics", "consciousness"]',
    'The ant fugue chapter changed how I think',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-esme-borges', 'user-esme', 'Collected Fictions', 'Jorge Luis Borges', '9780140286809', 'borrowable',
+  ('book-esme-borges', 'user-esme', 'Collected Fictions', 'Jorge Luis Borges', '9780140286809', 'visible', 'have', '["borrowable"]',
    'https://covers.openlibrary.org/b/isbn/0140286802-M.jpg',
    '["literary fiction", "philosophy", "labyrinths"]',
    'Every re-read finds new corridors',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-esme-witches', 'user-esme', 'Witches Abroad', 'Terry Pratchett', '9780062237361', 'borrowable',
+  ('book-esme-witches', 'user-esme', 'Witches Abroad', 'Terry Pratchett', '9780062237361', 'visible', 'have', '["borrowable"]',
    'https://covers.openlibrary.org/b/isbn/0062237361-M.jpg',
    '["fantasy", "satire", "fairy tales"]',
    'Stories want to happen. Witches make sure the right ones do.',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-esme-remains', 'user-esme', 'The Remains of the Day', 'Kazuo Ishiguro', '9780679731726', 'discussable',
+  ('book-esme-remains', 'user-esme', 'The Remains of the Day', 'Kazuo Ishiguro', '9780679731726', 'visible', 'have', '["discussable"]',
    'https://covers.openlibrary.org/b/isbn/0679731725-M.jpg',
    '["literary fiction", "British literature", "memory"]',
    'Dignified devastation',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-esme-jung', 'user-esme', 'Man and His Symbols', 'Carl Jung', '9780440351832', 'visible',
+  ('book-esme-jung', 'user-esme', 'Man and His Symbols', 'Carl Jung', '9780440351832', 'visible', 'have', '[]',
    'https://covers.openlibrary.org/b/isbn/0440351839-M.jpg',
    '["psychology", "symbolism", "dreams"]',
    'Headology by another name',
@@ -204,28 +204,28 @@ VALUES
 -- RINCEWIND'S SHELF (The Local Source - has Small Gods!)
 -- ═══════════════════════════════════════════════════════════════════════════
 
-INSERT INTO books (id, user_id, title, author, isbn, status, cover_url, subjects, notes, added_via, created_at, updated_at)
+INSERT INTO books (id, user_id, title, author, isbn, visibility, ownership, intents, cover_url, subjects, notes, added_via, created_at, updated_at)
 VALUES
   -- Has the book Sam is seeking!
-  ('book-rin-smallgods', 'user-rincewind', 'Small Gods', 'Terry Pratchett', '9780062237378', 'borrowable',
+  ('book-rin-smallgods', 'user-rincewind', 'Small Gods', 'Terry Pratchett', '9780062237378', 'visible', 'have', '["borrowable"]',
    'https://covers.openlibrary.org/b/isbn/0062237373-M.jpg',
    '["fantasy", "satire", "philosophy"]',
    'Om is my favorite character in all of literature',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-rin-color', 'user-rincewind', 'The Colour of Magic', 'Terry Pratchett', '9780062225672', 'borrowable',
+  ('book-rin-color', 'user-rincewind', 'The Colour of Magic', 'Terry Pratchett', '9780062225672', 'visible', 'have', '["borrowable"]',
    'https://covers.openlibrary.org/b/isbn/0062225672-M.jpg',
    '["fantasy", "satire", "humor"]',
    'Where it all began. The luggage is underrated.',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-rin-dune', 'user-rincewind', 'Dune', 'Frank Herbert', '9780441172719', 'borrowable',
+  ('book-rin-dune', 'user-rincewind', 'Dune', 'Frank Herbert', '9780441172719', 'visible', 'have', '["borrowable"]',
    'https://covers.openlibrary.org/b/isbn/0441172717-M.jpg',
    '["science fiction", "ecology", "politics"]',
    'The spice must flow, but so must this book',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-rin-left-hand', 'user-rincewind', 'The Left Hand of Darkness', 'Ursula K. Le Guin', '9780441478125', 'giftable',
+  ('book-rin-left-hand', 'user-rincewind', 'The Left Hand of Darkness', 'Ursula K. Le Guin', '9780441478125', 'visible', 'have', '["giftable"]',
    'https://covers.openlibrary.org/b/isbn/0441478123-M.jpg',
    '["science fiction", "gender", "anthropology"]',
    'Winter is a character',
@@ -235,39 +235,39 @@ VALUES
 -- VETINARI'S SHELF (The Reading Mentor)
 -- ═══════════════════════════════════════════════════════════════════════════
 
-INSERT INTO books (id, user_id, title, author, isbn, status, cover_url, subjects, notes, added_via, created_at, updated_at)
+INSERT INTO books (id, user_id, title, author, isbn, visibility, ownership, intents, cover_url, subjects, notes, added_via, created_at, updated_at)
 VALUES
-  ('book-vet-prince', 'user-vetinari', 'The Prince', 'Niccolò Machiavelli', '9780140449150', 'discussable',
+  ('book-vet-prince', 'user-vetinari', 'The Prince', 'Niccolò Machiavelli', '9780140449150', 'visible', 'have', '["discussable"]',
    'https://covers.openlibrary.org/b/isbn/0140449159-M.jpg',
    '["philosophy", "politics", "history"]',
    'Misunderstood. Like most useful things.',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-vet-seeing', 'user-vetinari', 'Seeing Like a State', 'James C. Scott', '9780300078152', 'borrowable',
+  ('book-vet-seeing', 'user-vetinari', 'Seeing Like a State', 'James C. Scott', '9780300078152', 'visible', 'have', '["borrowable"]',
    'https://covers.openlibrary.org/b/isbn/0300078153-M.jpg',
    '["politics", "systems thinking", "history"]',
    'Why high modernism fails. Essential reading.',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-vet-thinking', 'user-vetinari', 'Thinking in Systems', 'Donella Meadows', '9781603580557', 'discussable',
+  ('book-vet-thinking', 'user-vetinari', 'Thinking in Systems', 'Donella Meadows', '9781603580557', 'visible', 'have', '["discussable"]',
    'https://covers.openlibrary.org/b/isbn/1603580557-M.jpg',
    '["systems thinking", "ecology", "economics"]',
    'Leverage points for changing complex systems',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-vet-nightwatch', 'user-vetinari', 'Night Watch', 'Terry Pratchett', '9780060013127', 'visible',
+  ('book-vet-nightwatch', 'user-vetinari', 'Night Watch', 'Terry Pratchett', '9780060013127', 'visible', 'have', '[]',
    'https://covers.openlibrary.org/b/isbn/0060013125-M.jpg',
    '["fantasy", "politics", "revolution"]',
    'Pratchett''s masterpiece. Don''t @ me.',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-vet-antifragile', 'user-vetinari', 'Antifragile', 'Nassim Nicholas Taleb', '9780812979688', 'borrowable',
+  ('book-vet-antifragile', 'user-vetinari', 'Antifragile', 'Nassim Nicholas Taleb', '9780812979688', 'visible', 'have', '["borrowable"]',
    'https://covers.openlibrary.org/b/isbn/0812979680-M.jpg',
    '["philosophy", "economics", "systems thinking"]',
    'Chaos is a ladder, properly used',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-vet-zen', 'user-vetinari', 'Zen and the Art of Motorcycle Maintenance', 'Robert Pirsig', '9780060839871', 'giftable',
+  ('book-vet-zen', 'user-vetinari', 'Zen and the Art of Motorcycle Maintenance', 'Robert Pirsig', '9780060839871', 'visible', 'have', '["giftable"]',
    'https://covers.openlibrary.org/b/isbn/0060839872-M.jpg',
    '["philosophy", "memoir", "quality"]',
    'Quality undefined but recognized',
@@ -277,27 +277,27 @@ VALUES
 -- TIFFANY'S SHELF (Discussion Match)
 -- ═══════════════════════════════════════════════════════════════════════════
 
-INSERT INTO books (id, user_id, title, author, isbn, status, cover_url, subjects, notes, added_via, created_at, updated_at)
+INSERT INTO books (id, user_id, title, author, isbn, visibility, ownership, intents, cover_url, subjects, notes, added_via, created_at, updated_at)
 VALUES
-  ('book-tiff-dispossessed', 'user-tiffany', 'The Dispossessed', 'Ursula K. Le Guin', '9780061054884', 'discussable',
+  ('book-tiff-dispossessed', 'user-tiffany', 'The Dispossessed', 'Ursula K. Le Guin', '9780061054884', 'visible', 'have', '["discussable"]',
    'https://covers.openlibrary.org/b/isbn/0061054887-M.jpg',
    '["science fiction", "philosophy", "anarchism"]',
    'True ambiguity is hard to write',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-tiff-wee', 'user-tiffany', 'The Wee Free Men', 'Terry Pratchett', '9780062435262', 'borrowable',
+  ('book-tiff-wee', 'user-tiffany', 'The Wee Free Men', 'Terry Pratchett', '9780062435262', 'visible', 'have', '["borrowable"]',
    'https://covers.openlibrary.org/b/isbn/0062435264-M.jpg',
    '["fantasy", "coming of age", "witchcraft"]',
    'First Sight: seeing what''s really there',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-tiff-braiding', 'user-tiffany', 'Braiding Sweetgrass', 'Robin Wall Kimmerer', '9781571313560', 'discussable',
+  ('book-tiff-braiding', 'user-tiffany', 'Braiding Sweetgrass', 'Robin Wall Kimmerer', '9781571313560', 'visible', 'have', '["discussable"]',
    'https://covers.openlibrary.org/b/isbn/1571313567-M.jpg',
    '["ecology", "indigenous knowledge", "nature"]',
    'Science and story together at last',
    'manual', unixepoch(), unixepoch()),
 
-  ('book-tiff-siddhartha', 'user-tiffany', 'Siddhartha', 'Hermann Hesse', '9780553208849', 'borrowable',
+  ('book-tiff-siddhartha', 'user-tiffany', 'Siddhartha', 'Hermann Hesse', '9780553208849', 'visible', 'have', '["borrowable"]',
    'https://covers.openlibrary.org/b/isbn/0553208845-M.jpg',
    '["philosophy", "spirituality", "literary fiction"]',
    'The river knows',

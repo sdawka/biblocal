@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Journey: Shelf operations
-# Tests: add book (ISBN/manual), change status, filter, empty state
+# Tests: add book (ISBN/manual), intent pills, filter pills, empty state
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/helpers.sh"
@@ -60,22 +60,22 @@ else
   info "ISBN input not found in current view"
 fi
 
-# Test 5: Check book statuses dropdown (if books exist)
-info "Test: Book status options"
+# Test 5: Check intent pills on book cards (if books exist)
+info "Test: Book intent controls"
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
-if echo "$snapshot" | grep -qi "private\|visible\|borrowable\|status"; then
-  pass "Book status controls present"
+if echo "$snapshot" | grep -qi "lend\|discuss\|gift\|seeking\|private"; then
+  pass "Book intent badges/pills present"
 else
-  info "No status controls visible (may need books first)"
+  info "No intent controls visible (may need books first)"
 fi
 
-# Test 6: Filter functionality
-info "Test: Filter/sort options"
+# Test 6: Filter pills
+info "Test: Filter pill options"
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
-if echo "$snapshot" | grep -qi "filter\|sort\|all books\|showing"; then
-  pass "Filter UI present"
+if echo "$snapshot" | grep -qi "all\|lending\|discussing\|gifting\|seeking\|private"; then
+  pass "Filter pills present"
 else
-  info "Filter UI not found in current state"
+  info "Filter pills not found in current state"
 fi
 
 echo ""
