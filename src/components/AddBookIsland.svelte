@@ -2,6 +2,7 @@
   import { addBook } from '../stores/shelf';
   import { fetchByIsbn, isValidIsbn } from '../lib/openLibrary';
   import type { BookStatus } from '../lib/types';
+  import ScannerIsland from './ScannerIsland.svelte';
 
   type Mode = 'isbn' | 'manual';
 
@@ -12,6 +13,7 @@
   let status: BookStatus = $state('visible');
   let loading = $state(false);
   let error = $state('');
+  let showScanner = $state(false);
 
   const STATUS_OPTIONS: { value: BookStatus; label: string }[] = [
     { value: 'visible', label: 'Visible' },
@@ -74,6 +76,20 @@
     mode = newMode;
     error = '';
   }
+
+  function handleScanResult(scannedIsbn: string) {
+    isbn = scannedIsbn;
+    showScanner = false;
+    handleIsbnSubmit();
+  }
+
+  function openScanner() {
+    showScanner = true;
+  }
+
+  function closeScanner() {
+    showScanner = false;
+  }
 </script>
 
 <div class="add-book">
@@ -96,12 +112,22 @@
         handleIsbnSubmit();
       }}
     >
-      <input
-        type="text"
-        bind:value={isbn}
-        placeholder="Enter ISBN (e.g., 9780465026562)"
-        disabled={loading}
-      />
+      <div class="isbn-row">
+        <input
+          type="text"
+          bind:value={isbn}
+          placeholder="Enter ISBN (e.g., 9780465026562)"
+          disabled={loading}
+        />
+        <button
+          type="button"
+          class="scan-btn"
+          onclick={openScanner}
+          title="Scan barcode"
+        >
+          📷
+        </button>
+      </div>
       <select bind:value={status}>
         {#each STATUS_OPTIONS as opt}
           <option value={opt.value}>{opt.label}</option>
@@ -131,6 +157,10 @@
 
   {#if error}
     <p class="error">{error}</p>
+  {/if}
+
+  {#if showScanner}
+    <ScannerIsland onScan={handleScanResult} onClose={closeScanner} />
   {/if}
 </div>
 
@@ -288,6 +318,39 @@
     font-family: var(--font-body);
     font-size: 0.875rem;
     font-style: italic;
-    color: #8B2500;
+    color: var(--color-burgundy-dark);
+  }
+
+  .isbn-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .isbn-row input {
+    flex: 1;
+  }
+
+  .scan-btn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .scan-btn:hover {
+    border-color: var(--color-gold);
+    background: var(--color-gold-pale);
+  }
+
+  .scan-btn:focus {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
   }
 </style>
