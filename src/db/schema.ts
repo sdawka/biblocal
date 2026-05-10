@@ -39,6 +39,8 @@ export const books = sqliteTable('books', {
   coverUrl: text('cover_url'),
   status: text('status').notNull().default('visible'),
   addedVia: text('added_via').default('manual'),
+  subjects: text('subjects'),
+  notes: text('notes'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });

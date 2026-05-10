@@ -77,16 +77,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const { title, author, isbn, coverUrl, status, addedVia } = (await request.json()) as {
+    const body = (await request.json()) as {
+      id?: string;
       title?: string;
       author?: string;
       isbn?: string;
       coverUrl?: string;
       status?: string;
       addedVia?: string;
+      subjects?: string[];
+      notes?: string;
     };
 
-    if (!title || !author) {
+    if (!body.title || !body.author) {
       return new Response(JSON.stringify({ error: 'Title and author required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -95,14 +98,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const now = new Date();
     const book = {
-      id: generateId(),
+      id: body.id || generateId(),
       userId: user.id,
-      title,
-      author,
-      isbn: isbn || null,
-      coverUrl: coverUrl || null,
-      status: status || 'visible',
-      addedVia: addedVia || 'manual',
+      title: body.title,
+      author: body.author,
+      isbn: body.isbn || null,
+      coverUrl: body.coverUrl || null,
+      status: body.status || 'visible',
+      addedVia: body.addedVia || 'manual',
+      subjects: body.subjects ? JSON.stringify(body.subjects) : null,
+      notes: body.notes || null,
       createdAt: now,
       updatedAt: now,
     };
