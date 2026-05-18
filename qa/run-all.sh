@@ -66,6 +66,12 @@ run_journey "Shelf Operations" "$SCRIPT_DIR/journeys/02-shelf.sh"
 run_journey "Profile" "$SCRIPT_DIR/journeys/03-profile.sh"
 run_journey "Matches" "$SCRIPT_DIR/journeys/04-matches.sh"
 run_journey "Navigation" "$SCRIPT_DIR/journeys/05-navigation.sh"
+run_journey "Onboarding" "$SCRIPT_DIR/journeys/06-onboarding.sh"
+run_journey "Geolocation" "$SCRIPT_DIR/journeys/07-geolocation.sh"
+run_journey "Connections" "$SCRIPT_DIR/journeys/08-connections.sh"
+run_journey "Edge Cases" "$SCRIPT_DIR/journeys/09-edge-cases.sh"
+run_journey "Bookstore" "$SCRIPT_DIR/journeys/10-bookstore.sh"
+run_journey "Filters" "$SCRIPT_DIR/journeys/11-filters.sh"
 
 # Summary
 echo ""
