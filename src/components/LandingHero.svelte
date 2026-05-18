@@ -1,31 +1,36 @@
 <script lang="ts">
   let visible = $state(false);
   let heroElement: HTMLElement;
+  let failedImages = $state<Set<number>>(new Set());
+
+  function handleImageError(index: number) {
+    failedImages = new Set([...failedImages, index]);
+  }
 
   const demoBooks = [
     // Left column - stacked vertically with no overlap
-    { title: "Small Gods", cover: "https://covers.openlibrary.org/b/isbn/0062237373-M.jpg", x: -5, y: 5, endX: 3, size: "medium", delay: 0.1 },
-    { title: "Gödel, Escher, Bach", cover: "https://covers.openlibrary.org/b/isbn/0465026567-M.jpg", x: -8, y: 22, endX: 6, size: "large", delay: 0.2 },
-    { title: "Beloved", cover: "https://covers.openlibrary.org/b/isbn/1400033411-M.jpg", x: -6, y: 42, endX: 4, size: "medium", delay: 0.3 },
-    { title: "Night Watch", cover: "https://covers.openlibrary.org/b/isbn/0060013125-M.jpg", x: -5, y: 60, endX: 5, size: "small", delay: 0.4 },
-    { title: "The Dispossessed", cover: "https://covers.openlibrary.org/b/isbn/0061054887-M.jpg", x: -7, y: 76, endX: 3, size: "medium", delay: 0.5 },
+    { title: "Small Gods", cover: "/covers/0062237373.jpg", x: -5, y: 5, endX: 3, size: "medium", delay: 0.1 },
+    { title: "Gödel, Escher, Bach", cover: "/covers/0465026567.jpg", x: -8, y: 22, endX: 6, size: "large", delay: 0.2 },
+    { title: "Beloved", cover: "/covers/1400033411.jpg", x: -6, y: 42, endX: 4, size: "medium", delay: 0.3 },
+    { title: "Night Watch", cover: "/covers/0060013125.jpg", x: -5, y: 60, endX: 5, size: "small", delay: 0.4 },
+    { title: "The Dispossessed", cover: "/covers/0061054887.jpg", x: -7, y: 76, endX: 3, size: "medium", delay: 0.5 },
 
     // Right column - stacked vertically with no overlap
-    { title: "One Hundred Years", cover: "https://covers.openlibrary.org/b/isbn/0060883286-M.jpg", x: 105, y: 5, endX: 88, size: "medium", delay: 0.15 },
-    { title: "The Unbearable Lightness", cover: "https://covers.openlibrary.org/b/isbn/0061148520-M.jpg", x: 108, y: 22, endX: 85, size: "large", delay: 0.25 },
-    { title: "Guards! Guards!", cover: "https://covers.openlibrary.org/b/isbn/0062225758-M.jpg", x: 106, y: 42, endX: 87, size: "medium", delay: 0.35 },
-    { title: "Master and Margarita", cover: "https://covers.openlibrary.org/b/isbn/0140455469-M.jpg", x: 105, y: 60, endX: 86, size: "small", delay: 0.45 },
-    { title: "If on a winter's night", cover: "https://covers.openlibrary.org/b/isbn/0156439611-M.jpg", x: 107, y: 76, endX: 88, size: "medium", delay: 0.55 },
+    { title: "One Hundred Years", cover: "/covers/0060883286.jpg", x: 105, y: 5, endX: 88, size: "medium", delay: 0.15 },
+    { title: "The Unbearable Lightness", cover: "/covers/0061148520.jpg", x: 108, y: 22, endX: 85, size: "large", delay: 0.25 },
+    { title: "Guards! Guards!", cover: "/covers/0062225758.jpg", x: 106, y: 42, endX: 87, size: "medium", delay: 0.35 },
+    { title: "Master and Margarita", cover: "/covers/0140455469.jpg", x: 105, y: 60, endX: 86, size: "small", delay: 0.45 },
+    { title: "If on a winter's night", cover: "/covers/0156439611.jpg", x: 107, y: 76, endX: 88, size: "medium", delay: 0.55 },
 
     // Second layer left - offset inward
-    { title: "Mort", cover: "https://covers.openlibrary.org/b/isbn/0062225715-M.jpg", x: -3, y: 12, endX: 12, size: "small", delay: 0.7 },
-    { title: "Dune", cover: "https://covers.openlibrary.org/b/isbn/0441172717-M.jpg", x: -4, y: 50, endX: 13, size: "small", delay: 0.8 },
-    { title: "Borges", cover: "https://covers.openlibrary.org/b/isbn/0140286802-M.jpg", x: -3, y: 85, endX: 11, size: "small", delay: 0.9 },
+    { title: "Mort", cover: "/covers/0062225715.jpg", x: -3, y: 12, endX: 12, size: "small", delay: 0.7 },
+    { title: "Dune", cover: "/covers/0441172717.jpg", x: -4, y: 50, endX: 13, size: "small", delay: 0.8 },
+    { title: "Borges", cover: "/covers/0140286802.jpg", x: -3, y: 85, endX: 11, size: "small", delay: 0.9 },
 
     // Second layer right - offset inward
-    { title: "Going Postal", cover: "https://covers.openlibrary.org/b/isbn/0060502932-M.jpg", x: 103, y: 12, endX: 80, size: "small", delay: 0.75 },
-    { title: "House of Leaves", cover: "https://covers.openlibrary.org/b/isbn/0375703764-M.jpg", x: 104, y: 50, endX: 79, size: "small", delay: 0.85 },
-    { title: "Sapiens", cover: "https://covers.openlibrary.org/b/isbn/0062316095-M.jpg", x: 103, y: 85, endX: 81, size: "small", delay: 0.95 },
+    { title: "Going Postal", cover: "/covers/0060502932.jpg", x: 103, y: 12, endX: 80, size: "small", delay: 0.75 },
+    { title: "House of Leaves", cover: "/covers/0375703764.jpg", x: 104, y: 50, endX: 79, size: "small", delay: 0.85 },
+    { title: "Sapiens", cover: "/covers/0062316095.jpg", x: 103, y: 85, endX: 81, size: "small", delay: 0.95 },
   ];
 
   $effect(() => {
@@ -55,7 +60,20 @@
           --delay: {book.delay}s;
         "
       >
-        <img src={book.cover} alt={book.title} />
+        {#if failedImages.has(i)}
+          <div class="cover-placeholder">
+            <span>{book.title.charAt(0)}</span>
+          </div>
+        {:else}
+          <img
+            src={book.cover}
+            alt={book.title}
+            width="80"
+            height="120"
+            loading="lazy"
+            onerror={() => handleImageError(i)}
+          />
+        {/if}
       </div>
     {/each}
   </div>
@@ -264,6 +282,31 @@
       0 2px 8px rgba(0, 0, 0, 0.15),
       inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
+
+  .cover-placeholder {
+    width: 80px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(to bottom, var(--color-mahogany-light), var(--color-mahogany));
+    border-radius: 3px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .cover-placeholder span {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 600;
+    font-style: italic;
+    color: var(--color-gold);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .floating-book.large .cover-placeholder { width: 100px; height: 150px; }
+  .floating-book.medium .cover-placeholder { width: 80px; height: 120px; }
+  .floating-book.small .cover-placeholder { width: 65px; height: 98px; }
+  .floating-book.tiny .cover-placeholder { width: 50px; height: 75px; }
 
   .scroll-hint {
     position: absolute;

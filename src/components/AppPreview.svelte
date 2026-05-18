@@ -2,11 +2,16 @@
   let visible = $state(false);
   let sectionElement: HTMLElement;
   let activeTab = $state<'shelf' | 'matches' | 'profile'>('shelf');
+  let failedImages = $state<Set<number>>(new Set());
+
+  function handleImageError(index: number) {
+    failedImages = new Set([...failedImages, index]);
+  }
 
   const demoShelf = [
-    { title: "Small Gods", author: "Terry Pratchett", status: "Will discuss", cover: "https://covers.openlibrary.org/b/isbn/0062237373-M.jpg" },
-    { title: "Gödel, Escher, Bach", author: "Douglas Hofstadter", status: "Will lend", cover: "https://covers.openlibrary.org/b/isbn/0465026567-M.jpg" },
-    { title: "The Dispossessed", author: "Ursula K. Le Guin", status: "Looking for", cover: "https://covers.openlibrary.org/b/isbn/0061054887-M.jpg" },
+    { title: "Small Gods", author: "Terry Pratchett", status: "Will discuss", cover: "/covers/0062237373.jpg" },
+    { title: "Gödel, Escher, Bach", author: "Douglas Hofstadter", status: "Will lend", cover: "/covers/0465026567.jpg" },
+    { title: "The Dispossessed", author: "Ursula K. Le Guin", status: "Looking for", cover: "/covers/0061054887.jpg" },
   ];
 
   const demoMatches = [
@@ -98,9 +103,22 @@
               <span class="book-count">24 books</span>
             </div>
             <div class="books-grid">
-              {#each demoShelf as book}
+              {#each demoShelf as book, i}
                 <div class="book-card-preview">
-                  <img src={book.cover} alt={book.title} />
+                  {#if failedImages.has(i)}
+                    <div class="cover-placeholder">
+                      <span>{book.title.charAt(0)}</span>
+                    </div>
+                  {:else}
+                    <img
+                      src={book.cover}
+                      alt={book.title}
+                      width="140"
+                      height="120"
+                      loading="lazy"
+                      onerror={() => handleImageError(i)}
+                    />
+                  {/if}
                   <div class="book-info">
                     <span class="book-title">{book.title}</span>
                     <span class="book-author">{book.author}</span>
@@ -353,6 +371,24 @@
     width: 100%;
     height: 120px;
     object-fit: cover;
+  }
+
+  .cover-placeholder {
+    width: 100%;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(to bottom, var(--color-mahogany-light), var(--color-mahogany));
+  }
+
+  .cover-placeholder span {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 600;
+    font-style: italic;
+    color: var(--color-gold);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 
   .book-info {

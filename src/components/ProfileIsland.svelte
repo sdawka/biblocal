@@ -8,6 +8,14 @@
   let isEditing = $state(false);
   let editingPersonality = $state(false);
   let personalityInput = $state('');
+  let showSaved = $state(false);
+  let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function showSavedIndicator() {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    showSaved = true;
+    saveTimeout = setTimeout(() => { showSaved = false; }, 2000);
+  }
 
   let profileData = $state<UserProfile>({
     id: '',
@@ -81,6 +89,7 @@
         ? obsessions.split(',').map((s) => s.trim())
         : undefined,
     });
+    showSavedIndicator();
   }
 
   const CITIES = [
@@ -103,7 +112,12 @@
     <section>
       <div class="section-header">
         <h2>Edit Profile</h2>
-        <button class="btn-done" onclick={() => isEditing = false}>Done</button>
+        <div class="header-actions">
+          {#if showSaved}
+            <span class="saved-indicator">Saved</span>
+          {/if}
+          <button class="btn-done" onclick={() => isEditing = false}>Done</button>
+        </div>
       </div>
 
       <div class="field">
@@ -519,6 +533,30 @@
     margin: 0;
     padding: 0;
     border: none;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .saved-indicator {
+    padding: 0.25rem 0.625rem;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-forest);
+    background: rgba(34, 139, 34, 0.1);
+    border-radius: var(--radius-sm);
+    animation: fadeInOut 2s ease-in-out forwards;
+  }
+
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-4px); }
+    15% { opacity: 1; transform: translateY(0); }
+    85% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-4px); }
   }
 
   .constellation-hero {

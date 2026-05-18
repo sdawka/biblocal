@@ -20,15 +20,30 @@
   ];
 
   let filters = $derived($activeFilters);
+  let allBooks = $derived(Object.values($shelf));
   let filteredBooks = $derived(
-    Object.values($shelf).filter(book => bookMatchesFilters(book, filters))
+    allBooks.filter(book => bookMatchesFilters(book, filters))
   );
   let booksIHave = $derived(filteredBooks.filter(b => b.ownership === 'have'));
   let booksImSeeking = $derived(filteredBooks.filter(b => b.ownership === 'seeking'));
-  let totalBooks = $derived(Object.values($shelf).length);
+  let totalBooks = $derived(allBooks.length);
   let showClear = $derived(
     filters.visibility.length > 0 || filters.ownership.length > 0 || filters.intents.length > 0
   );
+
+  let ownershipCounts = $derived({
+    have: allBooks.filter(b => b.ownership === 'have').length,
+    seeking: allBooks.filter(b => b.ownership === 'seeking').length,
+  });
+
+  let intentCounts = $derived(
+    INTENT_OPTIONS.reduce((acc, opt) => {
+      acc[opt.value] = allBooks.filter(b => b.intents.includes(opt.value)).length;
+      return acc;
+    }, {} as Record<BookIntent, number>)
+  );
+
+  let privateCount = $derived(allBooks.filter(b => b.visibility === 'private').length);
 
   let haveExpanded = $state(true);
   let seekingExpanded = $state(true);
@@ -48,14 +63,14 @@
           class:active={filters.ownership.includes('have')}
           onclick={() => toggleOwnershipFilter('have')}
         >
-          have
+          have {#if ownershipCounts.have > 0}<span class="count">{ownershipCounts.have}</span>{/if}
         </button>
         <button
           class="pill ownership"
           class:active={filters.ownership.includes('seeking')}
           onclick={() => toggleOwnershipFilter('seeking')}
         >
-          am seeking
+          am seeking {#if ownershipCounts.seeking > 0}<span class="count">{ownershipCounts.seeking}</span>{/if}
         </button>
       </div>
     </div>
@@ -69,7 +84,7 @@
             class:active={filters.intents.includes(opt.value)}
             onclick={() => toggleIntentFilter(opt.value)}
           >
-            {opt.label}
+            {opt.label} {#if intentCounts[opt.value] > 0}<span class="count">{intentCounts[opt.value]}</span>{/if}
           </button>
         {/each}
       </div>
@@ -83,7 +98,7 @@
           class:active={filters.visibility.includes('private')}
           onclick={() => toggleVisibilityFilter('private')}
         >
-          Private only
+          Private only {#if privateCount > 0}<span class="count">{privateCount}</span>{/if}
         </button>
       </div>
       {#if showClear}
@@ -231,6 +246,26 @@
     color: var(--color-paper);
     background: var(--color-ink-faded);
     border-color: var(--color-ink);
+  }
+
+  .pill .count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.35rem;
+    margin-left: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: var(--color-gold-pale);
+    color: var(--color-ink);
+    border-radius: 9999px;
+  }
+
+  .pill.active .count {
+    background: rgba(255, 255, 255, 0.25);
+    color: inherit;
   }
 
   .clear-link {

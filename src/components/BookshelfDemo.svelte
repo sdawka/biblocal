@@ -1,6 +1,11 @@
 <script lang="ts">
   let visible = $state(false);
   let sectionElement: HTMLElement;
+  let failedImages = $state<Set<number>>(new Set());
+
+  function handleImageError(index: number) {
+    failedImages = new Set([...failedImages, index]);
+  }
 
   const demoBooks = [
     {
@@ -8,7 +13,7 @@
       author: "Terry Pratchett",
       status: "discussable",
       statusLabel: "Let's discuss",
-      cover: "https://covers.openlibrary.org/b/isbn/0062237373-M.jpg",
+      cover: "/covers/0062237373.jpg",
       note: "Om is my favorite tortoise philosopher"
     },
     {
@@ -16,7 +21,7 @@
       author: "Douglas Hofstadter",
       status: "borrowable",
       statusLabel: "Will lend",
-      cover: "https://covers.openlibrary.org/b/isbn/0465026567-M.jpg",
+      cover: "/covers/0465026567.jpg",
       note: "You'll either love it or pretend to"
     },
     {
@@ -24,7 +29,7 @@
       author: "Milan Kundera",
       status: "visible",
       statusLabel: "On my shelf",
-      cover: "https://covers.openlibrary.org/b/isbn/0061148520-M.jpg",
+      cover: "/covers/0061148520.jpg",
       note: "Every reading reveals something new"
     },
     {
@@ -32,7 +37,7 @@
       author: "Terry Pratchett",
       status: "giftable",
       statusLabel: "Free to good home",
-      cover: "https://covers.openlibrary.org/b/isbn/0062225758-M.jpg",
+      cover: "/covers/0062225758.jpg",
       note: "Own too many copies. A good problem."
     },
     {
@@ -40,7 +45,7 @@
       author: "Ursula K. Le Guin",
       status: "seeking",
       statusLabel: "Looking for this",
-      cover: "https://covers.openlibrary.org/b/isbn/0061054887-M.jpg",
+      cover: "/covers/0061054887.jpg",
       note: "The ambiguous utopia awaits"
     },
   ];
@@ -75,7 +80,20 @@
             style="--delay: {i * 0.12}s"
           >
             <div class="book-front">
-              <img src={book.cover} alt={book.title} />
+              {#if failedImages.has(i)}
+                <div class="cover-placeholder">
+                  <span>{book.title.charAt(0)}</span>
+                </div>
+              {:else}
+                <img
+                  src={book.cover}
+                  alt={book.title}
+                  width="120"
+                  height="180"
+                  loading="lazy"
+                  onerror={() => handleImageError(i)}
+                />
+              {/if}
               <span class="status-badge {book.status}">{book.statusLabel}</span>
             </div>
             <div class="book-page">
@@ -247,6 +265,24 @@
     height: 180px;
     object-fit: cover;
     display: block;
+  }
+
+  .cover-placeholder {
+    width: 100%;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(to bottom, var(--color-mahogany-light), var(--color-mahogany));
+  }
+
+  .cover-placeholder span {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 600;
+    font-style: italic;
+    color: var(--color-gold);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 
   .status-badge {

@@ -55,13 +55,9 @@ export async function fetchByIsbn(isbn: string): Promise<Partial<Book> | null> {
 
     const data: OpenLibraryBook = await res.json();
 
-    const authorNames: string[] = [];
-    if (data.authors) {
-      for (const author of data.authors.slice(0, 3)) {
-        await new Promise((r) => setTimeout(r, 100));
-        authorNames.push(await fetchAuthorName(author.key));
-      }
-    }
+    const authorNames: string[] = data.authors
+      ? await Promise.all(data.authors.slice(0, 3).map((a) => fetchAuthorName(a.key)))
+      : [];
 
     const book: Partial<Book> = {
       isbn: cleanIsbn,
