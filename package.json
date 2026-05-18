@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "deploy:qa": "bash scripts/deploy-qa.sh",
     "seed:qa": "wrangler d1 execute biblocal-qa-db --env qa --file=scripts/seed-qa.sql",
+    "qa:scenario": "bash scripts/qa-scenario.sh",
     "generate-types": "wrangler types",
     "seed:stores": "curl -X POST http://localhost:4321/api/seed-stores"
   },
