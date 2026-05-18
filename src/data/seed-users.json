@@ -2,7 +2,7 @@
   {
     "id": "seed-maya",
     "name": "Maya",
-    "city": "Demo City",
+    "city": "Montreal",
     "radiusKm": 5,
     "distance": "~1.2 km",
     "topics": {
@@ -43,7 +43,7 @@
   {
     "id": "seed-julien",
     "name": "Julien",
-    "city": "Demo City",
+    "city": "Montreal",
     "radiusKm": 5,
     "distance": "~2.8 km",
     "topics": {
@@ -75,7 +75,7 @@
   {
     "id": "seed-ana",
     "name": "Ana",
-    "city": "Demo City",
+    "city": "Montreal",
     "radiusKm": 10,
     "distance": "~0.8 km",
     "topics": {
@@ -108,7 +108,7 @@
   {
     "id": "seed-kenji",
     "name": "Kenji",
-    "city": "Demo City",
+    "city": "Montreal",
     "radiusKm": 3,
     "distance": "~1.5 km",
     "topics": {
@@ -140,7 +140,7 @@
   {
     "id": "seed-priya",
     "name": "Priya",
-    "city": "Demo City",
+    "city": "Montreal",
     "radiusKm": 5,
     "distance": "~3.2 km",
     "topics": {
@@ -172,7 +172,7 @@
   {
     "id": "seed-sam",
     "name": "Sam",
-    "city": "Demo City",
+    "city": "Montreal",
     "radiusKm": 7,
     "distance": "~4.1 km",
     "topics": {

@@ -2,20 +2,20 @@
   import { initProfile, isOnboarded } from '../stores/profile';
 
   let name = $state('');
-  let city = $state('Demo City');
+  let city = $state('Montreal');
   let error = $state('');
 
   const CITIES = [
-    'Demo City',
-    'New York',
-    'Los Angeles',
-    'Chicago',
-    'Houston',
-    'Phoenix',
-    'Philadelphia',
-    'San Antonio',
-    'San Diego',
-    'Dallas',
+    'Montreal',
+    'Toronto',
+    'Vancouver',
+    'Ottawa',
+    'Calgary',
+    'Edmonton',
+    'Quebec City',
+    'Winnipeg',
+    'Halifax',
+    'Victoria',
   ];
 
   function handleSubmit() {

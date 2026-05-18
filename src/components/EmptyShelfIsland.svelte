@@ -18,7 +18,7 @@
   }
 
   function goToExplore() {
-    window.location.href = '/explore';
+    window.location.href = '/matches';
   }
 </script>
 
