@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import ProfileIsland from '../components/ProfileIsland.svelte';
+import ConnectionRequestsIsland from '../components/ConnectionRequestsIsland.svelte';
 import QaAuthInit from '../components/QaAuthInit.svelte';
 import { UserButton } from '@clerk/astro/components';
 import { env } from 'cloudflare:workers';
@@ -17,6 +18,7 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
         {!isQaMode && <UserButton />}
       </div>
 
+      <ConnectionRequestsIsland client:load />
       <ProfileIsland client:load />
     </main>
 </Layout>

@@ -1,7 +1,8 @@
 import { persistentAtom } from '@nanostores/persistent';
-import type { UserProfile, UserTopics, BookIntent } from '../lib/types';
+import type { UserProfile, UserTopics, BookIntent, LocationPrecision, ContactMethod, ContactVisibility } from '../lib/types';
 import { currentUserId } from './auth';
 import { shelf } from './shelf';
+import { getCityCoordinates, roundCoordinates } from '../lib/geo';
 
 const DEFAULT_TOPICS: UserTopics = {
   curated: [],
@@ -36,6 +37,14 @@ async function syncProfile(updates: Partial<UserProfile>): Promise<void> {
   if (updates.currentObsessions !== undefined) serverUpdates.currentObsessions = updates.currentObsessions;
   if (updates.topics?.curated !== undefined) serverUpdates.topicsCurated = updates.topics.curated;
   if (updates.topics?.freeform !== undefined) serverUpdates.topicsFreeform = updates.topics.freeform;
+  // Geolocation
+  if (updates.latitude !== undefined) serverUpdates.latitude = updates.latitude;
+  if (updates.longitude !== undefined) serverUpdates.longitude = updates.longitude;
+  if (updates.locationPrecision !== undefined) serverUpdates.locationPrecision = updates.locationPrecision;
+  // Contact
+  if (updates.contactMethod !== undefined) serverUpdates.contactMethod = updates.contactMethod;
+  if (updates.contactValue !== undefined) serverUpdates.contactValue = updates.contactValue;
+  if (updates.contactVisibility !== undefined) serverUpdates.contactVisibility = updates.contactVisibility;
   if (Object.keys(serverUpdates).length === 0) return;
   try {
     await fetch('/api/profile', {
@@ -90,6 +99,14 @@ interface ServerProfile {
   currentObsessions: string | null;
   topicsCurated: string | null;
   topicsFreeform: string | null;
+  // Geolocation
+  latitude: number | null;
+  longitude: number | null;
+  locationPrecision: string | null;
+  // Contact
+  contactMethod: string | null;
+  contactValue: string | null;
+  contactVisibility: string | null;
 }
 
 export async function loadProfileFromServer(): Promise<void> {
@@ -113,6 +130,14 @@ export async function loadProfileFromServer(): Promise<void> {
         freeform: sp.topicsFreeform ? JSON.parse(sp.topicsFreeform) : [],
         inferred: current.topics.inferred,
       },
+      // Geolocation
+      latitude: sp.latitude ?? undefined,
+      longitude: sp.longitude ?? undefined,
+      locationPrecision: (sp.locationPrecision as LocationPrecision) ?? 'city',
+      // Contact
+      contactMethod: (sp.contactMethod as ContactMethod) ?? undefined,
+      contactValue: sp.contactValue ?? undefined,
+      contactVisibility: (sp.contactVisibility as ContactVisibility) ?? 'hidden',
     });
   } catch (e) {
     console.error('Failed to load profile from server:', e);
@@ -176,4 +201,62 @@ export function refreshDerivedProfile(): void {
       profile.set({ ...current, lendingPersonality: derived });
     }
   }
+}
+
+export interface GeolocationResult {
+  success: boolean;
+  lat?: number;
+  lng?: number;
+  error?: string;
+}
+
+export async function requestGeolocation(precision: LocationPrecision = 'approximate'): Promise<GeolocationResult> {
+  if (!navigator.geolocation) {
+    return { success: false, error: 'Geolocation not supported' };
+  }
+
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords = roundCoordinates(
+          position.coords.latitude,
+          position.coords.longitude,
+          precision
+        );
+        updateProfile({
+          latitude: coords.lat,
+          longitude: coords.lng,
+          locationPrecision: precision,
+        });
+        resolve({ success: true, lat: coords.lat, lng: coords.lng });
+      },
+      (error) => {
+        resolve({ success: false, error: error.message });
+      },
+      { enableHighAccuracy: precision === 'exact', timeout: 10000 }
+    );
+  });
+}
+
+export function setLocationFromCity(city: string): void {
+  const coords = getCityCoordinates(city);
+  if (coords) {
+    updateProfile({
+      latitude: coords.lat,
+      longitude: coords.lng,
+      locationPrecision: 'city',
+    });
+  }
+}
+
+export function updateContactInfo(
+  method: ContactMethod,
+  value: string,
+  visibility: ContactVisibility
+): void {
+  updateProfile({
+    contactMethod: method,
+    contactValue: value,
+    contactVisibility: visibility,
+  });
 }

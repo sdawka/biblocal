@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Match, MatchFacet } from '../lib/types';
+  import { formatDistance } from '../lib/geo';
 
   interface Props {
     match: Match;
@@ -8,6 +9,12 @@
   }
 
   let { match, expanded = false, onToggle }: Props = $props();
+
+  let distanceDisplay = $derived(
+    match.distanceKm != null
+      ? formatDistance(match.distanceKm)
+      : match.user.city || ''
+  );
 
   let isStore = $derived(match.user.type === 'bookstore');
 
@@ -61,7 +68,7 @@
       {#if isStore && match.user.neighborhood}
         {match.user.neighborhood}
       {:else}
-        {match.user.distance}
+        {distanceDisplay}
       {/if}
     </span>
   </header>
@@ -124,6 +131,26 @@
 
       {#if !isStore && match.user.borrowStyle}
         <p class="borrow-style">"{match.user.borrowStyle}"</p>
+      {/if}
+
+      {#if !isStore && match.user.contactVisibility !== 'hidden'}
+        <div class="connect-section">
+          {#if match.user.contactVisibility === 'public' && match.user.contactValue}
+            <p class="contact-info">
+              {#if match.user.contactMethod === 'email'}
+                <a href={`mailto:${match.user.contactValue}`} onclick={(e) => e.stopPropagation()}>
+                  📧 {match.user.contactValue}
+                </a>
+              {:else}
+                {match.user.contactValue}
+              {/if}
+            </p>
+          {:else}
+            <button class="btn-connect" onclick={(e) => { e.stopPropagation(); }}>
+              Request to Connect
+            </button>
+          {/if}
+        </div>
       {/if}
     </div>
   {/if}
@@ -360,5 +387,50 @@
 
   .view-store a {
     font-weight: 500;
+  }
+
+  .connect-section {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--color-gold-pale);
+  }
+
+  .btn-connect {
+    width: 100%;
+    padding: 0.625rem 1rem;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-cream);
+    background: linear-gradient(to bottom, var(--color-mahogany-light), var(--color-mahogany));
+    border: 1px solid var(--color-mahogany);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .btn-connect:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(114, 47, 55, 0.3);
+  }
+
+  .contact-info {
+    margin: 0;
+    padding: 0.625rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--color-ink);
+    background: var(--color-paper);
+    border-radius: var(--radius-sm);
+    text-align: center;
+  }
+
+  .contact-info a {
+    color: var(--color-burgundy);
+    text-decoration: none;
+  }
+
+  .contact-info a:hover {
+    text-decoration: underline;
   }
 </style>

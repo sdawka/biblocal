@@ -74,6 +74,14 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
       'currentObsessions',
       'topicsCurated',
       'topicsFreeform',
+      // Geolocation
+      'latitude',
+      'longitude',
+      'locationPrecision',
+      // Contact
+      'contactMethod',
+      'contactValue',
+      'contactVisibility',
     ];
 
     const filtered: Record<string, unknown> = { updatedAt: new Date() };

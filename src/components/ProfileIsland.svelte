@@ -1,11 +1,14 @@
 <script lang="ts">
-  import { profile, updateProfile, deriveLendingPersonality, updateLendingPersonality } from '../stores/profile';
+  import { profile, updateProfile, deriveLendingPersonality, updateLendingPersonality, requestGeolocation, setLocationFromCity, updateContactInfo } from '../stores/profile';
   import { shelf, getInferredTopics } from '../stores/shelf';
-  import type { UserProfile } from '../lib/types';
+  import type { UserProfile, ContactMethod, ContactVisibility } from '../lib/types';
   import TopicPickerIsland from './TopicPickerIsland.svelte';
   import InterestConstellation from './InterestConstellation.svelte';
+  import { formatDistance } from '../lib/geo';
 
   let isEditing = $state(false);
+  let requestingLocation = $state(false);
+  let locationError = $state('');
   let editingPersonality = $state(false);
   let personalityInput = $state('');
   let showSaved = $state(false);
@@ -28,6 +31,11 @@
   let borrowStyle = $state('');
   let obsessions = $state('');
 
+  // Contact fields
+  let contactMethod = $state<ContactMethod | ''>('');
+  let contactValue = $state('');
+  let contactVisibility = $state<ContactVisibility>('hidden');
+
   let hasTopics = $derived(
     profileData.topics.curated.length +
     profileData.topics.freeform.length +
@@ -39,6 +47,9 @@
       profileData = { ...p };
       borrowStyle = p.borrowStyle ?? '';
       obsessions = p.currentObsessions?.join(', ') ?? '';
+      contactMethod = p.contactMethod ?? '';
+      contactValue = p.contactValue ?? '';
+      contactVisibility = p.contactVisibility ?? 'hidden';
     })
   );
 
@@ -77,6 +88,27 @@
   function clearPersonalityOverride() {
     const derived = deriveLendingPersonality();
     updateLendingPersonality(derived, false);
+  }
+
+  async function handleEnableLocation() {
+    requestingLocation = true;
+    locationError = '';
+    const result = await requestGeolocation('approximate');
+    requestingLocation = false;
+    if (!result.success) {
+      locationError = result.error || 'Could not get location';
+      // Fall back to city center
+      if (profileData.city) {
+        setLocationFromCity(profileData.city);
+      }
+    }
+  }
+
+  function handleContactSave() {
+    if (contactMethod && contactValue) {
+      updateContactInfo(contactMethod as ContactMethod, contactValue, contactVisibility);
+      showSavedIndicator();
+    }
   }
 
   function handleSave() {
@@ -150,6 +182,74 @@
           onchange={handleSave}
         />
       </div>
+
+      <div class="field location-field">
+        <label>Location</label>
+        {#if profileData.latitude && profileData.longitude}
+          <div class="location-status">
+            <span class="location-badge">
+              {#if profileData.locationPrecision === 'city'}
+                Using city center
+              {:else}
+                Your location (~100m precision)
+              {/if}
+            </span>
+            <button class="btn-small" onclick={handleEnableLocation} disabled={requestingLocation}>
+              {requestingLocation ? 'Getting...' : 'Update'}
+            </button>
+          </div>
+        {:else}
+          <button class="btn-location" onclick={handleEnableLocation} disabled={requestingLocation}>
+            {requestingLocation ? 'Getting location...' : 'Enable precise location'}
+          </button>
+          <p class="location-hint">Your location is stored approximately (~100m) and never shared with other users.</p>
+        {/if}
+        {#if locationError}
+          <p class="location-error">{locationError}</p>
+        {/if}
+      </div>
+    </section>
+
+    <section>
+      <h2>Contact Info</h2>
+      <p class="section-desc">Let matches connect with you. Only shared when you accept a connection request.</p>
+
+      <div class="field">
+        <label for="contact-method">How can people reach you?</label>
+        <select id="contact-method" bind:value={contactMethod} onchange={handleContactSave}>
+          <option value="">Select...</option>
+          <option value="email">Email</option>
+          <option value="social">Social media</option>
+          <option value="custom">Other</option>
+        </select>
+      </div>
+
+      {#if contactMethod}
+        <div class="field">
+          <label for="contact-value">
+            {#if contactMethod === 'email'}Email address
+            {:else if contactMethod === 'social'}Social handle or link
+            {:else}Contact info
+            {/if}
+          </label>
+          <input
+            id="contact-value"
+            type="text"
+            bind:value={contactValue}
+            placeholder={contactMethod === 'email' ? 'you@example.com' : contactMethod === 'social' ? '@handle or URL' : 'How to reach you'}
+            onblur={handleContactSave}
+          />
+        </div>
+
+        <div class="field">
+          <label for="contact-visibility">Visibility</label>
+          <select id="contact-visibility" bind:value={contactVisibility} onchange={handleContactSave}>
+            <option value="hidden">Hidden (no contact)</option>
+            <option value="on-request">On request (reveal when accepted)</option>
+            <option value="public">Public (visible on match cards)</option>
+          </select>
+        </div>
+      {/if}
     </section>
 
     <section>
@@ -780,5 +880,90 @@
     border-radius: var(--radius-xs, 3px);
     text-transform: uppercase;
     letter-spacing: 0.03em;
+  }
+
+  /* Location styles */
+  .location-field {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--color-gold-pale);
+  }
+
+  .location-status {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .location-badge {
+    padding: 0.375rem 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--color-forest);
+    background: rgba(34, 139, 34, 0.1);
+    border-radius: var(--radius-sm);
+  }
+
+  .btn-location {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-ink);
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .btn-location:hover:not(:disabled) {
+    border-color: var(--color-gold);
+    background: var(--color-gold-pale);
+  }
+
+  .btn-location:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-small {
+    padding: 0.375rem 0.75rem;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-ink);
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .btn-small:hover:not(:disabled) {
+    border-color: var(--color-gold);
+  }
+
+  .location-hint {
+    margin: 0.5rem 0 0;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--color-ink-faded);
+    font-style: italic;
+  }
+
+  .location-error {
+    margin: 0.5rem 0 0;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--color-burgundy);
+  }
+
+  .section-desc {
+    margin: -0.5rem 0 1rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--color-ink-faded);
   }
 </style>

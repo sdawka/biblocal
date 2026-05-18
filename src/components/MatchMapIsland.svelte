@@ -1,22 +1,66 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { matches } from '../stores/matches';
+  import { profile } from '../stores/profile';
   import { loadSeedUsers } from '../stores/users';
   import type { Match } from '../lib/types';
+  import { CITY_COORDINATES, formatDistance } from '../lib/geo';
   import MatchCardIsland from './MatchCardIsland.svelte';
 
   let matchList = $state<Match[]>([]);
   let expandedId = $state<string | null>(null);
   let mapContainer: HTMLDivElement;
   let map: any;
+  let markers: any[] = [];
 
   $effect(() =>
     matches.subscribe((m) => {
       matchList = m;
+      updateMarkers();
     })
   );
 
-  const MONTREAL = { lat: 45.5017, lng: -73.5673 };
+  function getMapCenter(): { lat: number; lng: number } {
+    const p = profile.get();
+    if (p.latitude && p.longitude) {
+      return { lat: p.latitude, lng: p.longitude };
+    }
+    if (p.city && CITY_COORDINATES[p.city]) {
+      return CITY_COORDINATES[p.city];
+    }
+    return CITY_COORDINATES['Montreal'];
+  }
+
+  async function updateMarkers() {
+    if (!map) return;
+    const L = await import('leaflet');
+
+    // Clear existing markers
+    markers.forEach(m => m.remove());
+    markers = [];
+
+    matchList.forEach((match) => {
+      const user = match.user;
+      if (user.latitude == null || user.longitude == null) return;
+
+      const isStore = user.type === 'bookstore';
+      const distanceLabel = match.distanceKm != null ? ` (${formatDistance(match.distanceKm)})` : '';
+
+      const marker = L.circleMarker([user.latitude, user.longitude], {
+        radius: isStore ? 10 : 8,
+        fillColor: isStore ? '#722F37' : '#B8860B',
+        fillOpacity: 0.9,
+        color: isStore ? '#4A1C24' : '#4A2C2A',
+        weight: 2,
+      })
+        .bindTooltip(`${isStore ? '🏪 ' : ''}${user.name}${distanceLabel}`, {
+          className: isStore ? 'victorian-tooltip store-tooltip' : 'victorian-tooltip',
+        })
+        .addTo(map);
+
+      markers.push(marker);
+    });
+  }
 
   onMount(async () => {
     await loadSeedUsers();
@@ -24,28 +68,28 @@
     const L = await import('leaflet');
     await import('leaflet/dist/leaflet.css');
 
-    map = L.map(mapContainer).setView([MONTREAL.lat, MONTREAL.lng], 13);
+    const center = getMapCenter();
+    map = L.map(mapContainer).setView([center.lat, center.lng], 13);
 
     L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; Stadia Maps &copy; OpenStreetMap contributors',
     }).addTo(map);
 
-    matchList.forEach((match, i) => {
-      const offset = i * 0.005 - 0.01;
-      const isStore = match.user.type === 'bookstore';
-
-      L.circleMarker([MONTREAL.lat + offset, MONTREAL.lng + offset * 2], {
-        radius: isStore ? 10 : 8,
-        fillColor: isStore ? '#722F37' : '#B8860B',
-        fillOpacity: 0.9,
-        color: isStore ? '#4A1C24' : '#4A2C2A',
+    // Add user's location marker
+    const p = profile.get();
+    if (p.latitude && p.longitude) {
+      L.circleMarker([p.latitude, p.longitude], {
+        radius: 6,
+        fillColor: '#228B22',
+        fillOpacity: 1,
+        color: '#145214',
         weight: 2,
       })
-        .bindTooltip(isStore ? `🏪 ${match.user.name}` : match.user.name, {
-          className: isStore ? 'victorian-tooltip store-tooltip' : 'victorian-tooltip',
-        })
+        .bindTooltip('You', { className: 'victorian-tooltip' })
         .addTo(map);
-    });
+    }
+
+    updateMarkers();
 
     return () => {
       map?.remove();

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -21,6 +21,14 @@ export const users = sqliteTable('users', {
   phone: text('phone'),
   specialties: text('specialties'), // JSON array
   addedBy: text('added_by'),
+  // Geolocation
+  latitude: real('latitude'),
+  longitude: real('longitude'),
+  locationPrecision: text('location_precision').default('city'),
+  // Contact/connection
+  contactMethod: text('contact_method'),
+  contactValue: text('contact_value'),
+  contactVisibility: text('contact_visibility').default('hidden'),
 });
 
 export const authCodes = sqliteTable('auth_codes', {
@@ -59,9 +67,20 @@ export const books = sqliteTable('books', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
+export const connectionRequests = sqliteTable('connection_requests', {
+  id: text('id').primaryKey(),
+  fromUserId: text('from_user_id').notNull().references(() => users.id),
+  toUserId: text('to_user_id').notNull().references(() => users.id),
+  status: text('status').notNull().default('pending'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  respondedAt: integer('responded_at', { mode: 'timestamp' }),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type AuthCode = typeof authCodes.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Book = typeof books.$inferSelect;
 export type NewBook = typeof books.$inferInsert;
+export type ConnectionRequest = typeof connectionRequests.$inferSelect;
+export type NewConnectionRequest = typeof connectionRequests.$inferInsert;

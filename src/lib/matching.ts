@@ -1,4 +1,11 @@
 import type { Book, UserProfile, Match, MatchFacets, MatchFacet } from './types';
+import { haversineDistance } from './geo';
+
+export interface LocationFilter {
+  lat: number;
+  lng: number;
+  radiusKm: number;
+}
 
 const WEIGHTS = {
   shelfTwin: 3,
@@ -127,11 +134,26 @@ function hasAnyMatch(facets: MatchFacets): boolean {
 export function calculateMatches(
   myBooks: Book[],
   myTopics: string[],
-  users: UserProfile[]
+  users: UserProfile[],
+  location?: LocationFilter
 ): Match[] {
   const matches: Match[] = [];
 
   for (const user of users) {
+    // Filter by distance if location provided
+    let distanceKm: number | undefined;
+    if (location && user.latitude != null && user.longitude != null) {
+      distanceKm = haversineDistance(
+        location.lat,
+        location.lng,
+        user.latitude,
+        user.longitude
+      );
+      if (distanceKm > location.radiusKm) {
+        continue;
+      }
+    }
+
     const theirBooks = user.shelf ?? [];
     const theirTopics = [
       ...(user.topics?.curated ?? []),
@@ -151,9 +173,17 @@ export function calculateMatches(
         user,
         facets,
         totalScore: calcTotalScore(facets),
+        distanceKm,
       });
     }
   }
 
-  return matches.sort((a, b) => b.totalScore - a.totalScore);
+  // Sort by distance first (if available), then by score
+  return matches.sort((a, b) => {
+    if (a.distanceKm != null && b.distanceKm != null) {
+      const distDiff = a.distanceKm - b.distanceKm;
+      if (Math.abs(distDiff) > 0.5) return distDiff;
+    }
+    return b.totalScore - a.totalScore;
+  });
 }

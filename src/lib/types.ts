@@ -15,6 +15,10 @@ export type BookStatus =
 
 export type EntityType = 'person' | 'bookstore';
 
+export type LocationPrecision = 'exact' | 'approximate' | 'city';
+export type ContactMethod = 'email' | 'social' | 'custom';
+export type ContactVisibility = 'hidden' | 'on-request' | 'public';
+
 export interface Book {
   id: string;
   isbn?: string;
@@ -48,7 +52,11 @@ export interface UserProfile {
   borrowStyle?: string;
   currentObsessions?: string[];
   shelf?: Book[];
-  distance?: string;
+  // Geolocation
+  latitude?: number;
+  longitude?: number;
+  locationPrecision?: LocationPrecision;
+  distanceKm?: number; // computed at match time, not stored
   // Lending personality (auto-derived from shelf intents)
   lendingPersonality?: string;
   lendingPersonalityOverride?: boolean;
@@ -61,6 +69,10 @@ export interface UserProfile {
   phone?: string;
   specialties?: string[];
   addedBy?: string;
+  // Contact fields
+  contactMethod?: ContactMethod;
+  contactValue?: string;
+  contactVisibility?: ContactVisibility;
 }
 
 export interface MatchFacet {
@@ -80,4 +92,19 @@ export interface Match {
   user: UserProfile;
   facets: MatchFacets;
   totalScore: number;
+  distanceKm?: number;
+}
+
+export type ConnectionStatus = 'pending' | 'accepted' | 'declined';
+
+export interface ConnectionRequest {
+  id: string;
+  fromUserId: string;
+  toUserId: string;
+  status: ConnectionStatus;
+  createdAt: number;
+  respondedAt?: number;
+  // Populated when fetching
+  fromUser?: UserProfile;
+  toUser?: UserProfile;
 }
