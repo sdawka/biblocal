@@ -119,12 +119,22 @@
           bind:value={name}
           placeholder="e.g., Argo Bookshop"
           disabled={loading}
+          aria-required="true"
+          aria-invalid={error && !name.trim() ? 'true' : undefined}
+          aria-describedby={error ? 'store-error' : undefined}
         />
       </div>
 
       <div class="field">
         <label for="neighborhood">Neighborhood *</label>
-        <select id="neighborhood" bind:value={neighborhood} disabled={loading}>
+        <select
+          id="neighborhood"
+          bind:value={neighborhood}
+          disabled={loading}
+          aria-required="true"
+          aria-invalid={error && !neighborhood ? 'true' : undefined}
+          aria-describedby={error ? 'store-error' : undefined}
+        >
           <option value="">Select neighborhood...</option>
           {#each MONTREAL_NEIGHBORHOODS as hood}
             <option value={hood}>{hood}</option>
@@ -140,6 +150,9 @@
           bind:value={address}
           placeholder="e.g., 1915 Ste-Catherine O, Montreal"
           disabled={loading}
+          aria-required="true"
+          aria-invalid={error && !address.trim() ? 'true' : undefined}
+          aria-describedby={error ? 'store-error' : undefined}
         />
       </div>
 
@@ -183,7 +196,7 @@
       </div>
 
       {#if error}
-        <p class="error">{error}</p>
+        <p class="error" id="store-error" role="alert">{error}</p>
       {/if}
 
       <button type="submit" class="submit-btn" disabled={loading}>
@@ -291,7 +304,8 @@
   }
 
   .specialty-chip {
-    padding: 0.25rem 0.5rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 44px;
     font-family: var(--font-body);
     font-size: 0.75rem;
     color: var(--color-ink-faded);
@@ -300,6 +314,8 @@
     border-radius: 2px;
     cursor: pointer;
     transition: all var(--transition-quick);
+    display: inline-flex;
+    align-items: center;
   }
 
   .specialty-chip:hover:not(:disabled) {

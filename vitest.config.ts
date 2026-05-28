@@ -7,4 +7,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ['tests/setup.ts'],
   },
+  resolve: {
+    alias: {
+      'cloudflare:workers': './tests/mocks/cloudflare-workers.ts',
+    },
+  },
 });

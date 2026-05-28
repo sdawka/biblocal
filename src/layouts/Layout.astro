@@ -23,14 +23,51 @@ const currentPath = Astro.url.pathname;
       <a href="/" class="logo">
         biblocal
       </a>
-      <div class="links">
+      <button
+        class="hamburger"
+        id="nav-toggle"
+        aria-label="Toggle navigation menu"
+        aria-expanded="false"
+        aria-controls="nav-links"
+      >
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+      <div class="links" id="nav-links">
         <a href="/shelf" class:list={{ active: currentPath === '/shelf' }}>Shelf</a>
         <a href="/matches" class:list={{ active: currentPath === '/matches' }}>Matches</a>
         <a href="/profile" class:list={{ active: currentPath === '/profile' }}>Profile</a>
-        <SignOutButton class="logout-btn">Log out</SignOutButton>
+        <span class="logout-wrapper"><SignOutButton>Log out</SignOutButton></span>
       </div>
     </nav>
     <slot />
+    <script>
+      const navToggle = document.getElementById('nav-toggle');
+      const navLinks = document.getElementById('nav-links');
+
+      navToggle?.addEventListener('click', () => {
+        const isExpanded = navToggle.getAttribute('aria-expanded') === 'true';
+        navToggle.setAttribute('aria-expanded', String(!isExpanded));
+        navLinks?.classList.toggle('open');
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!navToggle?.contains(e.target as Node) && !navLinks?.contains(e.target as Node)) {
+          navToggle?.setAttribute('aria-expanded', 'false');
+          navLinks?.classList.remove('open');
+        }
+      });
+
+      // Close menu on escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          navToggle?.setAttribute('aria-expanded', 'false');
+          navLinks?.classList.remove('open');
+        }
+      });
+    </script>
   </body>
 </html>
 
@@ -181,7 +218,7 @@ const currentPath = Astro.url.pathname;
     display: none;
   }
 
-  .links :global(.logout-btn) {
+  .logout-wrapper :global(button) {
     padding: 0.5rem 1.125rem;
     font-family: var(--font-display);
     font-size: 0.875rem;
@@ -196,8 +233,96 @@ const currentPath = Astro.url.pathname;
     opacity: 0.7;
   }
 
-  .links :global(.logout-btn:hover) {
+  .logout-wrapper :global(button:hover) {
     color: var(--color-cream);
     opacity: 1;
+  }
+
+  /* Hamburger menu button */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 44px;
+    height: 44px;
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    z-index: 10;
+  }
+
+  .hamburger-line {
+    width: 24px;
+    height: 2px;
+    background: var(--color-gold);
+    border-radius: 1px;
+    transition: all var(--transition-quick);
+  }
+
+  .hamburger[aria-expanded="true"] .hamburger-line:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+
+  .hamburger[aria-expanded="true"] .hamburger-line:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger[aria-expanded="true"] .hamburger-line:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .hamburger {
+      display: flex;
+    }
+
+    .links {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      gap: 0;
+      padding: 0;
+      background: var(--color-mahogany);
+      border-bottom: 2px solid var(--color-gold);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .links.open {
+      max-height: 300px;
+      opacity: 1;
+      padding: 0.5rem 0;
+    }
+
+    .links a,
+    .logout-wrapper :global(button) {
+      padding: 0.875rem 2rem;
+      border-radius: 0;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+
+    .links a.active {
+      background: linear-gradient(
+        to right,
+        var(--color-gold),
+        var(--color-gold-light) 50%,
+        var(--color-gold)
+      );
+    }
+
+    .links a::after {
+      display: none;
+    }
   }
 </style>

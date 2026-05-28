@@ -8,6 +8,7 @@ type Env = { DB: D1Database };
 import { eq } from 'drizzle-orm';
 import { getDb } from '../../../db/client';
 import { users, books } from '../../../db/schema';
+import { getUserId } from '../../../lib/auth';
 
 export const GET: APIRoute = async ({ params, locals }) => {
   try {
@@ -41,8 +42,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
       .from(books)
       .where(eq(books.userId, storeId));
 
-    const auth = locals.auth();
-    const canEdit = auth.userId === store.addedBy;
+    const userId = getUserId(locals);
+    const canEdit = userId === store.addedBy;
 
     return new Response(
       JSON.stringify({
@@ -63,6 +64,161 @@ export const GET: APIRoute = async ({ params, locals }) => {
     );
   } catch (e) {
     console.error('Get store error:', e);
+    return new Response(JSON.stringify({ error: 'Server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
+
+interface UpdateStoreBody {
+  name?: string;
+  neighborhood?: string;
+  address?: string;
+  website?: string;
+  phone?: string;
+  specialties?: string[];
+  city?: string;
+}
+
+// PATCH /api/stores/[id] - update store (owner only)
+export const PATCH: APIRoute = async ({ params, request, locals }) => {
+  try {
+    const userId = getUserId(locals);
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Not authenticated' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const db = getDb((env as Env).DB);
+    const storeId = params.id;
+
+    if (!storeId) {
+      return new Response(JSON.stringify({ error: 'Store ID required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const storeResults = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, storeId))
+      .limit(1);
+
+    if (storeResults.length === 0 || storeResults[0].type !== 'bookstore') {
+      return new Response(JSON.stringify({ error: 'Store not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const store = storeResults[0];
+
+    if (store.addedBy !== userId) {
+      return new Response(JSON.stringify({ error: 'Not authorized to update this store' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const body = (await request.json()) as UpdateStoreBody;
+    const allowedFields = ['name', 'neighborhood', 'address', 'website', 'phone', 'specialties', 'city'];
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+
+    for (const field of allowedFields) {
+      if (body[field as keyof UpdateStoreBody] !== undefined) {
+        const value = body[field as keyof UpdateStoreBody];
+        if (field === 'specialties' && Array.isArray(value)) {
+          updates[field] = JSON.stringify(value);
+        } else {
+          updates[field] = value;
+        }
+      }
+    }
+
+    await db.update(users).set(updates).where(eq(users.id, storeId));
+
+    const updated = await db.select().from(users).where(eq(users.id, storeId)).limit(1);
+
+    return new Response(
+      JSON.stringify({
+        store: {
+          ...updated[0],
+          specialties: updated[0].specialties ? JSON.parse(updated[0].specialties) : [],
+        },
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  } catch (e) {
+    console.error('Update store error:', e);
+    return new Response(JSON.stringify({ error: 'Server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
+
+// DELETE /api/stores/[id] - delete store (owner only, cascades books)
+export const DELETE: APIRoute = async ({ params, locals }) => {
+  try {
+    const userId = getUserId(locals);
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Not authenticated' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const db = getDb((env as Env).DB);
+    const storeId = params.id;
+
+    if (!storeId) {
+      return new Response(JSON.stringify({ error: 'Store ID required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const storeResults = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, storeId))
+      .limit(1);
+
+    if (storeResults.length === 0 || storeResults[0].type !== 'bookstore') {
+      return new Response(JSON.stringify({ error: 'Store not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const store = storeResults[0];
+
+    if (store.addedBy !== userId) {
+      return new Response(JSON.stringify({ error: 'Not authorized to delete this store' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Delete books first (cascade)
+    await db.delete(books).where(eq(books.userId, storeId));
+
+    // Delete the store
+    await db.delete(users).where(eq(users.id, storeId));
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (e) {
+    console.error('Delete store error:', e);
     return new Response(JSON.stringify({ error: 'Server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

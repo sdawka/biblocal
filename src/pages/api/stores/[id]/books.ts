@@ -8,6 +8,7 @@ type Env = { DB: D1Database };
 import { eq } from 'drizzle-orm';
 import { getDb } from '../../../../db/client';
 import { users, books } from '../../../../db/schema';
+import { getUserId } from '../../../../lib/auth';
 
 interface AddBookBody {
   title: string;
@@ -16,12 +17,16 @@ interface AddBookBody {
   coverUrl?: string;
   status?: string;
   subjects?: string[];
+  // New three-dimension model
+  visibility?: 'private' | 'visible';
+  ownership?: 'have' | 'seeking';
+  intents?: ('borrowable' | 'discussable' | 'giftable' | 'class-resource')[];
 }
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   try {
-    const auth = locals.auth();
-    if (!auth.userId) {
+    const userId = getUserId(locals);
+    if (!userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -53,7 +58,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 
     const store = storeResults[0];
 
-    if (store.addedBy !== auth.userId) {
+    if (store.addedBy !== userId) {
       return new Response(JSON.stringify({ error: 'Not authorized to add books to this store' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
@@ -80,6 +85,10 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       isbn: body.isbn || null,
       coverUrl: body.coverUrl || null,
       status: body.status || 'visible',
+      // New three-dimension model
+      visibility: body.visibility || 'visible',
+      ownership: body.ownership || 'have',
+      intents: body.intents ? JSON.stringify(body.intents) : '[]',
       addedVia: 'manual',
       subjects: body.subjects ? JSON.stringify(body.subjects) : null,
       createdAt: now,

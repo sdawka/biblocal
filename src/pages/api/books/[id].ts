@@ -96,7 +96,20 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
       });
     }
 
-    // Delete only if owned by user
+    // Check ownership before deleting
+    const existing = await db
+      .select()
+      .from(books)
+      .where(and(eq(books.id, bookId), eq(books.userId, userId)))
+      .limit(1);
+
+    if (existing.length === 0) {
+      return new Response(JSON.stringify({ error: 'Book not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     await db
       .delete(books)
       .where(and(eq(books.id, bookId), eq(books.userId, userId)));

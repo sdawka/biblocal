@@ -5,20 +5,26 @@ import { currentUserId } from './auth';
 export const connectionRequests = atom<ConnectionRequest[]>([]);
 export const connectionsLoading = atom(false);
 
-export const incomingRequests = computed(connectionRequests, (requests) =>
-  requests.filter((r) => r.toUserId === currentUserId.get() && r.status === 'pending')
+export const incomingRequests = computed(
+  [connectionRequests, currentUserId],
+  (requests, userId) =>
+    requests.filter((r) => r.toUserId === userId && r.status === 'pending')
 );
 
-export const outgoingRequests = computed(connectionRequests, (requests) =>
-  requests.filter((r) => r.fromUserId === currentUserId.get())
+export const outgoingRequests = computed(
+  [connectionRequests, currentUserId],
+  (requests, userId) =>
+    requests.filter((r) => r.fromUserId === userId)
 );
 
-export const acceptedConnections = computed(connectionRequests, (requests) => {
-  const userId = currentUserId.get();
-  return requests.filter(
-    (r) => r.status === 'accepted' && (r.fromUserId === userId || r.toUserId === userId)
-  );
-});
+export const acceptedConnections = computed(
+  [connectionRequests, currentUserId],
+  (requests, userId) => {
+    return requests.filter(
+      (r) => r.status === 'accepted' && (r.fromUserId === userId || r.toUserId === userId)
+    );
+  }
+);
 
 export async function loadConnections(): Promise<void> {
   if (!currentUserId.get()) return;

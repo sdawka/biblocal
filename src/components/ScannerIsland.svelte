@@ -10,9 +10,11 @@
 
   let videoRef: HTMLDivElement | null = $state(null);
   let fileInputRef: HTMLInputElement | null = $state(null);
+  let dialogRef: HTMLDivElement | null = $state(null);
   let hasCamera = $state(true);
   let error = $state('');
   let decoding = $state(false);
+  let previousActiveElement: Element | null = null;
 
   const BARCODE_READERS = ['ean_reader', 'ean_8_reader'];
 
@@ -24,6 +26,49 @@
       Quagga.stop();
     };
   });
+
+  // Focus trap and restoration
+  $effect(() => {
+    previousActiveElement = document.activeElement;
+
+    // Focus the first focusable element in the dialog
+    const focusableElements = dialogRef?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusableElements && focusableElements.length > 0) {
+      focusableElements[0].focus();
+    }
+
+    return () => {
+      // Restore focus on close
+      if (previousActiveElement && previousActiveElement instanceof HTMLElement) {
+        previousActiveElement.focus();
+      }
+    };
+  });
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      onClose();
+      return;
+    }
+
+    if (event.key === 'Tab' && dialogRef) {
+      const focusableElements = dialogRef.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement?.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement?.focus();
+      }
+    }
+  }
 
   async function initScanner() {
     try {
@@ -104,8 +149,17 @@
   }
 </script>
 
-<div class="scanner-backdrop" onclick={handleBackdropClick} role="presentation">
-  <div class="scanner-sheet">
+<div
+  class="scanner-backdrop"
+  onclick={handleBackdropClick}
+  onkeydown={handleKeyDown}
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="scanner-title"
+  bind:this={dialogRef}
+>
+  <div class="scanner-sheet" role="document">
+    <h2 id="scanner-title" class="visually-hidden">Scan ISBN Barcode</h2>
     <div class="drag-handle"></div>
 
     {#if hasCamera}
@@ -123,14 +177,25 @@
     {/if}
 
     {#if error}
-      <p class="error">{error}</p>
+      <p class="error" role="alert">{error}</p>
     {/if}
 
     <div class="actions">
-      <button type="button" class="upload-btn" onclick={triggerFileInput} disabled={decoding}>
+      <button
+        type="button"
+        class="upload-btn"
+        onclick={triggerFileInput}
+        disabled={decoding}
+        aria-label={decoding ? 'Scanning barcode image' : 'Upload a photo of ISBN barcode'}
+      >
         {decoding ? 'Scanning...' : '📷 Upload Photo'}
       </button>
-      <button type="button" class="cancel-btn" onclick={onClose}>
+      <button
+        type="button"
+        class="cancel-btn"
+        onclick={onClose}
+        aria-label="Close scanner"
+      >
         Cancel
       </button>
     </div>
@@ -147,6 +212,18 @@
 </div>
 
 <style>
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .scanner-backdrop {
     position: fixed;
     inset: 0;

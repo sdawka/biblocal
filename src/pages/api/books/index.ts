@@ -41,11 +41,16 @@ export const GET: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    // Public - all books with pagination
+    // Public - all visible books with pagination (excludes private books)
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '100', 10), 500);
     const offset = parseInt(url.searchParams.get('offset') || '0', 10);
 
-    const allBooks = await db.select().from(books).limit(limit).offset(offset);
+    const allBooks = await db
+      .select()
+      .from(books)
+      .where(eq(books.visibility, 'visible'))
+      .limit(limit)
+      .offset(offset);
     return new Response(JSON.stringify({ books: allBooks, pagination: { limit, offset } }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

@@ -1,12 +1,14 @@
 import type { APIRoute } from 'astro';
 
 export const prerender = false;
+import { eq, like, and, sql } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 
 type Env = { DB: D1Database };
 
 import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
+import { getUserId } from '../../lib/auth';
 
 interface CreateStoreBody {
   name: string;
@@ -18,10 +20,77 @@ interface CreateStoreBody {
   city?: string;
 }
 
+// GET /api/stores - list stores with pagination and filters
+export const GET: APIRoute = async ({ url }) => {
+  try {
+    const db = getDb((env as Env).DB);
+
+    // Parse query params
+    const city = url.searchParams.get('city');
+    const neighborhood = url.searchParams.get('neighborhood');
+    const search = url.searchParams.get('search');
+    const page = parseInt(url.searchParams.get('page') || '1', 10);
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 100);
+    const offset = (page - 1) * limit;
+
+    // Build conditions
+    const conditions = [eq(users.type, 'bookstore')];
+    if (city) {
+      conditions.push(eq(users.city, city));
+    }
+    if (neighborhood) {
+      conditions.push(eq(users.neighborhood, neighborhood));
+    }
+    if (search) {
+      conditions.push(like(users.name, `%${search}%`));
+    }
+
+    // Get total count
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(and(...conditions));
+    const total = countResult[0]?.count || 0;
+
+    // Get stores
+    const stores = await db
+      .select()
+      .from(users)
+      .where(and(...conditions))
+      .limit(limit)
+      .offset(offset);
+
+    return new Response(
+      JSON.stringify({
+        stores: stores.map((s) => ({
+          ...s,
+          specialties: s.specialties ? JSON.parse(s.specialties) : [],
+        })),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  } catch (e) {
+    console.error('List stores error:', e);
+    return new Response(JSON.stringify({ error: 'Server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
+
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const auth = locals.auth();
-    if (!auth.userId) {
+    const userId = getUserId(locals);
+    if (!userId) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -52,7 +121,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       website: body.website || null,
       phone: body.phone || null,
       specialties: body.specialties ? JSON.stringify(body.specialties) : null,
-      addedBy: auth.userId,
+      addedBy: userId,
       createdAt: now,
       updatedAt: now,
     });

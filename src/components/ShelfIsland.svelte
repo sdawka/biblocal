@@ -120,12 +120,18 @@
   {:else}
     {#if booksIHave.length > 0}
       <section class="shelf-section">
-        <button class="section-header" onclick={() => haveExpanded = !haveExpanded}>
-          <span class="collapse-icon">{haveExpanded ? '▼' : '▶'}</span>
+        <button
+          class="section-header"
+          onclick={() => haveExpanded = !haveExpanded}
+          aria-expanded={haveExpanded}
+          aria-controls="books-i-have-grid"
+          aria-label={haveExpanded ? 'Collapse books I have section' : 'Expand books I have section'}
+        >
+          <span class="collapse-icon" aria-hidden="true">{haveExpanded ? '▼' : '▶'}</span>
           <h3>Books I Have ({booksIHave.length})</h3>
         </button>
         {#if haveExpanded}
-          <div class="grid">
+          <div class="grid" id="books-i-have-grid">
             {#each booksIHave as book, i (book.id)}
               <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
                 <BookCard
@@ -141,12 +147,18 @@
 
     {#if booksImSeeking.length > 0}
       <section class="shelf-section seeking">
-        <button class="section-header" onclick={() => seekingExpanded = !seekingExpanded}>
-          <span class="collapse-icon">{seekingExpanded ? '▼' : '▶'}</span>
+        <button
+          class="section-header"
+          onclick={() => seekingExpanded = !seekingExpanded}
+          aria-expanded={seekingExpanded}
+          aria-controls="books-seeking-grid"
+          aria-label={seekingExpanded ? 'Collapse books I am seeking section' : 'Expand books I am seeking section'}
+        >
+          <span class="collapse-icon" aria-hidden="true">{seekingExpanded ? '▼' : '▶'}</span>
           <h3>Books I'm Seeking ({booksImSeeking.length})</h3>
         </button>
         {#if seekingExpanded}
-          <div class="grid">
+          <div class="grid" id="books-seeking-grid">
             {#each booksImSeeking as book, i (book.id)}
               <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
                 <BookCard
@@ -214,6 +226,7 @@
 
   .pill {
     padding: 0.4rem 0.9rem;
+    min-height: 44px;
     font-family: var(--font-display);
     font-size: 0.85rem;
     font-weight: 500;
@@ -223,6 +236,8 @@
     border-radius: 9999px;
     cursor: pointer;
     transition: all var(--transition-quick);
+    display: inline-flex;
+    align-items: center;
   }
 
   .pill:hover {

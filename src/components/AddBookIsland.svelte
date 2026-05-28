@@ -236,12 +236,14 @@
             bind:value={isbn}
             placeholder="Enter ISBN (e.g., 9780465026562)"
             disabled={loading}
+            aria-invalid={error && mode === 'isbn' ? 'true' : undefined}
+            aria-describedby={error && mode === 'isbn' ? 'isbn-error' : undefined}
           />
           <button
             type="button"
             class="scan-btn"
             onclick={openScanner}
-            title="Scan barcode"
+            aria-label="Scan ISBN barcode with camera"
           >
             📷
           </button>
@@ -257,14 +259,28 @@
           handleManualSubmit();
         }}
       >
-        <input type="text" bind:value={title} placeholder="Book title" />
-        <input type="text" bind:value={author} placeholder="Author" />
+        <input
+          type="text"
+          bind:value={title}
+          placeholder="Book title"
+          aria-label="Book title"
+          aria-invalid={error && mode === 'manual' && !title.trim() ? 'true' : undefined}
+          aria-describedby={error && mode === 'manual' ? 'manual-error' : undefined}
+        />
+        <input
+          type="text"
+          bind:value={author}
+          placeholder="Author"
+          aria-label="Author name"
+          aria-invalid={error && mode === 'manual' && !author.trim() ? 'true' : undefined}
+          aria-describedby={error && mode === 'manual' ? 'manual-error' : undefined}
+        />
         <button type="submit">Preview Book</button>
       </form>
     {/if}
 
     {#if error}
-      <p class="error">{error}</p>
+      <p class="error" id={mode === 'isbn' ? 'isbn-error' : 'manual-error'} role="alert">{error}</p>
     {/if}
   {/if}
 

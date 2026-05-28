@@ -50,7 +50,11 @@
         {#if readonly}
           <span class="badge intent">{INTENT_LABELS[intent]}</span>
         {:else}
-          <button class="badge intent active" onclick={() => toggleIntent(intent)}>
+          <button
+            class="badge intent active"
+            onclick={() => toggleIntent(intent)}
+            aria-label="Remove {INTENT_LABELS[intent]} intent from {book.title}"
+          >
             {INTENT_LABELS[intent]} ✕
           </button>
         {/if}
@@ -199,6 +203,11 @@
   .badge.intent.active {
     cursor: pointer;
     transition: opacity var(--transition-quick);
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .badge.intent.active:hover {

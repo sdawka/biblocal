@@ -18,7 +18,7 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
         {!isQaMode && <UserButton />}
       </div>
 
-      <ConnectionRequestsIsland client:load />
+      <ConnectionRequestsIsland client:idle />
       <ProfileIsland client:load />
     </main>
 </Layout>

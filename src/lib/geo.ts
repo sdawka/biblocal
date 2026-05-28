@@ -36,6 +36,39 @@ export function haversineDistance(
   return R * c;
 }
 
+/**
+ * Find the nearest city center to the given coordinates.
+ * Returns the city center coordinates if within reasonable distance, otherwise returns approximate coords.
+ */
+export function findNearestCityCenter(
+  lat: number,
+  lng: number
+): { lat: number; lng: number; city?: string } {
+  let nearestCity: string | undefined;
+  let nearestDistance = Infinity;
+  let nearestCoords: { lat: number; lng: number } | undefined;
+
+  for (const [city, coords] of Object.entries(CITY_COORDINATES)) {
+    const distance = haversineDistance(lat, lng, coords.lat, coords.lng);
+    // Only consider cities within 50km as "the same city"
+    if (distance < nearestDistance && distance < 50) {
+      nearestDistance = distance;
+      nearestCity = city;
+      nearestCoords = coords;
+    }
+  }
+
+  if (nearestCoords && nearestCity) {
+    return { ...nearestCoords, city: nearestCity };
+  }
+
+  // No city found within range, return approximate coords
+  return {
+    lat: Math.round(lat * 100) / 100,
+    lng: Math.round(lng * 100) / 100,
+  };
+}
+
 export function roundCoordinates(
   lat: number,
   lng: number,
@@ -44,7 +77,11 @@ export function roundCoordinates(
   if (precision === 'exact') {
     return { lat, lng };
   }
-  // 3 decimal places ≈ 100m precision
+  if (precision === 'city') {
+    const cityResult = findNearestCityCenter(lat, lng);
+    return { lat: cityResult.lat, lng: cityResult.lng };
+  }
+  // approximate: 3 decimal places ≈ 100m precision
   return {
     lat: Math.round(lat * 1000) / 1000,
     lng: Math.round(lng * 1000) / 1000,

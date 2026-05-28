@@ -20,7 +20,7 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
         {!isQaMode && <UserButton />}
       </div>
 
-      <PromptIsland client:load context="shelf" />
+      <PromptIsland client:idle context="shelf" />
 
       <div class="add-book-section">
         <AddBookIsland client:load />
@@ -28,10 +28,10 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
 
       <details class="import-section">
         <summary>Import from Goodreads</summary>
-        <ImportIsland client:load />
+        <ImportIsland client:visible />
       </details>
 
-      <ShelfContainer client:load />
+      <ShelfContainer client:idle />
     </main>
 </Layout>
 

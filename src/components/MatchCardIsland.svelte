@@ -237,7 +237,8 @@
   }
 
   .facet-badge {
-    padding: 0.2rem 0.5rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 44px;
     font-size: 0.8rem;
     background: linear-gradient(
       to bottom,
@@ -250,6 +251,9 @@
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.4),
       0 1px 2px rgba(0, 0, 0, 0.1);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
   }
 
   .details {

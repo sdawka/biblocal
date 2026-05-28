@@ -10,8 +10,7 @@ export type BookStatus =
   | 'borrowable'
   | 'discussable'
   | 'giftable'
-  | 'class-resource'
-  | 'seeking-home';
+  | 'class-resource';
 
 export type EntityType = 'person' | 'bookstore';
 

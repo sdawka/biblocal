@@ -21,7 +21,7 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
         </div>
       </div>
 
-      <PromptIsland client:load context="matches" />
+      <PromptIsland client:idle context="matches" />
 
       <MatchMapIsland client:load />
     </main>
