@@ -59,14 +59,14 @@
       <span class="filter-label">I...</span>
       <div class="filter-pills">
         <button
-          class="pill ownership"
+          class="filter-pill ownership"
           class:active={filters.ownership.includes('have')}
           onclick={() => toggleOwnershipFilter('have')}
         >
           have {#if ownershipCounts.have > 0}<span class="count">{ownershipCounts.have}</span>{/if}
         </button>
         <button
-          class="pill ownership"
+          class="filter-pill ownership"
           class:active={filters.ownership.includes('seeking')}
           onclick={() => toggleOwnershipFilter('seeking')}
         >
@@ -80,7 +80,7 @@
       <div class="filter-pills">
         {#each INTENT_OPTIONS as opt}
           <button
-            class="pill intent"
+            class="filter-pill intent"
             class:active={filters.intents.includes(opt.value)}
             onclick={() => toggleIntentFilter(opt.value)}
           >
@@ -94,7 +94,7 @@
       <span class="filter-label"></span>
       <div class="filter-pills">
         <button
-          class="pill visibility"
+          class="filter-pill visibility"
           class:active={filters.visibility.includes('private')}
           onclick={() => toggleVisibilityFilter('private')}
         >
@@ -224,7 +224,7 @@
     gap: 0.5rem;
   }
 
-  .pill {
+  .filter-pill {
     padding: 0.4rem 0.9rem;
     min-height: 44px;
     font-family: var(--font-display);
@@ -240,30 +240,30 @@
     align-items: center;
   }
 
-  .pill:hover {
+  .filter-pill:hover {
     border-color: var(--color-gold);
     color: var(--color-ink);
   }
 
-  .pill.ownership.active {
+  .filter-pill.ownership.active {
     color: var(--color-cream);
     background: var(--color-forest);
     border-color: var(--color-forest-dark);
   }
 
-  .pill.intent.active {
+  .filter-pill.intent.active {
     color: var(--color-cream);
     background: var(--color-burgundy);
     border-color: var(--color-burgundy-dark);
   }
 
-  .pill.visibility.active {
+  .filter-pill.visibility.active {
     color: var(--color-paper);
     background: var(--color-ink-faded);
     border-color: var(--color-ink);
   }
 
-  .pill .count {
+  .filter-pill .count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -278,7 +278,7 @@
     border-radius: 9999px;
   }
 
-  .pill.active .count {
+  .filter-pill.active .count {
     background: rgba(255, 255, 255, 0.25);
     color: inherit;
   }
