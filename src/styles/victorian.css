@@ -907,6 +907,7 @@ body::after {
 
 /* Section header with flourish underline */
 .section-header--flourish::after {
+  height: 2px;
   background: linear-gradient(
     to right,
     transparent,
@@ -915,7 +916,6 @@ body::after {
     var(--color-gold-pale) 90%,
     transparent
   );
-  height: 2px;
 }
 
 /* Section header with decorative brackets */
