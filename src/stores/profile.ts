@@ -4,6 +4,16 @@ import { currentUserId } from './auth';
 import { shelf } from './shelf';
 import { getCityCoordinates, roundCoordinates } from '../lib/geo';
 
+function safeJsonDecode<T>(defaultValue: T) {
+  return (str: string): T => {
+    try {
+      return JSON.parse(str);
+    } catch {
+      return defaultValue;
+    }
+  };
+}
+
 const DEFAULT_TOPICS: UserTopics = {
   curated: [],
   freeform: [],
@@ -18,14 +28,15 @@ const DEFAULT_PROFILE: UserProfile = {
   topics: DEFAULT_TOPICS,
 };
 
-const jsonEncoder = {
+export const profile = persistentAtom<UserProfile>('biblocal:profile:v1', DEFAULT_PROFILE, {
   encode: JSON.stringify,
-  decode: JSON.parse,
-};
+  decode: safeJsonDecode(DEFAULT_PROFILE),
+});
 
-export const profile = persistentAtom<UserProfile>('biblocal:profile:v1', DEFAULT_PROFILE, jsonEncoder);
-
-export const dismissedPrompts = persistentAtom<string[]>('biblocal:dismissed:v1', [], jsonEncoder);
+export const dismissedPrompts = persistentAtom<string[]>('biblocal:dismissed:v1', [], {
+  encode: JSON.stringify,
+  decode: safeJsonDecode([]),
+});
 
 async function syncProfile(updates: Partial<UserProfile>): Promise<void> {
   if (!currentUserId.get()) return;
