@@ -565,7 +565,7 @@ main {
   background: var(--color-mahogany);
 }
 
-/* Warm vignette on page edges — very subtle */
+/* Warm vignette on page edges */
 body::after {
   content: '';
   position: fixed;
@@ -576,8 +576,13 @@ body::after {
   pointer-events: none;
   background: radial-gradient(
     ellipse at center,
-    transparent 65%,
-    rgba(74, 44, 42, 0.05) 100%
+    transparent 60%,
+    rgba(74, 44, 42, 0.07) 100%
+  ),
+  radial-gradient(
+    ellipse at center,
+    transparent 70%,
+    rgba(184, 134, 11, 0.02) 100%
   );
   z-index: 9998;
 }
