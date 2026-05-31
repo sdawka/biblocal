@@ -15,6 +15,10 @@ const WEIGHTS = {
   classChain: 1,
 };
 
+// Filter out private books to prevent privacy leaks in matching
+const filterVisible = (books: Book[] | undefined): Book[] =>
+  (books ?? []).filter((b) => b.visibility !== 'private');
+
 function calcShelfTwin(myBooks: Book[], theirBooks: Book[]): MatchFacet {
   const myIsbns = new Set(
     myBooks
@@ -139,6 +143,9 @@ export function calculateMatches(
 ): Match[] {
   const matches: Match[] = [];
 
+  // Filter out private books from my shelf to prevent them from being used in matching
+  const myVisibleBooks = filterVisible(myBooks);
+
   for (const user of users) {
     // Filter by distance if location provided
     let distanceKm: number | undefined;
@@ -154,18 +161,19 @@ export function calculateMatches(
       }
     }
 
-    const theirBooks = user.shelf ?? [];
+    // Filter out private books from their shelf to prevent titles leaking
+    const theirBooks = filterVisible(user.shelf);
     const theirTopics = [
       ...(user.topics?.curated ?? []),
       ...(user.topics?.inferred ?? []),
     ];
 
     const facets: MatchFacets = {
-      shelfTwin: calcShelfTwin(myBooks, theirBooks),
-      readingMentor: calcReadingMentor(myBooks, theirBooks),
-      localSource: calcLocalSource(myBooks, theirBooks),
+      shelfTwin: calcShelfTwin(myVisibleBooks, theirBooks),
+      readingMentor: calcReadingMentor(myVisibleBooks, theirBooks),
+      localSource: calcLocalSource(myVisibleBooks, theirBooks),
       discussionMatch: calcDiscussionMatch(myTopics, theirTopics),
-      classChain: calcClassChain(myBooks, theirBooks),
+      classChain: calcClassChain(myVisibleBooks, theirBooks),
     };
 
     if (hasAnyMatch(facets)) {

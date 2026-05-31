@@ -306,6 +306,143 @@ describe('calculateMatches', () => {
     });
   });
 
+  describe('private book exclusion', () => {
+    it('excludes private books from shelfTwin matching', () => {
+      const myBooks = [
+        makeBook({ isbn: '123', title: 'Visible Book', visibility: 'visible' }),
+        makeBook({ isbn: '456', title: 'Private Book', visibility: 'private' }),
+      ];
+
+      const otherUser = makeUser({
+        shelf: [
+          makeBook({ isbn: '123', title: 'Visible Book', visibility: 'visible' }),
+          makeBook({ isbn: '456', title: 'Private Book', visibility: 'visible' }),
+        ],
+      });
+
+      const matches = calculateMatches(myBooks, [], [otherUser]);
+
+      expect(matches).toHaveLength(1);
+      expect(matches[0].facets.shelfTwin.count).toBe(1);
+      expect(matches[0].facets.shelfTwin.items).toContain('Visible Book');
+      expect(matches[0].facets.shelfTwin.items).not.toContain('Private Book');
+    });
+
+    it('excludes other users private books from shelfTwin matching', () => {
+      const myBooks = [
+        makeBook({ isbn: '123', title: 'Book A', visibility: 'visible' }),
+        makeBook({ isbn: '456', title: 'Book B', visibility: 'visible' }),
+      ];
+
+      const otherUser = makeUser({
+        shelf: [
+          makeBook({ isbn: '123', title: 'Book A', visibility: 'visible' }),
+          makeBook({ isbn: '456', title: 'Book B', visibility: 'private' }),
+        ],
+      });
+
+      const matches = calculateMatches(myBooks, [], [otherUser]);
+
+      expect(matches).toHaveLength(1);
+      expect(matches[0].facets.shelfTwin.count).toBe(1);
+      expect(matches[0].facets.shelfTwin.items).toContain('Book A');
+      expect(matches[0].facets.shelfTwin.items).not.toContain('Book B');
+    });
+
+    it('excludes private books from readingMentor matching', () => {
+      const myBooks = [
+        makeBook({ isbn: '123', ownership: 'seeking', visibility: 'visible' }),
+        makeBook({ isbn: '456', ownership: 'seeking', visibility: 'private' }),
+      ];
+
+      const mentor = makeUser({
+        shelf: [
+          makeBook({ isbn: '123', ownership: 'have', intents: ['discussable'], title: 'Visible Seek', visibility: 'visible' }),
+          makeBook({ isbn: '456', ownership: 'have', intents: ['discussable'], title: 'Private Seek', visibility: 'visible' }),
+        ],
+      });
+
+      const matches = calculateMatches(myBooks, [], [mentor]);
+
+      expect(matches).toHaveLength(1);
+      expect(matches[0].facets.readingMentor.count).toBe(1);
+      expect(matches[0].facets.readingMentor.items).toContain('Visible Seek');
+      expect(matches[0].facets.readingMentor.items).not.toContain('Private Seek');
+    });
+
+    it('excludes other users private books from readingMentor results', () => {
+      const myBooks = [
+        makeBook({ isbn: '123', ownership: 'seeking', visibility: 'visible' }),
+      ];
+
+      const mentor = makeUser({
+        shelf: [
+          makeBook({ isbn: '123', ownership: 'have', intents: ['discussable'], title: 'Secret Book', visibility: 'private' }),
+        ],
+      });
+
+      const matches = calculateMatches(myBooks, [], [mentor]);
+
+      expect(matches).toHaveLength(0);
+    });
+
+    it('excludes private books from localSource matching', () => {
+      const myBooks = [
+        makeBook({ isbn: '123', ownership: 'seeking', visibility: 'visible' }),
+      ];
+
+      const lender = makeUser({
+        shelf: [
+          makeBook({ isbn: '123', ownership: 'have', intents: ['borrowable'], title: 'Hidden Gem', visibility: 'private' }),
+        ],
+      });
+
+      const matches = calculateMatches(myBooks, [], [lender]);
+
+      expect(matches).toHaveLength(0);
+    });
+
+    it('excludes my private seeking books from localSource matching', () => {
+      const myBooks = [
+        makeBook({ isbn: '123', ownership: 'seeking', visibility: 'private', title: 'Secret Want' }),
+      ];
+
+      const lender = makeUser({
+        shelf: [
+          makeBook({ isbn: '123', ownership: 'have', intents: ['borrowable'], title: 'Available Book', visibility: 'visible' }),
+        ],
+      });
+
+      const matches = calculateMatches(myBooks, [], [lender]);
+
+      expect(matches).toHaveLength(0);
+    });
+
+    it('does not leak private book titles in match results', () => {
+      const myBooks = [
+        makeBook({ isbn: '111', title: 'My Visible', visibility: 'visible' }),
+      ];
+
+      const otherUser = makeUser({
+        shelf: [
+          makeBook({ isbn: '111', title: 'Their Visible', visibility: 'visible' }),
+          makeBook({ isbn: '222', title: 'Their Secret', visibility: 'private' }),
+        ],
+      });
+
+      const matches = calculateMatches(myBooks, [], [otherUser]);
+
+      const allItems = [
+        ...matches[0].facets.shelfTwin.items,
+        ...matches[0].facets.readingMentor.items,
+        ...matches[0].facets.localSource.items,
+        ...matches[0].facets.classChain.items,
+      ];
+
+      expect(allItems).not.toContain('Their Secret');
+    });
+  });
+
   describe('edge cases', () => {
     it('handles books without ISBNs', () => {
       const myBooks = [makeBook({ title: 'No ISBN Book' })];
