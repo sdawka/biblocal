@@ -349,6 +349,7 @@ main {
     var(--color-burgundy),
     var(--color-burgundy-dark)
   );
+  background-size: 100% 100%;
   border: 1px solid var(--color-burgundy-dark);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -356,7 +357,9 @@ main {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.15),
     0 2px 4px rgba(74, 44, 42, 0.3);
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  text-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .btn-victorian:hover {
@@ -366,22 +369,25 @@ main {
     var(--color-burgundy-dark),
     #4A1F25
   );
+  background-size: 200% 100%;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 4px 8px rgba(74, 44, 42, 0.4);
   transform: translateY(-1px);
+  animation: shimmer 1.5s ease-in-out;
 }
 
 .btn-victorian:active {
   transform: translateY(0);
-  box-shadow:
-    inset 0 2px 4px rgba(0, 0, 0, 0.2),
-    0 1px 2px rgba(74, 44, 42, 0.3);
+  box-shadow: var(--shadow-pressed);
 }
 
-.btn-victorian:focus {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 2px;
+.btn-victorian:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 2px 4px rgba(74, 44, 42, 0.3),
+    var(--shadow-gold-glow);
 }
 
 .btn-secondary {
@@ -411,10 +417,11 @@ main {
   font-size: 1rem;
   color: var(--color-ink);
   background: var(--color-paper);
+  background-image: var(--texture-paper-fine);
   border: 1px solid var(--color-gold-pale);
   border-radius: var(--radius-sm);
   transition: all var(--transition-quick);
-  box-shadow: var(--shadow-inset);
+  box-shadow: inset 0 2px 4px rgba(44, 24, 16, 0.08);
 }
 
 .input-victorian::placeholder {
@@ -426,8 +433,8 @@ main {
   outline: none;
   border-color: var(--color-gold);
   box-shadow:
-    var(--shadow-inset),
-    0 0 0 3px rgba(184, 134, 11, 0.15);
+    inset 0 2px 4px rgba(44, 24, 16, 0.08),
+    var(--shadow-gold-glow);
 }
 
 /* Victorian Select */
@@ -439,18 +446,22 @@ main {
   font-size: 1rem;
   color: var(--color-ink);
   background: var(--color-paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B5B4F' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.875rem center;
+  background-image: var(--texture-paper-fine), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B5B4F' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-position: 0 0, right 0.875rem center;
+  background-repeat: repeat, no-repeat;
   border: 1px solid var(--color-gold-pale);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  box-shadow: var(--shadow-inset);
+  box-shadow: inset 0 2px 4px rgba(44, 24, 16, 0.08);
+  transition: all var(--transition-quick);
 }
 
 .select-victorian:focus {
   outline: none;
   border-color: var(--color-gold);
   box-shadow:
-    var(--shadow-inset),
-    0 0 0 3px rgba(184, 134, 11, 0.15);
+    inset 0 2px 4px rgba(44, 24, 16, 0.08),
+    var(--shadow-gold-glow);
 }
 
 /* Label */
@@ -479,8 +490,10 @@ main {
   background: var(--color-burgundy);
   border-radius: 2px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 2px 3px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .badge-seal.forest {
@@ -490,6 +503,7 @@ main {
 .badge-seal.gold {
   background: var(--color-gold);
   color: var(--color-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* Brass Plate Tag */
@@ -503,15 +517,18 @@ main {
   color: var(--color-ink);
   background: linear-gradient(
     to bottom,
-    var(--color-gold-pale),
-    var(--color-gold-light) 50%,
-    var(--color-gold-pale)
+    #E8D4A8 0%,
+    var(--color-gold-light) 20%,
+    var(--color-gold) 50%,
+    var(--color-gold-light) 80%,
+    #E8D4A8 100%
   );
   border: 1px solid var(--color-gold);
   border-radius: 2px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    0 1px 2px rgba(0, 0, 0, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 /* Section Header with Flourish */
@@ -988,16 +1005,28 @@ body::after {
   color: var(--color-cream);
   background: var(--color-forest);
   border-color: var(--color-forest-dark);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .filter-pill.intent.active {
   color: var(--color-cream);
   background: var(--color-burgundy);
   border-color: var(--color-burgundy-dark);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .filter-pill.visibility.active {
   color: var(--color-paper);
   background: var(--color-ink-faded);
   border-color: var(--color-ink);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.2);
 }
