@@ -21,5 +21,7 @@ export function clearUserData(): void {
   localStorage.removeItem('biblocal:profile:v1');
   localStorage.removeItem('biblocal:dismissed:v1');
   localStorage.removeItem('biblocal:filter:v1');
+  localStorage.removeItem('biblocal:filter:v2');
+  localStorage.removeItem('biblocal:filter:v3');
   localStorage.removeItem(USER_ID_KEY);
 }
