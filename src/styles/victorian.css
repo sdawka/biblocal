@@ -252,42 +252,47 @@ main {
   position: relative;
 }
 
-/* Ornate Card — Subtle variant */
+/* Ornate Card — Elevated variant */
 .card-ornate {
   background: var(--color-cream);
+  background-image: var(--texture-paper-fine);
   border: 1px solid var(--color-gold-pale);
   border-radius: var(--radius-md);
   padding: var(--space-lg);
   position: relative;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-resting);
   transition: all var(--transition-gentle);
 }
 
-/* Subtle corner accents - just dots */
+/* Corner flourishes */
 .card-ornate::before,
 .card-ornate::after {
   content: '';
   position: absolute;
-  width: 4px;
-  height: 4px;
-  background: var(--color-gold);
-  border-radius: 50%;
-  opacity: 0.35;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--color-gold);
+  opacity: 0;
   transition: opacity var(--transition-gentle);
+  pointer-events: none;
 }
 
 .card-ornate::before {
   top: 8px;
   left: 8px;
+  border-right: none;
+  border-bottom: none;
 }
 
 .card-ornate::after {
   bottom: 8px;
   right: 8px;
+  border-left: none;
+  border-top: none;
 }
 
 .card-ornate:hover {
-  box-shadow: var(--shadow-lifted);
+  box-shadow: var(--shadow-hover);
   transform: translateY(-2px);
   border-color: var(--color-gold);
 }

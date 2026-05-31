@@ -73,10 +73,11 @@
     gap: 1rem;
     padding: 1rem;
     background: var(--color-cream);
+    background-image: var(--texture-paper-fine), var(--texture-aged);
     border: 1px solid var(--color-gold-pale);
     border-radius: var(--radius-md);
     position: relative;
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--shadow-resting);
     transition: all var(--transition-gentle);
   }
 
@@ -84,31 +85,34 @@
     border-left: 3px solid var(--color-burgundy);
   }
 
-  /* Subtle corner dots */
   .book-card::before,
   .book-card::after {
     content: '';
     position: absolute;
-    width: 3px;
-    height: 3px;
-    background: var(--color-gold);
-    border-radius: 50%;
-    opacity: 0.25;
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--color-gold);
+    opacity: 0;
     transition: opacity var(--transition-gentle);
+    pointer-events: none;
   }
 
   .book-card::before {
     top: 6px;
     left: 6px;
+    border-right: none;
+    border-bottom: none;
   }
 
   .book-card::after {
     bottom: 6px;
     right: 6px;
+    border-left: none;
+    border-top: none;
   }
 
   .book-card:hover {
-    box-shadow: var(--shadow-lifted);
+    box-shadow: var(--shadow-hover);
     transform: translateY(-2px);
     border-color: var(--color-gold);
   }

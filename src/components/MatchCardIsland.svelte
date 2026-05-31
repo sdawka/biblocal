@@ -157,19 +157,18 @@
 </article>
 
 <style>
-  /* Subtle calling card aesthetic */
   .match-card {
     padding: 1.25rem;
     background: var(--color-cream);
+    background-image: var(--texture-paper-fine);
     border: 1px solid var(--color-gold-pale);
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all var(--transition-gentle);
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--shadow-resting);
     position: relative;
   }
 
-  /* Subtle top accent line */
   .match-card::before {
     content: '';
     position: absolute;
@@ -181,6 +180,7 @@
       to right,
       transparent,
       var(--color-gold-pale) 20%,
+      var(--color-gold) 50%,
       var(--color-gold-pale) 80%,
       transparent
     );
@@ -188,19 +188,32 @@
     transition: opacity var(--transition-gentle);
   }
 
+  .match-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+    pointer-events: none;
+  }
+
   .match-card:hover {
-    box-shadow: var(--shadow-lifted);
+    box-shadow: var(--shadow-hover);
     transform: translateY(-2px);
     border-color: var(--color-gold);
   }
 
   .match-card:hover::before {
-    opacity: 0.6;
+    opacity: 0.8;
   }
 
   .match-card.expanded {
-    box-shadow: var(--shadow-lifted);
+    box-shadow: var(--shadow-elevated);
     border-color: var(--color-gold);
+  }
+
+  .match-card.expanded::before {
+    opacity: 0.8;
   }
 
   header {
