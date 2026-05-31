@@ -90,7 +90,7 @@ export function hasActiveFilters(): boolean {
 async function syncAddBook(book: Book): Promise<void> {
   if (!currentUserId.get()) return;
   try {
-    await fetch('/api/books', {
+    const res = await fetch('/api/books', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -107,6 +107,9 @@ async function syncAddBook(book: Book): Promise<void> {
         notes: book.notes,
       }),
     });
+    if (!res.ok) {
+      console.error('Failed to sync book:', await res.text());
+    }
   } catch (e) {
     console.error('Failed to sync book:', e);
   }
@@ -115,11 +118,14 @@ async function syncAddBook(book: Book): Promise<void> {
 async function syncUpdateBook(id: string, updates: Partial<Book>): Promise<void> {
   if (!currentUserId.get()) return;
   try {
-    await fetch(`/api/books/${id}`, {
+    const res = await fetch(`/api/books/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
+    if (!res.ok) {
+      console.error('Failed to sync book update:', await res.text());
+    }
   } catch (e) {
     console.error('Failed to sync book update:', e);
   }
@@ -128,7 +134,10 @@ async function syncUpdateBook(id: string, updates: Partial<Book>): Promise<void>
 async function syncRemoveBook(id: string): Promise<void> {
   if (!currentUserId.get()) return;
   try {
-    await fetch(`/api/books/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      console.error('Failed to sync book removal:', await res.text());
+    }
   } catch (e) {
     console.error('Failed to sync book removal:', e);
   }

@@ -76,5 +76,17 @@ describe('Sync Store', () => {
       expect(localStorage.getItem('biblocal:lastUserId')).toBeNull();
       expect(localStorage.getItem('other-app:data')).toBe('should-stay');
     });
+
+    it('clears all filter versions from localStorage', () => {
+      localStorage.setItem('biblocal:filter:v1', '"all"');
+      localStorage.setItem('biblocal:filter:v2', '"lending"');
+      localStorage.setItem('biblocal:filter:v3', '{"visibility":[],"ownership":[],"intents":[]}');
+
+      clearUserData();
+
+      expect(localStorage.getItem('biblocal:filter:v1')).toBeNull();
+      expect(localStorage.getItem('biblocal:filter:v2')).toBeNull();
+      expect(localStorage.getItem('biblocal:filter:v3')).toBeNull();
+    });
   });
 });
