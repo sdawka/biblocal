@@ -3,9 +3,19 @@ import type { Book, BookStatus, BookVisibility, BookOwnership, BookIntent } from
 import { inferTopicsFromSubjects } from './topics';
 import { currentUserId } from './auth';
 
+function safeJsonDecode<T>(defaultValue: T) {
+  return (str: string): T => {
+    try {
+      return JSON.parse(str);
+    } catch {
+      return defaultValue;
+    }
+  };
+}
+
 export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {}, {
   encode: JSON.stringify,
-  decode: JSON.parse,
+  decode: safeJsonDecode({}),
 });
 
 // Legacy single-select filter (deprecated, kept for migration)
@@ -38,7 +48,7 @@ const DEFAULT_FILTERS: ShelfFilters = {
 export const activeFilters = persistentAtom<ShelfFilters>(
   'biblocal:filter:v3',
   DEFAULT_FILTERS,
-  { encode: JSON.stringify, decode: JSON.parse }
+  { encode: JSON.stringify, decode: safeJsonDecode(DEFAULT_FILTERS) }
 );
 
 export function bookMatchesFilters(book: Book, filters: ShelfFilters): boolean {
