@@ -101,7 +101,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const now = new Date();
     const book = {
-      id: body.id || generateId(),
+      id: generateId(), // Always server-generated
       userId: userId,
       title: body.title,
       author: body.author,

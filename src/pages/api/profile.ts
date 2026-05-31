@@ -6,6 +6,7 @@ import { env } from 'cloudflare:workers';
 import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
 import { getUserId } from '../../lib/auth';
+import { validateEnum, VALID_CONTACT_VISIBILITY } from '../../lib/validation';
 
 type Env = { DB: D1Database };
 
@@ -66,6 +67,18 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     await getOrCreateUser(db, userId);
 
     const updates = (await request.json()) as Record<string, unknown>;
+
+    // Validate enum fields before processing
+    if (updates.contactVisibility !== undefined) {
+      const valid = validateEnum(updates.contactVisibility, VALID_CONTACT_VISIBILITY);
+      if (valid === null) {
+        return new Response(
+          JSON.stringify({ error: `Invalid contactVisibility value. Must be one of: ${VALID_CONTACT_VISIBILITY.join(', ')}` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const allowedFields = [
       'name',
       'city',
