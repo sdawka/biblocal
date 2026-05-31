@@ -59,6 +59,55 @@
   --shadow-inset: inset 0 1px 3px rgba(44, 24, 16, 0.08);
   --shadow-wood: inset 0 -2px 4px rgba(0, 0, 0, 0.15);
 
+  /* Elevation System — Layered depth */
+  --shadow-resting: 0 1px 3px rgba(74, 44, 42, 0.08), 0 1px 2px rgba(74, 44, 42, 0.12);
+  --shadow-hover: 0 4px 12px rgba(74, 44, 42, 0.15), 0 0 8px rgba(184, 134, 11, 0.1);
+  --shadow-pressed: inset 0 2px 4px rgba(44, 24, 16, 0.15);
+  --shadow-elevated: 0 8px 24px rgba(74, 44, 42, 0.18), 0 0 12px rgba(184, 134, 11, 0.08);
+  --shadow-gold-glow: 0 0 0 3px rgba(184, 134, 11, 0.2), 0 0 12px rgba(184, 134, 11, 0.15);
+
+  /* Textures — Material surfaces */
+  --texture-paper-fine: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(139, 123, 111, 0.015) 2px,
+    rgba(139, 123, 111, 0.015) 4px
+  );
+
+  --texture-leather:
+    radial-gradient(ellipse at 20% 30%, rgba(74, 44, 42, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(74, 44, 42, 0.03) 0%, transparent 50%),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0px,
+      transparent 1px,
+      rgba(0, 0, 0, 0.02) 1px,
+      rgba(0, 0, 0, 0.02) 2px
+    );
+
+  --texture-linen: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 1px,
+    rgba(139, 123, 111, 0.02) 1px,
+    rgba(139, 123, 111, 0.02) 2px
+  ),
+  repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 1px,
+    rgba(139, 123, 111, 0.02) 1px,
+    rgba(139, 123, 111, 0.02) 2px
+  );
+
+  --texture-aged: linear-gradient(
+    135deg,
+    rgba(184, 134, 11, 0.02) 0%,
+    transparent 50%,
+    rgba(74, 44, 42, 0.02) 100%
+  );
+
   /* Transitions — Gentle, organic feel */
   --transition-gentle: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-quick: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -715,7 +764,8 @@ body::after {
   font-family: var(--font-handwritten);
   font-size: 1.1rem;
   color: var(--color-ink-faded);
-  transform: rotate(-2deg);
+  transform: rotate(-1deg);
+  display: inline-block;
 }
 
 .catalog-card {
@@ -745,14 +795,160 @@ body::after {
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 
+/* ─── Decorative Utilities ─────────────────────────────────── */
+
+.flourish-corner {
+  position: relative;
+}
+
+.flourish-corner::before,
+.flourish-corner::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--color-gold);
+  opacity: 0;
+  transition: opacity var(--transition-gentle);
+  pointer-events: none;
+}
+
+.flourish-corner::before {
+  top: 6px;
+  left: 6px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.flourish-corner::after {
+  bottom: 6px;
+  right: 6px;
+  border-left: none;
+  border-top: none;
+}
+
+.flourish-corner:hover::before,
+.flourish-corner:hover::after {
+  opacity: 0.5;
+}
+
+.divider-ornate {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin: var(--space-xl) 0;
+}
+
+.divider-ornate::before,
+.divider-ornate::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--color-gold-pale), transparent);
+}
+
+.divider-ornate-motif {
+  width: 8px;
+  height: 8px;
+  background: var(--color-gold);
+  transform: rotate(45deg);
+  opacity: 0.5;
+}
+
+.embossed-text {
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.paper-bg {
+  background-image: var(--texture-paper-fine);
+}
+
+.linen-bg {
+  background-image: var(--texture-linen);
+}
+
+.section-well {
+  background: var(--color-paper);
+  background-image: var(--texture-linen);
+  box-shadow: var(--shadow-inset);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+}
+
+.section-well--flourished {
+  position: relative;
+}
+
+.section-well--flourished::before,
+.section-well--flourished::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--color-gold-pale);
+  opacity: 0.4;
+}
+
+.section-well--flourished::before {
+  top: 8px;
+  left: 8px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.section-well--flourished::after {
+  bottom: 8px;
+  right: 8px;
+  border-left: none;
+  border-top: none;
+}
+
+/* Section header with flourish underline */
+.section-header--flourish::after {
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-gold-pale) 10%,
+    var(--color-gold) 50%,
+    var(--color-gold-pale) 90%,
+    transparent
+  );
+  height: 2px;
+}
+
+/* Section header with decorative brackets */
+.section-header--bracketed h2::before,
+.section-header--bracketed h3::before {
+  content: '[  ';
+  color: var(--color-gold);
+  opacity: 0.5;
+  font-weight: 400;
+}
+
+.section-header--bracketed h2::after,
+.section-header--bracketed h3::after {
+  content: '  ]';
+  color: var(--color-gold);
+  opacity: 0.5;
+  font-weight: 400;
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .landing-section,
   .catalog-card,
   [class*="float"],
-  [class*="flip"] {
+  [class*="flip"],
+  [class*="shimmer"] {
     animation: none !important;
-    transition: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
   }
 }
 
