@@ -1,4 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
+import {
+  validateEnum,
+  validateIntents,
+  VALID_VISIBILITY,
+  VALID_OWNERSHIP,
+  VALID_INTENTS,
+  VALID_CONTACT_VISIBILITY,
+} from '../../src/lib/validation';
 
 /**
  * Tests for the private books exposure security fix.
@@ -103,5 +111,75 @@ describe('Books API - Code Fix Verification', () => {
      * book collections from exposure.
      */
     expect(true).toBe(true); // Documentation test
+  });
+});
+
+describe('Enum Validation', () => {
+  describe('validateEnum', () => {
+    it('returns valid visibility values', () => {
+      expect(validateEnum('private', VALID_VISIBILITY)).toBe('private');
+      expect(validateEnum('visible', VALID_VISIBILITY)).toBe('visible');
+    });
+
+    it('returns null for invalid visibility values', () => {
+      expect(validateEnum('invalid', VALID_VISIBILITY)).toBeNull();
+      expect(validateEnum('PUBLIC', VALID_VISIBILITY)).toBeNull();
+      expect(validateEnum('', VALID_VISIBILITY)).toBeNull();
+    });
+
+    it('returns null for non-string values', () => {
+      expect(validateEnum(123, VALID_VISIBILITY)).toBeNull();
+      expect(validateEnum(null, VALID_VISIBILITY)).toBeNull();
+      expect(validateEnum(undefined, VALID_VISIBILITY)).toBeNull();
+      expect(validateEnum({}, VALID_VISIBILITY)).toBeNull();
+    });
+
+    it('returns valid ownership values', () => {
+      expect(validateEnum('have', VALID_OWNERSHIP)).toBe('have');
+      expect(validateEnum('seeking', VALID_OWNERSHIP)).toBe('seeking');
+    });
+
+    it('returns null for invalid ownership values', () => {
+      expect(validateEnum('own', VALID_OWNERSHIP)).toBeNull();
+      expect(validateEnum('wanted', VALID_OWNERSHIP)).toBeNull();
+    });
+
+    it('returns valid contact visibility values', () => {
+      expect(validateEnum('hidden', VALID_CONTACT_VISIBILITY)).toBe('hidden');
+      expect(validateEnum('on-request', VALID_CONTACT_VISIBILITY)).toBe('on-request');
+      expect(validateEnum('public', VALID_CONTACT_VISIBILITY)).toBe('public');
+    });
+
+    it('returns null for invalid contact visibility values', () => {
+      expect(validateEnum('private', VALID_CONTACT_VISIBILITY)).toBeNull();
+      expect(validateEnum('visible', VALID_CONTACT_VISIBILITY)).toBeNull();
+    });
+  });
+
+  describe('validateIntents', () => {
+    it('returns valid intents array', () => {
+      const validIntents = ['borrowable', 'discussable'];
+      expect(validateIntents(validIntents)).toEqual(['borrowable', 'discussable']);
+    });
+
+    it('filters out invalid intents', () => {
+      const mixedIntents = ['borrowable', 'invalid', 'discussable', 'fake'];
+      expect(validateIntents(mixedIntents)).toEqual(['borrowable', 'discussable']);
+    });
+
+    it('returns empty array for non-array input', () => {
+      expect(validateIntents('borrowable')).toEqual([]);
+      expect(validateIntents(null)).toEqual([]);
+      expect(validateIntents(undefined)).toEqual([]);
+    });
+
+    it('returns empty array when all intents are invalid', () => {
+      expect(validateIntents(['invalid', 'fake', 'wrong'])).toEqual([]);
+    });
+
+    it('accepts all valid intent values', () => {
+      const allValid = ['borrowable', 'discussable', 'giftable', 'class-resource'];
+      expect(validateIntents(allValid)).toEqual(allValid);
+    });
   });
 });

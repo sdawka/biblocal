@@ -6,6 +6,13 @@ import { env } from 'cloudflare:workers';
 import { getDb } from '../../../db/client';
 import { books } from '../../../db/schema';
 import { getUserId } from '../../../lib/auth';
+import {
+  validateEnum,
+  validateIntents,
+  VALID_VISIBILITY,
+  VALID_OWNERSHIP,
+  VALID_INTENTS,
+} from '../../../lib/validation';
 
 type Env = { DB: D1Database };
 
@@ -44,6 +51,37 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     }
 
     const updates = (await request.json()) as Record<string, unknown>;
+
+    // Validate enum fields before processing
+    if (updates.visibility !== undefined) {
+      const valid = validateEnum(updates.visibility, VALID_VISIBILITY);
+      if (valid === null) {
+        return new Response(
+          JSON.stringify({ error: `Invalid visibility value. Must be one of: ${VALID_VISIBILITY.join(', ')}` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    if (updates.ownership !== undefined) {
+      const valid = validateEnum(updates.ownership, VALID_OWNERSHIP);
+      if (valid === null) {
+        return new Response(
+          JSON.stringify({ error: `Invalid ownership value. Must be one of: ${VALID_OWNERSHIP.join(', ')}` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    if (updates.intents !== undefined) {
+      const intentsArray = Array.isArray(updates.intents) ? updates.intents : [];
+      const invalidIntents = intentsArray.filter((i: unknown) => validateEnum(i, VALID_INTENTS) === null);
+      if (invalidIntents.length > 0) {
+        return new Response(
+          JSON.stringify({ error: `Invalid intent values: ${invalidIntents.join(', ')}. Must be one of: ${VALID_INTENTS.join(', ')}` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const allowedFields = ['title', 'author', 'isbn', 'coverUrl', 'status', 'visibility', 'ownership', 'notes'];
     const filtered: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -56,7 +94,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       filtered.subjects = Array.isArray(updates.subjects) ? JSON.stringify(updates.subjects) : updates.subjects;
     }
     if (updates.intents !== undefined) {
-      filtered.intents = Array.isArray(updates.intents) ? JSON.stringify(updates.intents) : updates.intents;
+      filtered.intents = Array.isArray(updates.intents) ? JSON.stringify(validateIntents(updates.intents)) : updates.intents;
     }
 
     await db.update(books).set(filtered).where(eq(books.id, bookId));
