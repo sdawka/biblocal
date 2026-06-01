@@ -112,8 +112,9 @@
     overflow: hidden;
     background: radial-gradient(
       ellipse at 50% 30%,
-      rgba(184, 134, 11, 0.08) 0%,
-      transparent 60%
+      rgba(184, 134, 11, 0.12) 0%,
+      rgba(184, 134, 11, 0.04) 40%,
+      transparent 70%
     );
   }
 
@@ -121,11 +122,22 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(
-      circle at 50% 100%,
-      rgba(114, 47, 55, 0.06) 0%,
-      transparent 50%
-    );
+    background:
+      radial-gradient(
+        circle at 50% 100%,
+        rgba(114, 47, 55, 0.08) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 20% 20%,
+        rgba(184, 134, 11, 0.05) 0%,
+        transparent 30%
+      ),
+      radial-gradient(
+        circle at 80% 30%,
+        rgba(184, 134, 11, 0.05) 0%,
+        transparent 30%
+      );
     pointer-events: none;
   }
 
@@ -222,7 +234,7 @@
     top: var(--y);
     opacity: 0;
     transform: translateX(0) rotate(0deg) scale(0.5);
-    filter: drop-shadow(0 8px 20px rgba(74, 44, 42, 0.25));
+    filter: drop-shadow(0 12px 24px rgba(74, 44, 42, 0.35));
     animation: floatInward 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     animation-delay: var(--delay);
     animation-play-state: paused;
