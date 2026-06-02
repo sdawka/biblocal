@@ -74,8 +74,8 @@
     const center = getMapCenter();
     map = L.map(mapContainer).setView([center.lat, center.lng], 13);
 
-    L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; Stadia Maps &copy; OpenStreetMap contributors',
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
 
     // Add user's location marker
