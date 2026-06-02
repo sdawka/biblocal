@@ -135,7 +135,16 @@ export async function loadProfileFromServer(): Promise<void> {
       city: sp.city || '',
       radiusKm: sp.radiusKm || 5,
       borrowStyle: sp.borrowStyle || undefined,
-      currentObsessions: sp.currentObsessions ? JSON.parse(sp.currentObsessions) : undefined,
+      currentObsessions: sp.currentObsessions
+        ? (() => {
+            try {
+              return JSON.parse(sp.currentObsessions);
+            } catch {
+              // Handle plain string (e.g., "recursive narratives, unreliable narrators")
+              return sp.currentObsessions.split(',').map((s: string) => s.trim()).filter(Boolean);
+            }
+          })()
+        : undefined,
       topics: {
         curated: sp.topicsCurated ? JSON.parse(sp.topicsCurated) : [],
         freeform: sp.topicsFreeform ? JSON.parse(sp.topicsFreeform) : [],
