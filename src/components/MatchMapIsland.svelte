@@ -1,3 +1,7 @@
+<svelte:head>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</svelte:head>
+
 <script lang="ts">
   import { onMount } from 'svelte';
   import { matches } from '../stores/matches';
@@ -66,7 +70,6 @@
     await loadSeedUsers();
 
     const L = await import('leaflet');
-    await import('leaflet/dist/leaflet.css');
 
     const center = getMapCenter();
     map = L.map(mapContainer).setView([center.lat, center.lng], 13);
