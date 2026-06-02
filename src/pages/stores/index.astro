@@ -1,0 +1,206 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import QaAuthInit from '../../components/QaAuthInit.svelte';
+import { UserButton } from '@clerk/astro/components';
+import { env } from 'cloudflare:workers';
+import { getDb } from '../../db/client';
+import { users } from '../../db/schema';
+import { eq } from 'drizzle-orm';
+
+export const prerender = false;
+
+type Env = { DB: D1Database; QA_MODE?: string; QA_USER_ID?: string };
+
+const isQaMode = (env as Env)?.QA_MODE === 'true';
+const qaUserId = (env as Env)?.QA_USER_ID || 'qa-test-user';
+
+// Fetch stores directly from DB (server-side)
+const db = getDb((env as Env).DB);
+const stores = await db
+  .select()
+  .from(users)
+  .where(eq(users.type, 'bookstore'));
+
+const storesList = stores.map((s) => ({
+  ...s,
+  specialties: s.specialties ? JSON.parse(s.specialties) : [],
+}));
+---
+
+<Layout title="Bookstores | biblocal">
+  {isQaMode && <QaAuthInit client:load userId={qaUserId} />}
+  <main>
+    <div class="header-row">
+      <h1>Local Bookstores</h1>
+      <div class="header-actions">
+        <a href="/stores/new" class="add-store-link">+ Add a bookstore</a>
+        {!isQaMode && <UserButton />}
+      </div>
+    </div>
+
+    {storesList.length === 0 ? (
+      <div class="empty-state">
+        <p>No bookstores yet.</p>
+        <p>Know a great local bookstore? <a href="/stores/new">Add it to the map</a>.</p>
+      </div>
+    ) : (
+      <div class="stores-grid">
+        {storesList.map((store) => (
+          <a href={`/store/${store.id}`} class="store-card">
+            <div class="store-badge">bookstore</div>
+            <h2>{store.name}</h2>
+            {store.neighborhood && (
+              <p class="neighborhood">{store.neighborhood}</p>
+            )}
+            {store.address && (
+              <p class="address">{store.address}</p>
+            )}
+            {store.specialties && store.specialties.length > 0 && (
+              <div class="specialties">
+                {store.specialties.slice(0, 3).map((s: string) => (
+                  <span class="tag">{s.replace(/-/g, ' ')}</span>
+                ))}
+                {store.specialties.length > 3 && (
+                  <span class="more">+{store.specialties.length - 3} more</span>
+                )}
+              </div>
+            )}
+          </a>
+        ))}
+      </div>
+    )}
+  </main>
+</Layout>
+
+<style>
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 {
+    margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .add-store-link {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--color-burgundy, #722f37);
+    text-decoration: none;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--color-burgundy, #722f37);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-quick);
+  }
+
+  .add-store-link:hover {
+    background: var(--color-burgundy, #722f37);
+    color: var(--color-cream);
+  }
+
+  .empty-state {
+    padding: 3rem 2rem;
+    text-align: center;
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-md);
+  }
+
+  .empty-state p {
+    margin: 0.5rem 0;
+    font-family: var(--font-body);
+    color: var(--color-ink-faded);
+  }
+
+  .empty-state a {
+    color: var(--color-burgundy, #722f37);
+  }
+
+  .stores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .store-card {
+    display: block;
+    padding: 1.25rem;
+    background: var(--color-cream);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    transition: all var(--transition-quick);
+  }
+
+  .store-card:hover {
+    border-color: var(--color-gold);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .store-badge {
+    display: inline-block;
+    padding: 0.125rem 0.375rem;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-ink-faded);
+    background: var(--color-paper);
+    border-radius: 2px;
+    margin-bottom: 0.5rem;
+  }
+
+  .store-card h2 {
+    margin: 0 0 0.375rem;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    color: var(--color-ink);
+  }
+
+  .neighborhood {
+    margin: 0 0 0.25rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--color-burgundy, #722f37);
+    font-style: italic;
+  }
+
+  .address {
+    margin: 0 0 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--color-ink-faded);
+  }
+
+  .specialties {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.75rem;
+  }
+
+  .tag {
+    padding: 0.125rem 0.375rem;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    color: var(--color-cream);
+    background: var(--color-burgundy, #722f37);
+    border-radius: 2px;
+  }
+
+  .more {
+    padding: 0.125rem 0.375rem;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    color: var(--color-ink-faded);
+    font-style: italic;
+  }
+</style>
