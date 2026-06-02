@@ -181,7 +181,7 @@
       {:else}
         <div class="books-grid">
           {#each books as book (book.id)}
-            <BookCard {book} />
+            <BookCard {book} readonly />
           {/each}
         </div>
       {/if}
