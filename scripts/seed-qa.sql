@@ -4,7 +4,9 @@
 -- The vibe: Pratchett fans, literary wanderers, philosophy nerds, people who
 -- read Borges on the metro and have opinions about footnotes.
 
--- Clear existing data
+-- Clear existing data (order matters due to foreign key constraints)
+DELETE FROM connection_requests;
+DELETE FROM sessions;
 DELETE FROM books;
 DELETE FROM users;
 
