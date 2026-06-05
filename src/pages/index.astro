@@ -2,11 +2,9 @@
 import LandingLayout from '../layouts/LandingLayout.astro';
 import LandingHero from '../components/LandingHero.svelte';
 import BookshelfDemo from '../components/BookshelfDemo.svelte';
-import LendingSection from '../components/LendingSection.svelte';
 import FacetShowcase from '../components/FacetShowcase.svelte';
-import AppPreview from '../components/AppPreview.svelte';
+import MidPageCTA from '../components/MidPageCTA.svelte';
 import LocalMapPreview from '../components/LocalMapPreview.svelte';
-import HowItWorksLink from '../components/HowItWorksLink.astro';
 import SignInSection from '../components/SignInSection.astro';
 import Footer from '../components/Footer.astro';
 ---
@@ -19,27 +17,21 @@ import Footer from '../components/Footer.astro';
     <!-- 2. Personal: Organize your shelf -->
     <BookshelfDemo client:visible />
 
-    <!-- 3. Transactional: Lend and borrow -->
-    <LendingSection client:visible />
-
-    <!-- 4. Preview: See what you're building -->
-    <AppPreview client:visible />
-
-    <!-- 5. Community: Find your people -->
+    <!-- 3. Community: Find your people -->
     <FacetShowcase client:visible />
 
-    <!-- 6. Local: It's all nearby -->
-    <LocalMapPreview client:visible />
+    <!-- 4. Mid-page CTA -->
+    <MidPageCTA client:visible />
 
-    <!-- 7. Learn more -->
-    <HowItWorksLink />
+    <!-- 5. Local: It's all nearby -->
+    <LocalMapPreview client:visible />
 
     <!-- Ornate divider before sign-in -->
     <div class="divider-ornate">
       <div class="divider-ornate-motif"></div>
     </div>
 
-    <!-- 8. Sign up -->
+    <!-- 6. Sign up -->
     <SignInSection />
 
     <Footer />
