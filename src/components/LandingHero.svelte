@@ -79,11 +79,11 @@
   </div>
 
   <div class="hero-content">
-    <p class="eyebrow">A place for book people to find each other</p>
-    <h1>The right book finds you.<br/>So do the right people.</h1>
+    <p class="eyebrow">The local network for readers</p>
+    <h1>You are what you read.<br/>So are they.</h1>
     <p class="subhead">
-      Somewhere nearby, someone else finished that book at 2am and needed to talk about it.<br/>
-      This is how you find them.
+      Share your shelf. Find readers nearby with shared taste.<br/>
+      Lend books, borrow books, talk books.
     </p>
     <button class="cta btn-victorian" onclick={scrollToSignIn}>
       Start Here
