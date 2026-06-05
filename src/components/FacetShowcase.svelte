@@ -51,7 +51,7 @@
           facets.forEach((_, i) => {
             setTimeout(() => {
               revealedCards = [...revealedCards, i];
-            }, 300 + i * 200);
+            }, 200 + i * 150);
           });
         }
       },
@@ -65,9 +65,9 @@
 
 <section class="facets-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
-    <h2 class="section-title">You know that feeling when someone actually gets the reference?</h2>
+    <h2 class="section-title">Five ways we match you with the right people.</h2>
     <p class="section-desc">
-      We find those people. The ones who read the footnotes. Who have opinions about translation choices. Who understand why you kept that paperback.
+      Not just who's nearby — who actually gets the reference.
     </p>
 
     <div class="facets-grid">
@@ -131,7 +131,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-2xl);
+    padding: var(--space-2xl) var(--space-2xl) calc(var(--space-2xl) * 1.2);
     background: var(--color-parchment);
     position: relative;
   }
