@@ -8,29 +8,19 @@
   }
 
   const demoBooks = [
-    // Left column - stacked vertically with no overlap
-    { title: "Small Gods", cover: "/covers/0062237373.jpg", x: -5, y: 5, endX: 3, size: "medium", delay: 0.1 },
-    { title: "Gödel, Escher, Bach", cover: "/covers/0465026567.jpg", x: -8, y: 22, endX: 6, size: "large", delay: 0.2 },
-    { title: "Beloved", cover: "/covers/1400033411.jpg", x: -6, y: 42, endX: 4, size: "medium", delay: 0.3 },
-    { title: "Night Watch", cover: "/covers/0060013125.jpg", x: -5, y: 60, endX: 5, size: "small", delay: 0.4 },
-    { title: "The Dispossessed", cover: "/covers/0061054887.jpg", x: -7, y: 76, endX: 3, size: "medium", delay: 0.5 },
+    // Left column
+    { title: "Small Gods", cover: "/covers/0062237373.jpg", x: -5, y: 10, endX: 5, size: "medium", delay: 0.05 },
+    { title: "Gödel, Escher, Bach", cover: "/covers/0465026567.jpg", x: -8, y: 30, endX: 8, size: "large", delay: 0.1 },
+    { title: "Beloved", cover: "/covers/1400033411.jpg", x: -6, y: 55, endX: 6, size: "medium", delay: 0.15 },
+    { title: "The Dispossessed", cover: "/covers/0061054887.jpg", x: -5, y: 78, endX: 5, size: "medium", delay: 0.2 },
+    { title: "Dune", cover: "/covers/0441172717.jpg", x: -3, y: 45, endX: 14, size: "small", delay: 0.25 },
 
-    // Right column - stacked vertically with no overlap
-    { title: "One Hundred Years", cover: "/covers/0060883286.jpg", x: 105, y: 5, endX: 88, size: "medium", delay: 0.15 },
-    { title: "The Unbearable Lightness", cover: "/covers/0061148520.jpg", x: 108, y: 22, endX: 85, size: "large", delay: 0.25 },
-    { title: "Guards! Guards!", cover: "/covers/0062225758.jpg", x: 106, y: 42, endX: 87, size: "medium", delay: 0.35 },
-    { title: "Master and Margarita", cover: "/covers/0140455469.jpg", x: 105, y: 60, endX: 86, size: "small", delay: 0.45 },
-    { title: "If on a winter's night", cover: "/covers/0156439611.jpg", x: 107, y: 76, endX: 88, size: "medium", delay: 0.55 },
-
-    // Second layer left - offset inward
-    { title: "Mort", cover: "/covers/0062225715.jpg", x: -3, y: 12, endX: 12, size: "small", delay: 0.7 },
-    { title: "Dune", cover: "/covers/0441172717.jpg", x: -4, y: 50, endX: 13, size: "small", delay: 0.8 },
-    { title: "Borges", cover: "/covers/0140286802.jpg", x: -3, y: 85, endX: 11, size: "small", delay: 0.9 },
-
-    // Second layer right - offset inward
-    { title: "Going Postal", cover: "/covers/0060502932.jpg", x: 103, y: 12, endX: 80, size: "small", delay: 0.75 },
-    { title: "House of Leaves", cover: "/covers/0375703764.jpg", x: 104, y: 50, endX: 79, size: "small", delay: 0.85 },
-    { title: "Sapiens", cover: "/covers/0062316095.jpg", x: 103, y: 85, endX: 81, size: "small", delay: 0.95 },
+    // Right column
+    { title: "One Hundred Years", cover: "/covers/0060883286.jpg", x: 105, y: 10, endX: 86, size: "medium", delay: 0.1 },
+    { title: "The Unbearable Lightness", cover: "/covers/0061148520.jpg", x: 108, y: 30, endX: 83, size: "large", delay: 0.15 },
+    { title: "Guards! Guards!", cover: "/covers/0062225758.jpg", x: 106, y: 55, endX: 85, size: "medium", delay: 0.2 },
+    { title: "Master and Margarita", cover: "/covers/0140455469.jpg", x: 105, y: 78, endX: 86, size: "medium", delay: 0.25 },
+    { title: "House of Leaves", cover: "/covers/0375703764.jpg", x: 103, y: 45, endX: 78, size: "small", delay: 0.3 },
   ];
 
   $effect(() => {
