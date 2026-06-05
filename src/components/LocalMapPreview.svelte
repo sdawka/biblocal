@@ -27,13 +27,9 @@
 <section class="local-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
     <div class="text-content">
-      <h2 class="section-title">It turns out books are easier<br/>to share in person.</h2>
+      <h2 class="section-title">See who is reading what near you.</h2>
       <p class="section-desc">
-        Here's who's nearby. Some have books you want. Some want books you have.
-        All of them read, which is already a good sign.
-      </p>
-      <p class="section-aside">
-        Turns out the internet is pretty good at connecting neighbors.
+        Find a new book and maybe a new friend.
       </p>
     </div>
 
@@ -77,7 +73,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-2xl);
+    padding: calc(var(--space-2xl) * 1.2) var(--space-2xl);
     background: linear-gradient(
       135deg,
       var(--color-aged-paper) 0%,
@@ -120,16 +116,6 @@
     color: var(--color-ink-faded);
     line-height: 1.7;
     margin: 0 0 var(--space-lg);
-  }
-
-  .section-aside {
-    font-family: var(--font-body);
-    font-size: 1rem;
-    color: var(--color-ink-light);
-    font-style: italic;
-    margin: 0;
-    padding-left: var(--space-md);
-    border-left: 2px solid var(--color-gold-pale);
   }
 
   .map-container {
@@ -332,11 +318,5 @@
       text-align: center;
     }
 
-    .section-aside {
-      border-left: none;
-      padding-left: 0;
-      border-top: 1px solid var(--color-gold-pale);
-      padding-top: var(--space-md);
     }
-  }
 </style>
