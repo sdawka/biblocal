@@ -80,6 +80,11 @@
     </button>
   </div>
 
+  <div class="mobile-books">
+    <img src="/covers/0465026567.jpg" alt="Gödel, Escher, Bach book cover" class="mobile-book left" width="70" height="105" />
+    <img src="/covers/0061148520.jpg" alt="The Unbearable Lightness of Being book cover" class="mobile-book right" width="70" height="105" />
+  </div>
+
   <div class="scroll-hint">
     <span>See how it works</span>
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -364,6 +369,36 @@
 
     .scroll-hint {
       bottom: var(--space-md);
+    }
+  }
+
+  .mobile-books {
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .mobile-books {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-lg);
+      margin-top: var(--space-lg);
+      opacity: 0;
+      animation: fadeIn 0.8s ease 0.3s forwards;
+    }
+
+    .mobile-book {
+      width: 70px;
+      height: auto;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 4px 12px rgba(74, 44, 42, 0.3);
+    }
+
+    .mobile-book.left {
+      transform: rotate(-5deg);
+    }
+
+    .mobile-book.right {
+      transform: rotate(5deg);
     }
   }
 </style>
