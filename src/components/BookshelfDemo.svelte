@@ -65,10 +65,10 @@
 
 <section class="bookshelf-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
-    <h2 class="section-title">Start with your shelf. The rest follows.</h2>
+    <h2 class="section-title">Your shelf tells people who you are.</h2>
     <p class="section-desc">
-      Add the books that matter. Mark the ones you'd lend, discuss, or give away.<br/>
-      The rest is just connecting people who should probably meet.
+      Every shelf is a branch of the neighborhood library. Add your books, mark what you'll share —<br/>
+      that's how matches find you.
     </p>
 
     <div class="shelf-container">
@@ -115,7 +115,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-2xl);
+    padding: var(--space-2xl) var(--space-2xl) calc(var(--space-2xl) * 1.2);
     background: linear-gradient(
       to bottom,
       var(--color-parchment) 0%,
