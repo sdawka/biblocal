@@ -1,5 +1,5 @@
 <script lang="ts">
-  let visible = $state(false);
+  let visible = $state(true);
   let heroElement: HTMLElement;
   let failedImages = $state<Set<number>>(new Set());
 
@@ -159,14 +159,7 @@
     letter-spacing: 0.1em;
     color: var(--color-burgundy);
     margin: 0 0 var(--space-md);
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .visible .eyebrow {
-    opacity: 1;
-    transform: translateY(0);
+    animation: fadeSlideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
 
   h1 {
@@ -177,14 +170,7 @@
     color: var(--color-ink);
     line-height: 1.1;
     margin: 0 0 var(--space-lg);
-    opacity: 0;
-    transform: translateY(30px);
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
-  }
-
-  .visible h1 {
-    opacity: 1;
-    transform: translateY(0);
+    animation: fadeSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
   }
 
   .subhead {
@@ -193,27 +179,24 @@
     color: var(--color-ink-faded);
     line-height: 1.7;
     margin: 0 0 var(--space-xl);
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.25s;
-  }
-
-  .visible .subhead {
-    opacity: 1;
-    transform: translateY(0);
+    animation: fadeSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.25s both;
   }
 
   .cta {
     font-size: 1rem;
     padding: 0.75rem 1.75rem;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s;
+    animation: fadeSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s both;
   }
 
-  .visible .cta {
-    opacity: 1;
-    transform: translateY(0);
+  @keyframes fadeSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .floating-books {
