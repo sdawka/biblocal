@@ -11,7 +11,7 @@
 
     const observer = new IntersectionObserver(
       ([entry]) => { visible = entry.isIntersecting; },
-      { threshold: 0.5 }
+      { threshold: 0.3 }
     );
     observer.observe(sectionElement);
 
@@ -60,11 +60,5 @@
 
   .cta-link:hover .arrow {
     transform: translateX(4px);
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
   }
 </style>

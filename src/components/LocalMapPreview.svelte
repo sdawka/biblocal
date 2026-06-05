@@ -317,6 +317,5 @@
       grid-template-columns: 1fr;
       text-align: center;
     }
-
-    }
+  }
 </style>
