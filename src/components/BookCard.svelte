@@ -15,8 +15,8 @@
   let showDeleteConfirm = $state(false);
 
   let swipeX = $state(0);
-  let startX = $state(0);
-  let isSwiping = $state(false);
+  let startX = 0;
+  let isSwiping = false;
   const SWIPE_THRESHOLD = 80;
 
   function handleTouchStart(e: TouchEvent) {
@@ -80,9 +80,11 @@
 <article
   class="book-card"
   class:seeking={book.ownership === 'seeking'}
+  class:swiping={swipeX > 0}
   ontouchstart={handleTouchStart}
   ontouchmove={handleTouchMove}
   ontouchend={handleTouchEnd}
+  ontouchcancel={() => { isSwiping = false; swipeX = 0; }}
   style="transform: translateX(-{swipeX}px)"
 >
   {#if book.coverUrl}
@@ -166,10 +168,10 @@
     border: 1px solid var(--color-gold-pale);
     border-radius: var(--radius-md);
     position: relative;
+    overflow: hidden;
     box-shadow: var(--shadow-resting);
-    transition: all var(--transition-gentle);
+    transition: transform var(--transition-quick), box-shadow var(--transition-gentle), border-color var(--transition-gentle);
     touch-action: pan-y;
-    transition: transform var(--transition-quick);
   }
 
   .book-card.seeking {
@@ -204,8 +206,11 @@
 
   .book-card:hover {
     box-shadow: var(--shadow-hover);
-    transform: translateY(-2px);
     border-color: var(--color-gold);
+  }
+
+  .book-card:hover:not(.swiping) {
+    transform: translateY(-2px);
   }
 
   .book-card:hover::before,
