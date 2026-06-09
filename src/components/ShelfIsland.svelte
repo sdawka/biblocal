@@ -8,6 +8,7 @@
     toggleIntentFilter,
     toggleVisibilityFilter,
     clearAllFilters,
+    removeBook,
   } from '../stores/shelf';
   import BookCard from './BookCard.svelte';
   import type { BookIntent, BookOwnership, BookVisibility } from '../lib/types';
@@ -47,6 +48,10 @@
 
   let haveExpanded = $state(true);
   let seekingExpanded = $state(true);
+
+  function handleDeleteBook(id: string) {
+    removeBook(id);
+  }
 </script>
 
 <section class="shelf">
@@ -137,6 +142,7 @@
                 <BookCard
                   {book}
                   onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
+                  onDelete={handleDeleteBook}
                 />
               </div>
             {/each}
@@ -164,6 +170,7 @@
                 <BookCard
                   {book}
                   onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
+                  onDelete={handleDeleteBook}
                 />
               </div>
             {/each}
