@@ -6,10 +6,26 @@
     onIntentsChange?: (intents: BookIntent[]) => void;
     onVisibilityChange?: (visibility: BookVisibility) => void;
     onOwnershipChange?: (ownership: BookOwnership) => void;
+    onDelete?: (id: string) => void;
     readonly?: boolean;
   }
 
-  let { book, onIntentsChange, onVisibilityChange, onOwnershipChange, readonly = false }: Props = $props();
+  let { book, onIntentsChange, onVisibilityChange, onOwnershipChange, onDelete, readonly = false }: Props = $props();
+
+  let showDeleteConfirm = $state(false);
+
+  function handleDeleteClick() {
+    showDeleteConfirm = true;
+  }
+
+  function confirmDelete() {
+    onDelete?.(book.id);
+    showDeleteConfirm = false;
+  }
+
+  function cancelDelete() {
+    showDeleteConfirm = false;
+  }
 
   const INTENT_LABELS: Record<BookIntent, string> = {
     borrowable: 'Lend',
@@ -65,6 +81,26 @@
       <span class="verified" title="Added via ISBN scan">✓</span>
     {/if}
   </div>
+
+  {#if !readonly && onDelete}
+    <button
+      class="delete-btn"
+      onclick={handleDeleteClick}
+      aria-label="Delete {book.title} from shelf"
+    >
+      ✕
+    </button>
+
+    {#if showDeleteConfirm}
+      <div class="delete-confirm">
+        <p>Remove from shelf?</p>
+        <div class="delete-actions">
+          <button class="btn-cancel" onclick={cancelDelete}>Cancel</button>
+          <button class="btn-remove" onclick={confirmDelete}>Remove</button>
+        </div>
+      </div>
+    {/if}
+  {/if}
 </article>
 
 <style>
@@ -226,5 +262,95 @@
     margin-left: 0.5rem;
     color: var(--color-forest);
     font-size: 0.9rem;
+  }
+
+  .delete-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: var(--color-ink-faded);
+    background: var(--color-cream);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: 50%;
+    cursor: pointer;
+    opacity: 0;
+    transition: all var(--transition-quick);
+    z-index: 2;
+  }
+
+  .book-card:hover .delete-btn {
+    opacity: 1;
+  }
+
+  .delete-btn:hover {
+    color: var(--color-cream);
+    background: var(--color-burgundy);
+    border-color: var(--color-burgundy-dark);
+  }
+
+  .delete-confirm {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: rgba(253, 250, 243, 0.95);
+    border-radius: var(--radius-md);
+    z-index: 3;
+  }
+
+  .delete-confirm p {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  .delete-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .delete-confirm .btn-cancel {
+    padding: 0.5rem 1rem;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    color: var(--color-ink-faded);
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .delete-confirm .btn-cancel:hover {
+    border-color: var(--color-gold);
+    color: var(--color-ink);
+  }
+
+  .delete-confirm .btn-remove {
+    padding: 0.5rem 1rem;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-cream);
+    background: var(--color-burgundy);
+    border: 1px solid var(--color-burgundy-dark);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .delete-confirm .btn-remove:hover {
+    background: var(--color-burgundy-dark);
   }
 </style>
