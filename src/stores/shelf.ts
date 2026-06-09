@@ -285,3 +285,28 @@ export function getInferredTopics(): string[] {
   const allSubjects = books.flatMap(b => b.subjects ?? []);
   return inferTopicsFromSubjects(allSubjects);
 }
+
+function normalizeString(str: string): string {
+  return str.toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+export function findDuplicate(isbn: string | undefined, title: string, author: string): Book | null {
+  const books = Object.values(shelf.get());
+
+  // Check ISBN match first (if provided)
+  if (isbn) {
+    const isbnMatch = books.find(b => b.isbn === isbn);
+    if (isbnMatch) return isbnMatch;
+  }
+
+  // Check normalized title + author
+  const normalizedTitle = normalizeString(title);
+  const normalizedAuthor = normalizeString(author);
+
+  const titleAuthorMatch = books.find(b =>
+    normalizeString(b.title) === normalizedTitle &&
+    normalizeString(b.author) === normalizedAuthor
+  );
+
+  return titleAuthorMatch || null;
+}

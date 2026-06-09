@@ -19,6 +19,7 @@ import {
   getBookCount,
   getShelfStats,
   getInferredTopics,
+  findDuplicate,
 } from '../../src/stores/shelf';
 import type { BookStatus } from '../../src/lib/types';
 
@@ -196,6 +197,71 @@ describe('Shelf Store', () => {
     it('can be set to specific status', () => {
       activeFilter.set('borrowable');
       expect(activeFilter.get()).toBe('borrowable');
+    });
+  });
+
+  describe('findDuplicate', () => {
+    beforeEach(() => {
+      shelf.set({});
+    });
+
+    it('returns null when shelf is empty', () => {
+      const result = findDuplicate('9780140449136', 'Crime and Punishment', 'Dostoevsky');
+      expect(result).toBeNull();
+    });
+
+    it('finds duplicate by ISBN', () => {
+      const book = addBook({
+        title: 'Crime and Punishment',
+        author: 'Fyodor Dostoevsky',
+        isbn: '9780140449136',
+        ownership: 'have',
+        intents: [],
+        addedVia: 'manual',
+      });
+
+      const result = findDuplicate('9780140449136', 'Different Title', 'Different Author');
+      expect(result).toEqual(book);
+    });
+
+    it('finds duplicate by normalized title and author', () => {
+      const book = addBook({
+        title: 'Crime and Punishment',
+        author: 'Fyodor Dostoevsky',
+        ownership: 'have',
+        intents: [],
+        addedVia: 'manual',
+      });
+
+      const result = findDuplicate(undefined, '  CRIME AND PUNISHMENT  ', 'fyodor  dostoevsky');
+      expect(result).toEqual(book);
+    });
+
+    it('returns null when no match', () => {
+      addBook({
+        title: 'Crime and Punishment',
+        author: 'Fyodor Dostoevsky',
+        isbn: '9780140449136',
+        ownership: 'have',
+        intents: [],
+        addedVia: 'manual',
+      });
+
+      const result = findDuplicate(undefined, 'The Brothers Karamazov', 'Fyodor Dostoevsky');
+      expect(result).toBeNull();
+    });
+
+    it('skips ISBN check when book has no ISBN', () => {
+      addBook({
+        title: 'My Book',
+        author: 'Some Author',
+        ownership: 'have',
+        intents: [],
+        addedVia: 'manual',
+      });
+
+      const result = findDuplicate('9781234567890', 'My Book', 'Some Author');
+      expect(result).not.toBeNull();
     });
   });
 });
