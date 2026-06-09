@@ -436,7 +436,6 @@
     top: 0;
     right: 0;
     bottom: 0;
-    transform: translateX(100%);
     display: flex;
     align-items: center;
     justify-content: center;
