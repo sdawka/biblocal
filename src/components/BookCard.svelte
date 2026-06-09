@@ -14,6 +14,41 @@
 
   let showDeleteConfirm = $state(false);
 
+  let swipeX = $state(0);
+  let startX = $state(0);
+  let isSwiping = $state(false);
+  const SWIPE_THRESHOLD = 80;
+
+  function handleTouchStart(e: TouchEvent) {
+    if (readonly || !onDelete) return;
+    startX = e.touches[0].clientX;
+    isSwiping = true;
+  }
+
+  function handleTouchMove(e: TouchEvent) {
+    if (!isSwiping) return;
+    const currentX = e.touches[0].clientX;
+    const diff = startX - currentX;
+    // Only allow left swipe, cap at threshold
+    swipeX = Math.min(Math.max(diff, 0), SWIPE_THRESHOLD);
+  }
+
+  function handleTouchEnd() {
+    if (!isSwiping) return;
+    isSwiping = false;
+    // Snap to threshold or back to 0
+    if (swipeX >= SWIPE_THRESHOLD * 0.6) {
+      swipeX = SWIPE_THRESHOLD;
+    } else {
+      swipeX = 0;
+    }
+  }
+
+  function handleSwipeDelete() {
+    onDelete?.(book.id);
+    swipeX = 0;
+  }
+
   function handleDeleteClick() {
     showDeleteConfirm = true;
   }
@@ -42,7 +77,14 @@
   }
 </script>
 
-<article class="book-card" class:seeking={book.ownership === 'seeking'}>
+<article
+  class="book-card"
+  class:seeking={book.ownership === 'seeking'}
+  ontouchstart={handleTouchStart}
+  ontouchmove={handleTouchMove}
+  ontouchend={handleTouchEnd}
+  style="transform: translateX(-{swipeX}px)"
+>
   {#if book.coverUrl}
     <img src={book.coverUrl} alt="{book.title} cover" class="cover" />
   {:else}
@@ -101,6 +143,17 @@
       </div>
     {/if}
   {/if}
+
+  {#if !readonly && onDelete && swipeX > 0}
+    <button
+      class="swipe-delete"
+      style="width: {swipeX}px"
+      onclick={handleSwipeDelete}
+      aria-label="Delete {book.title}"
+    >
+      Delete
+    </button>
+  {/if}
 </article>
 
 <style>
@@ -115,6 +168,8 @@
     position: relative;
     box-shadow: var(--shadow-resting);
     transition: all var(--transition-gentle);
+    touch-action: pan-y;
+    transition: transform var(--transition-quick);
   }
 
   .book-card.seeking {
@@ -352,5 +407,25 @@
 
   .delete-confirm .btn-remove:hover {
     background: var(--color-burgundy-dark);
+  }
+
+  .swipe-delete {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    transform: translateX(100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-cream);
+    background: var(--color-burgundy);
+    border: none;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    cursor: pointer;
+    min-width: 60px;
   }
 </style>
