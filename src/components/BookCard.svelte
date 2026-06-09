@@ -81,6 +81,7 @@
   class="book-card"
   class:seeking={book.ownership === 'seeking'}
   class:swiping={swipeX > 0}
+  data-book-id={book.id}
   ontouchstart={handleTouchStart}
   ontouchmove={handleTouchMove}
   ontouchend={handleTouchEnd}
@@ -412,6 +413,22 @@
 
   .delete-confirm .btn-remove:hover {
     background: var(--color-burgundy-dark);
+  }
+
+  :global(.book-card.highlight-pulse) {
+    animation: highlightPulse 1s ease-out;
+  }
+
+  @keyframes highlightPulse {
+    0% {
+      box-shadow: 0 0 0 0 var(--color-gold);
+    }
+    50% {
+      box-shadow: 0 0 0 4px var(--color-gold);
+    }
+    100% {
+      box-shadow: var(--shadow-resting);
+    }
   }
 
   .swipe-delete {
