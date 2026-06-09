@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { addBook } from '../stores/shelf';
+  import { addBook, findDuplicate } from '../stores/shelf';
   import { fetchByIsbn, isValidIsbn } from '../lib/openLibrary';
-  import type { BookVisibility, BookOwnership, BookIntent } from '../lib/types';
+  import type { Book, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
 
   let ScannerComponent: typeof import('./ScannerIsland.svelte').default | null = $state(null);
 
@@ -20,6 +20,7 @@
   let ownership: BookOwnership = $state('have');
   let intents: BookIntent[] = $state([]);
   let previewBook: { title: string; author: string; coverUrl?: string; isbn?: string; subjects?: string[] } | null = $state(null);
+  let duplicateBook: Book | null = $state(null);
 
   const INTENT_OPTIONS: { value: BookIntent; label: string }[] = [
     { value: 'borrowable', label: 'Lend' },
@@ -45,6 +46,7 @@
     ownership = 'have';
     intents = [];
     previewBook = null;
+    duplicateBook = null;
     mode = 'isbn';
   }
 
@@ -92,6 +94,19 @@
   function confirmAdd() {
     if (!previewBook) return;
 
+    // Check for duplicate
+    const existing = findDuplicate(previewBook.isbn, previewBook.title, previewBook.author);
+    if (existing) {
+      duplicateBook = existing;
+      return;
+    }
+
+    doAdd();
+  }
+
+  function doAdd() {
+    if (!previewBook) return;
+
     addBook({
       title: previewBook.title,
       author: previewBook.author,
@@ -105,6 +120,27 @@
     });
 
     resetForm();
+  }
+
+  function addAnyway() {
+    duplicateBook = null;
+    doAdd();
+  }
+
+  function viewExisting() {
+    if (!duplicateBook) return;
+    const bookId = duplicateBook.id;
+    resetForm();
+
+    // Scroll to and highlight the existing book
+    setTimeout(() => {
+      const card = document.querySelector(`[data-book-id="${bookId}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('highlight-pulse');
+        setTimeout(() => card.classList.remove('highlight-pulse'), 1000);
+      }
+    }, 100);
   }
 
   function switchMode(newMode: Mode) {
@@ -209,6 +245,20 @@
         Add to Shelf
       </button>
     </div>
+
+    {#if duplicateBook}
+      <div class="duplicate-warning">
+        <p>You already have <strong>{duplicateBook.title}</strong> on your shelf.</p>
+        <div class="duplicate-actions">
+          <button type="button" class="btn-view" onclick={viewExisting}>
+            View Existing
+          </button>
+          <button type="button" class="btn-add-anyway" onclick={addAnyway}>
+            Add Anyway
+          </button>
+        </div>
+      </div>
+    {/if}
   {:else}
     <!-- Entry mode -->
     <div class="tabs">
@@ -646,5 +696,67 @@
   .scan-btn:focus {
     outline: 2px solid var(--color-gold);
     outline-offset: 2px;
+  }
+
+  .duplicate-warning {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(139, 35, 50, 0.08);
+    border: 1px solid var(--color-burgundy);
+    border-radius: var(--radius-sm);
+  }
+
+  .duplicate-warning p {
+    margin: 0 0 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--color-burgundy-dark);
+  }
+
+  .duplicate-warning strong {
+    font-weight: 600;
+  }
+
+  .duplicate-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-view {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-forest);
+    background: var(--color-paper);
+    border: 1px solid var(--color-forest);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .btn-view:hover {
+    background: var(--color-forest);
+    color: var(--color-cream);
+  }
+
+  .btn-add-anyway {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-ink-faded);
+    background: var(--color-paper);
+    border: 1px solid var(--color-gold-pale);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-quick);
+  }
+
+  .btn-add-anyway:hover {
+    border-color: var(--color-gold);
+    color: var(--color-ink);
   }
 </style>
