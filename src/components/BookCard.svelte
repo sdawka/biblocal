@@ -96,7 +96,7 @@
   style="transform: translateX(-{swipe.current}px)"
 >
   {#if book.coverUrl}
-    <img src={book.coverUrl} alt="{book.title} cover" class="cover" />
+    <img src={book.coverUrl} alt="{book.title} cover" class="cover" width="60" height="90" loading="lazy" decoding="async" />
   {:else}
     <div class="cover placeholder">
       <span>{book.title.charAt(0)}</span>
@@ -291,7 +291,10 @@
     z-index: 2;
   }
 
-  .book-card:hover .delete-btn {
+  /* Reveal on hover AND keyboard focus so the control isn't invisible to keyboard users. */
+  .book-card:hover .delete-btn,
+  .book-card:focus-within .delete-btn,
+  .delete-btn:focus-visible {
     opacity: 1;
   }
 
@@ -328,9 +331,9 @@
 
   /* Make the destructive confirm read as destructive while staying on-token. */
   .btn-remove {
-    --accent: var(--st-giftable-fg);
-    --accent-on: var(--surface);
-    --accent-hover: var(--st-giftable-fg);
+    --accent: var(--danger);
+    --accent-on: var(--danger-on);
+    --accent-hover: var(--danger-hover);
   }
 
   :global(.book-card.highlight-pulse) {
@@ -360,8 +363,8 @@
     font-family: var(--font-ui);
     font-size: 0.875rem;
     font-weight: 590;
-    color: var(--surface);
-    background: var(--st-giftable-fg);
+    color: var(--danger-on);
+    background: var(--danger);
     border: none;
     border-radius: 0 var(--r-lg) var(--r-lg) 0;
     cursor: pointer;

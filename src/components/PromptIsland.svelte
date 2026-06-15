@@ -6,7 +6,6 @@
     isPromptDismissed,
     updateProfile,
   } from '../stores/profile';
-  import type { UserProfile } from '../lib/types';
 
   interface Prompt {
     id: string;
@@ -52,14 +51,11 @@
 
   let { context = 'shelf' }: Props = $props();
 
-  let profileData = $state<UserProfile | null>(null);
   let activePrompt = $state<Prompt | null>(null);
   let inputValue = $state('');
 
   $effect(() =>
-    profile.subscribe((p) => {
-      profileData = p;
-
+    profile.subscribe(() => {
       for (const prompt of PROMPTS) {
         if (!isPromptDismissed(prompt.id) && prompt.trigger()) {
           if (context === 'matches' && prompt.id === 'borrow-first-match') {

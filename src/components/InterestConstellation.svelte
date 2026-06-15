@@ -99,7 +99,7 @@
 
 {#if hasTopics}
   <div class="constellation-container">
-    <svg viewBox="0 0 100 100" class="constellation">
+    <svg viewBox="0 0 100 100" class="constellation" role="img" aria-label="Your reading-interest constellation">
       <defs>
         <radialGradient id="starGlow" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.8" />
@@ -123,6 +123,7 @@
           y2={conn.to.y}
           class="connection"
           style="--strength: {conn.strength}"
+          aria-hidden="true"
         />
       {/each}
 
@@ -147,7 +148,7 @@
             y={star.y + star.size + 4}
             class="star-label {star.type}"
           >
-            {star.label.replace('-', ' ')}
+            {star.label.replaceAll('-', ' ')}
           </text>
         </g>
       {/each}

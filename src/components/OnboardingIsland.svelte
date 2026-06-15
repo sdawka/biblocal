@@ -1,9 +1,14 @@
 <script lang="ts">
-  import { initProfile, isOnboarded } from '../stores/profile';
+  import { initProfile } from '../stores/profile';
 
   let name = $state('');
   let city = $state('Montreal');
   let error = $state('');
+  let nameInput: HTMLInputElement;
+
+  $effect(() => {
+    nameInput?.focus();
+  });
 
   const CITIES = [
     'Montreal',
@@ -50,7 +55,7 @@
         type="text"
         bind:value={name}
         placeholder="Your name"
-        autofocus
+        bind:this={nameInput}
       />
     </div>
 

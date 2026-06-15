@@ -186,9 +186,15 @@
         .addTo(map);
     }
 
-    updateMarkers();
+    // Populate matches from the store and keep pins in sync as it recomputes.
+    // (Fires synchronously on subscribe, so this also does the initial render.)
+    const unsubMatches = matches.subscribe((m) => {
+      matchList = m;
+      if (map) updateMarkers();
+    });
 
     return () => {
+      unsubMatches();
       themeObserver.disconnect();
       map?.remove();
     };

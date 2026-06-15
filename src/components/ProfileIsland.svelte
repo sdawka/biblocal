@@ -4,7 +4,6 @@
   import type { UserProfile, ContactMethod, ContactVisibility } from '../lib/types';
   import TopicPickerIsland from './TopicPickerIsland.svelte';
   import InterestConstellation from './InterestConstellation.svelte';
-  import { formatDistance } from '../lib/geo';
 
   let isEditing = $state(false);
   let requestingLocation = $state(false);

@@ -61,7 +61,21 @@
   );
 </script>
 
-<article class="match-card card card-interactive" class:expanded class:store={isStore} onclick={onToggle}>
+<article
+  class="match-card card card-interactive"
+  class:expanded
+  class:store={isStore}
+  role="button"
+  tabindex="0"
+  aria-expanded={expanded}
+  onclick={onToggle}
+  onkeydown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onToggle();
+    }
+  }}
+>
   <header>
     <div class="title-row">
       {#if isStore}
@@ -90,8 +104,8 @@
   {/if}
 
   <div class="facets">
-    {#each activeFacets as { key, facet, meta }}
-      <span class="facet-badge" title={meta.label}>
+    {#each activeFacets as { facet, meta }}
+      <span class="facet-badge" aria-label={meta.label}>
         <span class="facet-icon" aria-hidden="true">{meta.icon}</span>
         <span class="facet-count">{facet.count}</span>
         <span
@@ -125,7 +139,7 @@
         </div>
       {/if}
 
-      {#each activeFacets as { key, facet, meta }}
+      {#each activeFacets as { facet, meta }}
         <div class="facet-detail">
           <h4>{meta.icon} {meta.label}</h4>
           <ul>

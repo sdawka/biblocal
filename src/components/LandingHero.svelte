@@ -164,7 +164,7 @@
     top: var(--y);
     opacity: 0;
     transform: translateX(0) rotate(0deg) scale(0.5);
-    filter: drop-shadow(0 14px 28px oklch(0.26 0.02 270 / 0.30));
+    filter: drop-shadow(0 14px 28px var(--drop-shadow-color));
     animation: floatInward 2.5s var(--ease-out) forwards;
     animation-delay: var(--delay);
     animation-play-state: paused;
@@ -215,7 +215,6 @@
   .floating-book.large img { width: 100px; }
   .floating-book.medium img { width: 80px; }
   .floating-book.small img { width: 65px; }
-  .floating-book.tiny img { width: 50px; }
 
   .floating-book img {
     height: auto;
@@ -244,7 +243,6 @@
   .floating-book.large .cover-placeholder { width: 100px; height: 150px; }
   .floating-book.medium .cover-placeholder { width: 80px; height: 120px; }
   .floating-book.small .cover-placeholder { width: 65px; height: 98px; }
-  .floating-book.tiny .cover-placeholder { width: 50px; height: 75px; }
 
   .scroll-hint {
     position: absolute;
@@ -280,7 +278,6 @@
     .floating-book.large img { width: 80px; }
     .floating-book.medium img { width: 65px; }
     .floating-book.small img { width: 50px; }
-    .floating-book.tiny img { width: 40px; }
   }
 
   /* Mobile */
