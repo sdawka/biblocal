@@ -1,335 +1,367 @@
 <script lang="ts">
-  let visible = $state(true);
-  let heroElement: HTMLElement;
+  let heroEl: HTMLElement;
+  let visible = $state(false);
   let failedImages = $state<Set<number>>(new Set());
 
-  function handleImageError(index: number) {
-    failedImages = new Set([...failedImages, index]);
-  }
+  const handleImageError = (i: number) => {
+    failedImages = new Set([...failedImages, i]);
+  };
 
-  const demoBooks = [
-    // Left column
-    { title: "Small Gods", cover: "/covers/0062237373.jpg", x: -5, y: 10, endX: 5, size: "medium", delay: 0.05 },
-    { title: "Gödel, Escher, Bach", cover: "/covers/0465026567.jpg", x: -8, y: 30, endX: 8, size: "large", delay: 0.1 },
-    { title: "Beloved", cover: "/covers/1400033411.jpg", x: -6, y: 55, endX: 6, size: "medium", delay: 0.15 },
-    { title: "The Dispossessed", cover: "/covers/0061054887.jpg", x: -5, y: 78, endX: 5, size: "medium", delay: 0.2 },
-    { title: "Dune", cover: "/covers/0441172717.jpg", x: -3, y: 45, endX: 14, size: "small", delay: 0.25 },
-
-    // Right column
-    { title: "One Hundred Years", cover: "/covers/0060883286.jpg", x: 105, y: 10, endX: 86, size: "medium", delay: 0.1 },
-    { title: "The Unbearable Lightness", cover: "/covers/0061148520.jpg", x: 108, y: 30, endX: 83, size: "large", delay: 0.15 },
-    { title: "Guards! Guards!", cover: "/covers/0062225758.jpg", x: 106, y: 55, endX: 85, size: "medium", delay: 0.2 },
-    { title: "Master and Margarita", cover: "/covers/0140455469.jpg", x: 105, y: 78, endX: 86, size: "medium", delay: 0.25 },
-    { title: "House of Leaves", cover: "/covers/0375703764.jpg", x: 103, y: 45, endX: 78, size: "small", delay: 0.3 },
+  // A curated wall of covers, arranged as a composed shelf (not scattered).
+  const wall = [
+    { title: 'Gödel, Escher, Bach', cover: '/covers/0465026567.jpg' },
+    { title: 'One Hundred Years of Solitude', cover: '/covers/0060883286.jpg' },
+    { title: 'The Unbearable Lightness of Being', cover: '/covers/0061148520.jpg' },
+    { title: 'Small Gods', cover: '/covers/0062237373.jpg' },
+    { title: 'Beloved', cover: '/covers/1400033411.jpg' },
+    { title: 'Dune', cover: '/covers/0441172717.jpg' },
+    { title: 'The Dispossessed', cover: '/covers/0061054887.jpg' },
+    { title: 'The Master and Margarita', cover: '/covers/0140455469.jpg' },
+    { title: 'House of Leaves', cover: '/covers/0375703764.jpg' },
   ];
 
   $effect(() => {
-    if (!heroElement) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { visible = entry.isIntersecting; },
-      { threshold: 0.2 }
+    if (!heroEl) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) visible = true; },
+      { threshold: 0.12 }
     );
-    observer.observe(heroElement);
-    return () => observer.disconnect();
+    obs.observe(heroEl);
+    return () => obs.disconnect();
   });
 
-  function scrollToSignIn() {
+  const scrollToSignIn = () =>
     document.getElementById('signin-section')?.scrollIntoView({ behavior: 'smooth' });
-  }
+  const scrollDown = () =>
+    window.scrollTo({ top: window.innerHeight * 0.92, behavior: 'smooth' });
 </script>
 
-<section class="hero" bind:this={heroElement} class:visible>
-  <div class="floating-books">
-    {#each demoBooks as book, i}
-      <div
-        class="floating-book {book.size}"
-        style="
-          --start-x: {book.x}%;
-          --end-x: {book.endX}%;
-          --y: {book.y}%;
-          --delay: {book.delay}s;
-        "
-      >
-        {#if failedImages.has(i)}
-          <div class="cover-placeholder">
-            <span>{book.title.charAt(0)}</span>
-          </div>
-        {:else}
-          <img
-            src={book.cover}
-            alt={book.title}
-            width="80"
-            height="120"
-            loading="lazy"
-            onerror={() => handleImageError(i)}
-          />
-        {/if}
+<section class="hero" bind:this={heroEl} class:visible aria-label="biblocal">
+  <div class="grain" aria-hidden="true"></div>
+
+  <div class="grid">
+    <div class="copy">
+      <p class="eyebrow"><span class="rule"></span>The local network for readers</p>
+
+      <h1>
+        <span class="line">You are what</span>
+        <span class="line">you read.</span>
+        <span class="line accent"><em>So are they.</em></span>
+      </h1>
+
+      <p class="lede">
+        Build a living bookshelf, then find the people around you who read like you
+        do — to lend, borrow, and actually talk about books.
+      </p>
+
+      <div class="actions">
+        <button class="btn btn-filled btn-lg start" onclick={scrollToSignIn}>
+          Start your shelf
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="ghost" onclick={scrollDown}>See how it works</button>
       </div>
-    {/each}
+
+      <p class="meta">
+        <span>Lend</span><i></i><span>Borrow</span><i></i><span>Discuss</span><i></i><span>Gift</span><i></i><span>Hunt</span>
+      </p>
+    </div>
+
+    <div class="wall" aria-hidden="true">
+      <div class="wall-inner">
+        {#each wall as book, i}
+          <figure class="tile" style={`--i:${i}`}>
+            {#if failedImages.has(i)}
+              <div class="cover ph"><span>{book.title.charAt(0)}</span></div>
+            {:else}
+              <img
+                src={book.cover}
+                alt=""
+                width="160"
+                height="240"
+                loading="eager"
+                decoding="async"
+                onerror={() => handleImageError(i)}
+              />
+            {/if}
+          </figure>
+        {/each}
+      </div>
+    </div>
   </div>
 
-  <div class="hero-content glass">
-    <p class="eyebrow">The local network for readers</p>
-    <h1>You are what you read.<br/>So are they.</h1>
-    <p class="subhead">
-      Share your shelf. Find readers nearby with shared taste.<br/>
-      Lend books, borrow books, talk books.
-    </p>
-    <button class="cta btn btn-filled btn-lg" onclick={scrollToSignIn}>
-      Start Here
-    </button>
-  </div>
-
-  <div class="mobile-books">
-    <img src="/covers/0465026567.jpg" alt="Gödel, Escher, Bach book cover" class="mobile-book left" width="70" height="105" />
-    <img src="/covers/0061148520.jpg" alt="The Unbearable Lightness of Being book cover" class="mobile-book right" width="70" height="105" />
-  </div>
-
-  <div class="scroll-hint">
-    <span>See how it works</span>
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <button class="scroll-hint" onclick={scrollDown} aria-label="Scroll to learn more">
+    <span>Scroll</span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 5v14M6 13l6 6 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-  </div>
+  </button>
 </section>
 
 <style>
   .hero {
-    min-height: 100vh;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: var(--s-10) var(--s-6);
     position: relative;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
     overflow: hidden;
+    padding: clamp(2rem, 6vh, 5rem) clamp(1.25rem, 5vw, 5rem);
     background:
-      radial-gradient(ellipse at 50% 38%, var(--accent-tint) 0%, transparent 60%),
+      radial-gradient(58% 50% at 82% 26%, var(--accent-tint) 0%, transparent 68%),
+      radial-gradient(46% 44% at 8% 88%, var(--surface-sunken) 0%, transparent 70%),
       var(--canvas);
   }
 
-  .hero-content {
-    position: relative;
-    z-index: 10;
-    max-width: 720px;
-    padding: var(--s-8) var(--s-7);
-    border-radius: var(--r-xl);
-    border: 1px solid var(--hairline);
-    box-shadow: var(--shadow-2);
-  }
-
-  .eyebrow {
-    margin: 0 0 var(--s-4);
-    animation: heroRise 0.6s var(--ease-out) both;
-  }
-
-  h1 {
-    font-size: clamp(2.25rem, 5.5vw, 3.5rem);
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    margin: 0 0 var(--s-5);
-    animation: heroRise 0.8s var(--ease-out) 0.1s both;
-  }
-
-  .subhead {
-    font-family: var(--font-ui);
-    font-size: clamp(1.05rem, 2vw, 1.2rem);
-    color: var(--ink-muted);
-    line-height: 1.65;
-    margin: 0 0 var(--s-7);
-    animation: heroRise 0.8s var(--ease-out) 0.25s both;
-  }
-
-  .cta {
-    animation: heroRise 0.8s var(--ease-out) 0.4s both;
-  }
-
-  @keyframes heroRise {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .floating-books {
+  /* Subtle film grain for atmosphere/depth (token-agnostic, theme-safe). */
+  .grain {
     position: absolute;
     inset: 0;
     pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .grid {
+    position: relative;
     z-index: 1;
+    width: 100%;
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(2rem, 5vw, 5rem);
   }
 
-  .floating-book {
-    position: absolute;
-    left: var(--start-x);
-    top: var(--y);
+  /* ── Copy ───────────────────────────────────────────── */
+  .copy { max-width: 34rem; }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0 0 var(--s-5);
     opacity: 0;
-    transform: translateX(0) rotate(0deg) scale(0.5);
-    filter: drop-shadow(0 14px 28px var(--drop-shadow-color));
-    animation: floatInward 2.5s var(--ease-out) forwards;
-    animation-delay: var(--delay);
-    animation-play-state: paused;
+  }
+  .eyebrow .rule {
+    width: 30px;
+    height: 1.5px;
+    background: var(--accent);
+    border-radius: 2px;
   }
 
-  @keyframes floatInward {
-    0% {
-      opacity: 0;
-      left: var(--start-x);
-      transform: rotate(-12deg) scale(0.5);
-    }
-    20% {
-      opacity: 0.95;
-      transform: rotate(-4deg) scale(1.05);
-    }
-    60% {
-      opacity: 0.9;
-      left: var(--end-x);
-      transform: rotate(1deg) scale(1);
-    }
-    100% {
-      opacity: 0.85;
-      left: var(--end-x);
-      transform: rotate(var(--final-rotate, 2deg)) scale(1);
-    }
+  h1 {
+    margin: 0 0 var(--s-5);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2.7rem, 6.4vw, 5rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    color: var(--ink);
+  }
+  h1 .line { display: block; }
+  h1 .accent { color: var(--accent); }
+  h1 .accent em { font-style: italic; font-weight: 500; }
+
+  .lede {
+    margin: 0 0 var(--s-6);
+    max-width: 30rem;
+    font-family: var(--font-ui);
+    font-size: clamp(1.05rem, 1.4vw, 1.22rem);
+    line-height: 1.6;
+    color: var(--ink-muted);
   }
 
-  .floating-book:nth-child(odd) { --final-rotate: 3deg; --sway-amount: 4px; --sway-duration: 4s; }
-  .floating-book:nth-child(even) { --final-rotate: -2deg; --sway-amount: -3px; --sway-duration: 5s; }
-  .floating-book:nth-child(3n) { --final-rotate: -4deg; --sway-amount: 5px; --sway-duration: 6s; }
-  .floating-book:nth-child(5n) { --sway-amount: -4px; --sway-duration: 4.5s; }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--s-6);
+  }
+  .start { gap: 0.5rem; padding-inline: 1.5rem; }
+  .start svg { transition: transform var(--dur-2) var(--ease-spring); }
+  .start:hover svg { transform: translateX(3px); }
 
-  .visible .floating-book {
-    animation:
-      floatInward 2.5s var(--ease-out) forwards,
-      gentleSway var(--sway-duration, 5s) ease-in-out calc(var(--delay) + 2.5s) infinite;
+  .ghost {
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 0.4rem 0.2rem;
+    font-family: var(--font-ui);
+    font-size: 0.95rem;
+    font-weight: 590;
+    color: var(--ink);
+    cursor: pointer;
+    position: relative;
+  }
+  .ghost::after {
+    content: '';
+    position: absolute;
+    left: 0.2rem;
+    right: 0.2rem;
+    bottom: 0.15rem;
+    height: 1.5px;
+    background: var(--ink);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur-2) var(--ease-out);
+  }
+  .ghost:hover::after { transform: scaleX(1); }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    font-weight: 590;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .meta i { width: 3px; height: 3px; border-radius: 50%; background: var(--accent); opacity: 0.7; }
+
+  /* Staggered entrance for the copy. */
+  .visible .eyebrow { animation: rise 0.7s var(--ease-out) 0.05s both; }
+  .visible h1 .line { animation: rise 0.85s var(--ease-out) both; opacity: 0; }
+  .visible h1 .line:nth-child(1) { animation-delay: 0.12s; }
+  .visible h1 .line:nth-child(2) { animation-delay: 0.20s; }
+  .visible h1 .line:nth-child(3) { animation-delay: 0.30s; }
+  .visible .lede { animation: rise 0.8s var(--ease-out) 0.42s both; }
+  .visible .actions { animation: rise 0.8s var(--ease-out) 0.52s both; }
+  .visible .meta { animation: rise 0.8s var(--ease-out) 0.62s both; }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  @keyframes gentleSway {
-    0%, 100% {
-      transform: rotate(var(--final-rotate, 2deg)) scale(1) translateY(0);
-    }
-    50% {
-      transform: rotate(var(--final-rotate, 2deg)) scale(1) translateY(var(--sway-amount, 3px));
-    }
+  /* ── Cover wall ─────────────────────────────────────── */
+  .wall {
+    perspective: 1600px;
+    justify-self: end;
+    width: 100%;
   }
-
-  .floating-book.large img { width: 100px; }
-  .floating-book.medium img { width: 80px; }
-  .floating-book.small img { width: 65px; }
-
-  .floating-book img {
-    height: auto;
-    border-radius: var(--r-sm);
-    box-shadow: var(--shadow-2);
+  .wall-inner {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(0.6rem, 1.1vw, 1rem);
+    transform: rotateY(-14deg) rotateX(3deg) rotate(-1deg);
+    transform-style: preserve-3d;
   }
+  /* Stagger the columns so it reads as a built shelf, not a flat grid. */
+  .wall-inner .tile:nth-child(3n + 2) { transform: translateY(26px); }
+  .wall-inner .tile:nth-child(3n) { transform: translateY(52px); }
 
-  .cover-placeholder {
-    width: 80px;
-    height: 120px;
+  .tile {
+    margin: 0;
+    aspect-ratio: 2 / 3;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface-sunken);
+    box-shadow:
+      0 1px 1px oklch(0 0 0 / 0.18),
+      0 18px 34px var(--drop-shadow-color);
+    transition: transform var(--dur-2) var(--ease-out);
+    opacity: 0;
+  }
+  .tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tile .cover.ph {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--accent-tint);
-    border-radius: var(--r-sm);
-    box-shadow: var(--shadow-2);
   }
-
-  .cover-placeholder span {
+  .tile .cover.ph span {
     font-family: var(--font-display);
-    font-size: 2rem;
-    font-weight: 500;
+    font-size: 1.8rem;
     color: var(--accent);
   }
 
-  .floating-book.large .cover-placeholder { width: 100px; height: 150px; }
-  .floating-book.medium .cover-placeholder { width: 80px; height: 120px; }
-  .floating-book.small .cover-placeholder { width: 65px; height: 98px; }
-
-  .scroll-hint {
-    position: absolute;
-    bottom: var(--s-8);
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--s-2);
-    color: var(--ink-faint);
-    font-family: var(--font-ui);
-    font-size: 0.85rem;
-    opacity: 0;
-    animation: heroFadeIn 1s ease 2s forwards;
+  .visible .tile {
+    animation: tileIn 0.7s var(--ease-out) both;
+    animation-delay: calc(0.35s + var(--i) * 0.07s);
   }
-
-  .scroll-hint svg {
-    animation: gentleFloat 2s ease-in-out infinite;
-  }
-
-  @keyframes gentleFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(6px); }
-  }
-
-  @keyframes heroFadeIn {
+  @keyframes tileIn {
+    from { opacity: 0; transform: translateY(34px) scale(0.94); }
     to { opacity: 1; }
   }
-
-  /* Tablet */
-  @media (max-width: 900px) {
-    .floating-book.large img { width: 80px; }
-    .floating-book.medium img { width: 65px; }
-    .floating-book.small img { width: 50px; }
+  /* Keep the column-offset translate after entrance. */
+  .visible .wall-inner .tile:nth-child(3n + 2) { animation-name: tileIn2; }
+  .visible .wall-inner .tile:nth-child(3n) { animation-name: tileIn3; }
+  @keyframes tileIn2 {
+    from { opacity: 0; transform: translateY(60px) scale(0.94); }
+    to { opacity: 1; transform: translateY(26px); }
+  }
+  @keyframes tileIn3 {
+    from { opacity: 0; transform: translateY(86px) scale(0.94); }
+    to { opacity: 1; transform: translateY(52px); }
   }
 
-  /* Mobile */
-  @media (max-width: 600px) {
-    .hero {
-      padding: var(--s-8) var(--s-5);
-    }
+  /* ── Scroll hint ────────────────────────────────────── */
+  .scroll-hint {
+    position: absolute;
+    bottom: clamp(1rem, 3vh, 2rem);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    appearance: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 640;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    opacity: 0;
+    animation: fadeIn 1s ease 1.6s forwards;
+  }
+  .scroll-hint svg { animation: bob 2.2s ease-in-out infinite; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+  @keyframes fadeIn { to { opacity: 1; } }
 
-    .hero-content {
-      padding: var(--s-7) var(--s-5);
+  /* ── Responsive ─────────────────────────────────────── */
+  @media (max-width: 920px) {
+    .grid { grid-template-columns: 1fr; gap: clamp(2.5rem, 8vw, 4rem); }
+    .copy { max-width: none; }
+    .wall { perspective: none; justify-self: stretch; }
+    .wall-inner {
+      grid-template-columns: repeat(5, 1fr);
+      transform: none;
+      gap: 0.6rem;
     }
-
-    .floating-book {
-      display: none;
-    }
-
-    .subhead br {
-      display: none;
-    }
-
-    .scroll-hint {
-      bottom: var(--s-5);
-    }
+    .wall-inner .tile:nth-child(3n + 2),
+    .wall-inner .tile:nth-child(3n) { transform: none; }
+    /* Show the first 5 as a tidy shelf strip on tablet/mobile. */
+    .wall-inner .tile:nth-child(n + 6) { display: none; }
+    .visible .wall-inner .tile:nth-child(3n + 2) { animation-name: tileIn; }
+    .visible .wall-inner .tile:nth-child(3n) { animation-name: tileIn; }
+    .visible .wall-inner .tile { animation-delay: calc(0.3s + var(--i) * 0.06s); }
   }
 
-  .mobile-books {
-    display: none;
+  @media (max-width: 920px) and (min-width: 561px) {
+    .scroll-hint { display: none; }
   }
 
-  @media (max-width: 600px) {
-    .mobile-books {
-      display: flex;
-      justify-content: center;
-      gap: var(--s-6);
-      margin-top: var(--s-6);
-      opacity: 0;
-      animation: heroFadeIn 0.8s ease 0.3s forwards;
-    }
-
-    .mobile-book {
-      width: 80px;
-      height: auto;
-      border-radius: var(--r-sm);
-      box-shadow: var(--shadow-2);
-    }
-
-    .mobile-book.left {
-      transform: rotate(-4deg);
-    }
-
-    .mobile-book.right {
-      transform: rotate(4deg);
-    }
+  @media (max-width: 560px) {
+    .hero { padding-top: clamp(3rem, 12vh, 6rem); }
+    .wall-inner { grid-template-columns: repeat(4, 1fr); }
+    .wall-inner .tile:nth-child(n + 5) { display: none; }
+    .scroll-hint { display: none; }
   }
 </style>
