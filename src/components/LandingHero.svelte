@@ -253,7 +253,7 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: clamp(0.6rem, 1.1vw, 1rem);
-    transform: rotateY(-14deg) rotateX(3deg) rotate(-1deg);
+    transform: rotateY(-12deg) rotateX(2deg) rotate(-1deg);
     transform-style: preserve-3d;
   }
   /* Stagger the columns so it reads as a built shelf, not a flat grid. */
@@ -261,21 +261,32 @@
   .wall-inner .tile:nth-child(3n) { transform: translateY(52px); }
 
   .tile {
+    position: relative;
     margin: 0;
     aspect-ratio: 2 / 3;
-    border-radius: 6px;
-    overflow: hidden;
-    background: var(--surface-sunken);
-    box-shadow:
-      0 1px 1px oklch(0 0 0 / 0.18),
-      0 18px 34px var(--drop-shadow-color);
     transition: transform var(--dur-2) var(--ease-out);
     opacity: 0;
   }
-  .tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tile:hover { z-index: 5; }
+  .tile img,
   .tile .cover.ph {
     width: 100%;
     height: 100%;
+    border-radius: 6px;
+    box-shadow:
+      0 1px 1px oklch(0 0 0 / 0.18),
+      0 18px 34px var(--drop-shadow-color);
+    transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) var(--ease-out);
+  }
+  .tile img { object-fit: cover; display: block; }
+  .tile:hover img,
+  .tile:hover .cover.ph {
+    transform: translateY(-10px) scale(1.04);
+    box-shadow:
+      0 2px 5px oklch(0 0 0 / 0.22),
+      0 30px 52px var(--drop-shadow-color);
+  }
+  .tile .cover.ph {
     display: flex;
     align-items: center;
     justify-content: center;

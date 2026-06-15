@@ -3,38 +3,47 @@
   let sectionElement: HTMLElement;
   let revealedCards = $state<number[]>([]);
 
+  // Custom line-icons (stroke = currentColor → accent) for a cohesive, premium feel.
+  const ICONS = {
+    twin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="6" height="14" rx="1"/><rect x="14" y="5" width="6" height="14" rx="1"/><path d="M4 9h6M14 9h6"/></svg>',
+    scout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5.5-5 2 2-5.5 5-2z"/></svg>',
+    neighbor: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg>',
+    debate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h13a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-6l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><circle cx="8" cy="10" r="0.7" fill="currentColor" stroke="none"/><circle cx="11.5" cy="10" r="0.7" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="0.7" fill="currentColor" stroke="none"/></svg>',
+    syllabus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4L2 9l10 5 10-5-10-5z"/><path d="M6 11.5V16c0 1.2 2.7 2.5 6 2.5s6-1.3 6-2.5v-4.5"/><path d="M22 9v4.5"/></svg>',
+  };
+
   const facets = [
     {
       name: "Shelf Twin",
-      icon: "📚",
+      icon: ICONS.twin,
       tagline: "Suspiciously similar shelves",
       example: "You both kept the same obscure Calvino. Coincidence doesn't cover it.",
       weight: 3,
     },
     {
       name: "Book Scout",
-      icon: "🔭",
+      icon: ICONS.scout,
       tagline: "They've been where you're going",
       example: "Owns three books on your maybe-someday list",
       weight: 2,
     },
     {
       name: "Neighbor",
-      icon: "🏡",
+      icon: ICONS.neighbor,
       tagline: "Walking distance",
       example: "800 meters away. Has the book. Likes coffee.",
       weight: 2,
     },
     {
       name: "Debate Partner",
-      icon: "☕",
+      icon: ICONS.debate,
       tagline: "Productive disagreement",
       example: "You'll argue about Kundera for an hour and both enjoy it",
       weight: 1,
     },
     {
       name: "Syllabus Survivor",
-      icon: "📝",
+      icon: ICONS.syllabus,
       tagline: "Shared academic scars",
       example: "Both required to read it. Both actually did.",
       weight: 1,
@@ -91,7 +100,7 @@
           style="--index: {i}"
         >
           <div class="facet-top">
-            <span class="facet-icon" aria-hidden="true">{facet.icon}</span>
+            <span class="facet-icon" aria-hidden="true">{@html facet.icon}</span>
             <span class="weight-indicator" aria-label="Connection strength {facet.weight} of 3">
               {#each Array(3) as _, w}
                 <span class="weight-dot" class:on={w < facet.weight}></span>
@@ -245,10 +254,27 @@
   }
 
   .facet-icon {
-    font-size: 1.9rem;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: var(--r-md);
+    color: var(--accent);
+    background: var(--surface-sunken);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+    transition: transform var(--dur-2) var(--ease-spring);
   }
-  .facet-card:nth-child(1) .facet-icon { font-size: 2.6rem; }
+  .facet-icon :global(svg) { width: 26px; height: 26px; }
+  .facet-card:hover .facet-icon { transform: translateY(-2px) rotate(-3deg); }
+  /* On the accent-washed anchor tile, lift the icon box to surface for contrast. */
+  .facet-card:nth-child(1) .facet-icon {
+    width: 52px;
+    height: 52px;
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+  }
+  .facet-card:nth-child(1) .facet-icon :global(svg) { width: 30px; height: 30px; }
 
   .weight-indicator {
     display: inline-flex;
