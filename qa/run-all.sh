@@ -41,18 +41,29 @@ echo ""
 # Track results
 PASSED=0
 FAILED=0
+SKIPPED=0
 JOURNEYS=()
 
 run_journey() {
   local name="$1"
   local script="$2"
+  local rc
 
   echo ""
-  if bash "$script"; then
-    ((PASSED++))
+  # `if` keeps this exempt from `set -e` so a failing journey doesn't abort the run.
+  # Exit codes: 0 = pass, 2 = skipped (e.g. journey not applicable in QA mode), else fail.
+  # Use assignment (not `((PASSED++))`) for the counters: post-increment returns the
+  # pre-increment value, so the first 0→1 bump exits non-zero and trips `set -e`.
+  if bash "$script"; then rc=0; else rc=$?; fi
+
+  if [ "$rc" -eq 0 ]; then
+    PASSED=$((PASSED + 1))
     JOURNEYS+=("✓ $name")
+  elif [ "$rc" -eq 2 ]; then
+    SKIPPED=$((SKIPPED + 1))
+    JOURNEYS+=("⊘ $name (skipped)")
   else
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
     JOURNEYS+=("✗ $name")
   fi
 
@@ -82,7 +93,7 @@ for j in "${JOURNEYS[@]}"; do
   echo "  $j"
 done
 echo ""
-echo "Passed: $PASSED  Failed: $FAILED"
+echo "Passed: $PASSED  Failed: $FAILED  Skipped: $SKIPPED"
 
 if [ $FAILED -gt 0 ]; then
   exit 1

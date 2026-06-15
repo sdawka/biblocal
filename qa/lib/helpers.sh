@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # QA Test Helpers for biblocal
 
-set -euo pipefail
+# NOTE: deliberately NOT using `set -e`. Journeys source this file, so `set -e`
+# would propagate into them and abort a whole journey on any incidental non-zero
+# command (e.g. a `grep` with no match or a flaky agent-browser call) — even after
+# its real assertions passed. This is an assertion-style suite: failures are raised
+# explicitly via `fail()` (which exits 1). `set -u`/`pipefail` are kept.
+set -uo pipefail
 
 export BASE_URL="${BASE_URL:-http://localhost:4321}"
 export TEST_EMAIL="${TEST_EMAIL:-qa+clerk_test@example.com}"
@@ -18,6 +23,14 @@ NC='\033[0m'
 pass() { echo -e "${GREEN}✓${NC} $1"; }
 fail() { echo -e "${RED}✗${NC} $1"; exit 1; }
 info() { echo -e "${YELLOW}→${NC} $1"; }
+
+# True when running against the auth-bypassed QA environment.
+is_qa_mode() { [ "${QA_MODE:-false}" = "true" ]; }
+
+# Skip the current journey (exit 2 = "skipped", distinct from pass/fail).
+# Use for journeys whose subject doesn't exist in the current mode
+# (e.g. Clerk auth flows when QA_MODE bypasses authentication).
+skip_journey() { echo -e "${YELLOW}⊘${NC} SKIPPED: $1"; exit 2; }
 
 wait_and_snapshot() {
   agent-browser wait --load networkidle 2>/dev/null
@@ -51,12 +64,25 @@ assert_element() {
 }
 
 login_test_user() {
-  # In QA mode, skip login and go directly to shelf
+  # In QA mode, skip login and go directly to shelf.
+  # Retry the navigation: agent-browser occasionally reports about:blank on the
+  # first open, which previously caused a spurious assert_url failure downstream.
   if [ "$QA_MODE" = "true" ]; then
     info "QA Mode: Skipping login, navigating to /shelf"
-    agent-browser open "$BASE_URL/shelf" >/dev/null 2>&1
-    agent-browser wait --load networkidle >/dev/null 2>&1
-    pass "QA Mode active"
+    local tries=0 url=""
+    while [ $tries -lt 3 ]; do
+      agent-browser open "$BASE_URL/shelf" >/dev/null 2>&1
+      agent-browser wait --load networkidle >/dev/null 2>&1
+      url=$(get_url)
+      [[ "$url" == *"/shelf"* ]] && break
+      tries=$((tries + 1))
+      sleep 1
+    done
+    if [[ "$url" == *"/shelf"* ]]; then
+      pass "QA Mode active"
+    else
+      fail "QA Mode: could not navigate to /shelf (last url: '$url')"
+    fi
     return 0
   fi
 

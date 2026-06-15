@@ -9,6 +9,13 @@ echo "════════════════════════�
 echo "Journey 1: Authentication"
 echo "═══════════════════════════════════════"
 
+# This journey exercises Clerk auth: the login form, unauthenticated-route
+# redirects, and logout. QA_MODE bypasses Clerk entirely (every request is the
+# seeded QA user), so none of these flows exist there — skip rather than fail.
+if is_qa_mode; then
+  skip_journey "Authentication flows are bypassed when QA_MODE=true (no Clerk login form or auth redirects)"
+fi
+
 # Test 1: Unauthenticated user sees login page
 info "Test: Home page shows login form"
 agent-browser open "$BASE_URL" >/dev/null 2>&1
