@@ -6,134 +6,139 @@ import Footer from '../components/Footer.astro';
 <LandingLayout title="How It Works — biblocal">
   <main>
     <section class="hero-mini">
-      <a href="/" class="back-link">← Back to home</a>
-      <h1>You are what you read.<br/>So let's see what you've got.</h1>
-      <p class="subtitle">Three chapters. One shelf. Infinite possibilities for showing off your taste.</p>
+      <a href="/" class="back-link rise">← Back to home</a>
+      <span class="eyebrow rise rise-1">How It Works</span>
+      <h1 class="serif rise rise-2">You are what you read.<br/>So let's see what you've got.</h1>
+      <p class="subtitle muted rise rise-3">Three chapters. One shelf. Infinite possibilities for showing off your taste.</p>
     </section>
 
     <section class="chapter" id="chapter-1">
       <div class="chapter-header">
-        <span class="chapter-number">Chapter One</span>
-        <h2>Build your shelf</h2>
-        <p class="chapter-intro">First, the confession. Every book you add says something about who you are—or who you're pretending to be. We don't judge. Much.</p>
+        <span class="eyebrow">Chapter One</span>
+        <h2 class="serif">Build your shelf</h2>
+        <p class="chapter-intro muted">First, the confession. Every book you add says something about who you are—or who you're pretending to be. We don't judge. Much.</p>
       </div>
 
       <div class="features-grid">
-        <div class="feature-card">
+        <div class="card feature-card">
           <div class="feature-icon">📱</div>
-          <h3>Scan or type</h3>
-          <p>Point your camera at a barcode, or type a title like a civilized person. Either way, we'll find it.</p>
+          <h3 class="serif">Scan or type</h3>
+          <p class="muted">Point your camera at a barcode, or type a title like a civilized person. Either way, we'll find it.</p>
         </div>
-        <div class="feature-card">
+        <div class="card feature-card">
           <div class="feature-icon">📚</div>
-          <h3>Your whole collection</h3>
-          <p>That shelf in the bedroom. The boxes in storage. The "to-read" pile that's become a structural hazard. All of it.</p>
+          <h3 class="serif">Your whole collection</h3>
+          <p class="muted">That shelf in the bedroom. The boxes in storage. The "to-read" pile that's become a structural hazard. All of it.</p>
         </div>
-        <div class="feature-card">
+        <div class="card feature-card">
           <div class="feature-icon">🏷️</div>
-          <h3>Set your intentions</h3>
-          <p>Each book gets a status: will lend, want to discuss, giving away, or hunting for. Because owning isn't the same as sharing.</p>
+          <h3 class="serif">Set your intentions</h3>
+          <p class="muted">Each book gets a status: will lend, want to discuss, giving away, or hunting for. Because owning isn't the same as sharing.</p>
         </div>
       </div>
 
       <div class="chapter-aside">
-        <span class="marginalia">"The library is a growing organism." — Ranganathan's Fifth Law. Also applicable to that corner of your bedroom.</span>
+        <span class="marginalia serif">"The library is a growing organism." — Ranganathan's Fifth Law. Also applicable to that corner of your bedroom.</span>
       </div>
     </section>
 
     <section class="chapter alt" id="chapter-2">
-      <div class="chapter-header">
-        <span class="chapter-number">Chapter Two</span>
-        <h2>Lend, borrow, repeat</h2>
-        <p class="chapter-intro">Books were meant to travel. The best ones come back dog-eared, coffee-stained, and loved. The very best don't come back at all—they've found a new home.</p>
-      </div>
+      <div class="chapter-inner">
+        <div class="chapter-header">
+          <span class="eyebrow">Chapter Two</span>
+          <h2 class="serif">Lend, borrow, repeat</h2>
+          <p class="chapter-intro muted">Books were meant to travel. The best ones come back dog-eared, coffee-stained, and loved. The very best don't come back at all—they've found a new home.</p>
+        </div>
 
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🤝</div>
-          <h3>No shipping, no hassle</h3>
-          <p>Your matches are nearby. Walk over. Have coffee. Hand them the book. Remember what human interaction feels like.</p>
+        <div class="features-grid">
+          <div class="card feature-card">
+            <div class="feature-icon">🤝</div>
+            <h3 class="serif">No shipping, no hassle</h3>
+            <p class="muted">Your matches are nearby. Walk over. Have coffee. Hand them the book. Remember what human interaction feels like.</p>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3 class="serif">Find what you seek</h3>
+            <p class="muted">Mark a book as "hunting for" and we'll tell you when someone nearby has it. No more refreshing used bookstore websites.</p>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">🎁</div>
+            <h3 class="serif">Give books away</h3>
+            <p class="muted">Some books need to move on. Mark them "free to good home" and let someone else fall in love with them.</p>
+          </div>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔍</div>
-          <h3>Find what you seek</h3>
-          <p>Mark a book as "hunting for" and we'll tell you when someone nearby has it. No more refreshing used bookstore websites.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🎁</div>
-          <h3>Give books away</h3>
-          <p>Some books need to move on. Mark them "free to good home" and let someone else fall in love with them.</p>
-        </div>
-      </div>
 
-      <div class="chapter-aside">
-        <span class="marginalia">"A book is a gift you can open again and again." — Garrison Keillor. Or in this case, a gift you can give again and again.</span>
+        <div class="chapter-aside">
+          <span class="marginalia serif">"A book is a gift you can open again and again." — Garrison Keillor. Or in this case, a gift you can give again and again.</span>
+        </div>
       </div>
     </section>
 
     <section class="chapter" id="chapter-3">
       <div class="chapter-header">
-        <span class="chapter-number">Chapter Three</span>
-        <h2>Find your people</h2>
-        <p class="chapter-intro">Here's the thing about readers: we're desperate to talk about what we've read. The right person will understand why you cried at that ending. We help you find them.</p>
+        <span class="eyebrow">Chapter Three</span>
+        <h2 class="serif">Find your people</h2>
+        <p class="chapter-intro muted">Here's the thing about readers: we're desperate to talk about what we've read. The right person will understand why you cried at that ending. We help you find them.</p>
       </div>
 
       <div class="features-grid">
-        <div class="feature-card">
+        <div class="card feature-card">
           <div class="feature-icon">👯</div>
-          <h3>Shelf twins</h3>
-          <p>People with suspiciously similar taste. The kind who'll finish your sentences about obscure plot points.</p>
+          <h3 class="serif">Shelf twins</h3>
+          <p class="muted">People with suspiciously similar taste. The kind who'll finish your sentences about obscure plot points.</p>
         </div>
-        <div class="feature-card">
+        <div class="card feature-card">
           <div class="feature-icon">💬</div>
-          <h3>Discussion matches</h3>
-          <p>Mark a book "want to discuss" and find others who need to process that ending with another human.</p>
+          <h3 class="serif">Discussion matches</h3>
+          <p class="muted">Mark a book "want to discuss" and find others who need to process that ending with another human.</p>
         </div>
-        <div class="feature-card">
+        <div class="card feature-card">
           <div class="feature-icon">🏘️</div>
-          <h3>Local bookstores too</h3>
-          <p>Independent shops with character. The kind where the owner actually reads and has opinions.</p>
+          <h3 class="serif">Local bookstores too</h3>
+          <p class="muted">Independent shops with character. The kind where the owner actually reads and has opinions.</p>
         </div>
       </div>
 
       <div class="chapter-aside">
-        <span class="marginalia">"No two persons ever read the same book." — Edmund Wilson. But some people read it similarly enough to become friends.</span>
+        <span class="marginalia serif">"No two persons ever read the same book." — Edmund Wilson. But some people read it similarly enough to become friends.</span>
       </div>
     </section>
 
     <section class="chapter alt" id="colophon">
-      <div class="chapter-header">
-        <span class="chapter-number">Colophon</span>
-        <h2>A note from the management</h2>
-        <p class="chapter-intro">In which we explain ourselves, because every good book has a bit at the end where the author rambles about fonts and paper stock.</p>
-      </div>
+      <div class="chapter-inner">
+        <div class="chapter-header">
+          <span class="eyebrow">Colophon</span>
+          <h2 class="serif">A note from the management</h2>
+          <p class="chapter-intro muted">In which we explain ourselves, because every good book has a bit at the end where the author rambles about fonts and paper stock.</p>
+        </div>
 
-      <div class="colophon-content">
-        <p>
-          biblocal is a <strong>community non-profit initiative</strong>, which is a fancy way of saying nobody's getting rich here and we're all doing this because we genuinely believe books should move around more than they do.*
-        </p>
-        <p>
-          The whole thing is open source, because the best ideas—like the best books—want to be shared. If you can code, write, design, or just have strong opinions about library classification systems, we'd love your help. Pull requests welcome. Constructive criticism tolerated. Baked goods appreciated but not required.**
-        </p>
-        <p class="github-link">
-          <a href="https://github.com/sdawka/biblocal" target="_blank" rel="noopener noreferrer">
-            → Find us on GitHub
-          </a>
-        </p>
-      </div>
+        <div class="colophon-content">
+          <p>
+            biblocal is a <strong>community non-profit initiative</strong>, which is a fancy way of saying nobody's getting rich here and we're all doing this because we genuinely believe books should move around more than they do.*
+          </p>
+          <p>
+            The whole thing is open source, because the best ideas—like the best books—want to be shared. If you can code, write, design, or just have strong opinions about library classification systems, we'd love your help. Pull requests welcome. Constructive criticism tolerated. Baked goods appreciated but not required.**
+          </p>
+          <p class="github-link">
+            <a href="https://github.com/sdawka/biblocal" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
+              → Find us on GitHub
+            </a>
+          </p>
+        </div>
 
-      <div class="chapter-aside">
-        <span class="marginalia">* We considered becoming a for-profit startup and "disrupting the personal library space," but that seemed rather against the spirit of the thing.</span>
-      </div>
-      <div class="chapter-aside footnote-second">
-        <span class="marginalia">** GNU Terry Pratchett</span>
+        <div class="chapter-aside">
+          <span class="marginalia serif">* We considered becoming a for-profit startup and "disrupting the personal library space," but that seemed rather against the spirit of the thing.</span>
+        </div>
+        <div class="chapter-aside footnote-second">
+          <span class="marginalia serif">** GNU Terry Pratchett</span>
+        </div>
       </div>
     </section>
 
     <section class="cta-section">
-      <h2>Ready to see who's reading near you?</h2>
-      <p>Your shelf is waiting. Your people are out there. Let's introduce you.</p>
-      <a href="/" class="btn-victorian">Build Your Shelf</a>
+      <h2 class="serif">Ready to see who's reading near you?</h2>
+      <p class="muted">Your shelf is waiting. Your people are out there. Let's introduce you.</p>
+      <a href="/" class="btn btn-filled btn-lg">Build Your Shelf</a>
     </section>
 
     <Footer />
@@ -148,87 +153,80 @@ import Footer from '../components/Footer.astro';
   }
 
   .hero-mini {
-    padding: var(--space-2xl) var(--space-2xl) var(--space-xl);
+    padding: var(--s-10) var(--s-6) var(--s-8);
     text-align: center;
-    background: radial-gradient(
-      ellipse at 50% 0%,
-      rgba(184, 134, 11, 0.08) 0%,
-      transparent 60%
-    );
   }
 
   .back-link {
     display: inline-block;
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.9rem;
-    color: var(--color-burgundy);
+    color: var(--accent);
     text-decoration: none;
-    margin-bottom: var(--space-lg);
-    transition: color var(--transition-quick);
+    margin-bottom: var(--s-5);
+    transition: color var(--dur-1) var(--ease-soft);
   }
 
   .back-link:hover {
-    color: var(--color-burgundy-dark);
+    color: var(--accent-hover);
+  }
+
+  .hero-mini .eyebrow {
+    display: block;
+    margin-bottom: var(--s-3);
   }
 
   .hero-mini h1 {
-    font-family: var(--font-display);
     font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 600;
-    font-style: italic;
-    color: var(--color-ink);
-    line-height: 1.2;
-    margin: 0 0 var(--space-md);
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
+    font-weight: 500;
+    line-height: 1.15;
+    margin: 0 auto var(--s-4);
+    max-width: 720px;
   }
 
   .subtitle {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.15rem;
-    color: var(--color-ink-faded);
     margin: 0;
   }
 
   .chapter {
-    padding: var(--space-2xl);
+    padding: var(--s-10) var(--s-6);
     max-width: 1000px;
     margin: 0 auto;
   }
 
   .chapter.alt {
-    background: var(--color-aged-paper);
+    background: var(--surface-sunken);
+    max-width: none;
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .chapter-inner {
+    max-width: 1000px;
+    margin: 0 auto;
   }
 
   .chapter-header {
     text-align: center;
-    margin-bottom: var(--space-2xl);
+    margin-bottom: var(--s-8);
   }
 
-  .chapter-number {
+  .chapter-header .eyebrow {
     display: inline-block;
-    font-family: var(--font-display);
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--color-burgundy);
-    margin-bottom: var(--space-sm);
+    margin-bottom: var(--s-2);
   }
 
   .chapter-header h2 {
-    font-family: var(--font-display);
     font-size: clamp(1.8rem, 4vw, 2.5rem);
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-md);
+    font-weight: 500;
+    margin: 0 0 var(--s-4);
   }
 
   .chapter-intro {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.1rem;
-    color: var(--color-ink-faded);
     max-width: 600px;
     margin: 0 auto;
     line-height: 1.7;
@@ -237,134 +235,102 @@ import Footer from '../components/Footer.astro';
   .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--space-lg);
-    margin-bottom: var(--space-xl);
+    gap: var(--s-5);
+    margin-bottom: var(--s-8);
   }
 
   .feature-card {
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    padding: var(--space-lg);
     text-align: center;
-    box-shadow: var(--shadow-card);
-    transition: all var(--transition-gentle);
   }
 
   .feature-card:hover {
     transform: translateY(-3px);
-    box-shadow: var(--shadow-lifted);
+    box-shadow: var(--shadow-2);
+    border-color: var(--hairline-strong);
   }
 
   .feature-icon {
     font-size: 2.5rem;
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--s-4);
   }
 
   .feature-card h3 {
-    font-family: var(--font-display);
     font-size: 1.15rem;
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-sm);
+    font-weight: 500;
+    margin: 0 0 var(--s-2);
   }
 
   .feature-card p {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.95rem;
-    color: var(--color-ink-faded);
     margin: 0;
     line-height: 1.6;
   }
 
   .chapter-aside {
     text-align: center;
-    padding: var(--space-lg);
-    border-top: 1px dashed var(--color-gold-pale);
+    padding: var(--s-5);
+    border-top: 1px solid var(--hairline);
   }
 
   .marginalia {
-    font-family: var(--font-handwritten);
+    font-family: var(--font-display);
     font-size: 1.1rem;
-    color: var(--color-ink-light);
+    color: var(--ink-faint);
     font-style: italic;
   }
 
   .cta-section {
     text-align: center;
-    padding: var(--space-2xl);
-    background: linear-gradient(
-      to bottom,
-      var(--color-parchment),
-      var(--color-aged-paper)
-    );
+    padding: var(--s-10) var(--s-6);
+    background: var(--surface-sunken);
+    border-top: 1px solid var(--hairline);
   }
 
   .cta-section h2 {
-    font-family: var(--font-display);
     font-size: clamp(1.5rem, 3.5vw, 2rem);
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-md);
+    font-weight: 500;
+    margin: 0 0 var(--s-4);
   }
 
   .cta-section p {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.1rem;
-    color: var(--color-ink-faded);
-    margin: 0 0 var(--space-xl);
+    margin: 0 0 var(--s-6);
   }
 
   .colophon-content {
     max-width: 650px;
-    margin: 0 auto var(--space-xl);
+    margin: 0 auto var(--s-8);
     text-align: center;
   }
 
   .colophon-content p {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.05rem;
-    color: var(--color-ink-faded);
+    color: var(--ink-muted);
     line-height: 1.8;
-    margin: 0 0 var(--space-md);
+    margin: 0 0 var(--s-4);
   }
 
   .colophon-content strong {
-    color: var(--color-ink);
+    color: var(--ink);
     font-weight: 600;
   }
 
   .github-link {
-    margin-top: var(--space-lg);
-  }
-
-  .github-link a {
-    display: inline-block;
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--color-burgundy);
-    text-decoration: none;
-    padding: var(--space-sm) var(--space-md);
-    border: 2px solid var(--color-burgundy);
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-quick);
-  }
-
-  .github-link a:hover {
-    background: var(--color-burgundy);
-    color: var(--color-cream);
+    margin-top: var(--s-5);
   }
 
   .footnote-second {
     border-top: none;
     padding-top: 0;
-    margin-top: calc(-1 * var(--space-md));
+    margin-top: calc(-1 * var(--s-4));
   }
 
   @media (max-width: 600px) {
     .chapter {
-      padding: var(--space-xl) var(--space-md);
+      padding: var(--s-8) var(--s-4);
     }
 
     .features-grid {

@@ -6,80 +6,83 @@ import Footer from '../components/Footer.astro';
 <LandingLayout title="About — biblocal">
   <main>
     <section class="hero-mini">
-      <a href="/" class="back-link">← Back to home</a>
-      <h1>Books belong to everyone.<br/>We're just helping them get around.</h1>
-      <p class="subtitle">A community project to connect readers, one shelf at a time.</p>
+      <a href="/" class="back-link rise">← Back to home</a>
+      <span class="eyebrow rise rise-1">About biblocal</span>
+      <h1 class="serif rise rise-2">Books belong to everyone.<br/>We're just helping them get around.</h1>
+      <p class="subtitle muted rise rise-3">A community project to connect readers, one shelf at a time.</p>
     </section>
 
     <section class="chapter" id="what-we-are">
       <div class="chapter-header">
-        <span class="chapter-number">The Short Version</span>
-        <h2>What is biblocal?</h2>
-        <p class="chapter-intro">A free tool that connects people through their bookshelves. Build your shelf, find neighbors with similar taste, lend and borrow locally. No algorithms pushing bestsellers. No fees. Just readers finding readers.</p>
+        <span class="eyebrow">The Short Version</span>
+        <h2 class="serif">What is biblocal?</h2>
+        <p class="chapter-intro muted">A free tool that connects people through their bookshelves. Build your shelf, find neighbors with similar taste, lend and borrow locally. No algorithms pushing bestsellers. No fees. Just readers finding readers.</p>
       </div>
 
       <div class="values-grid">
-        <div class="value-card">
+        <div class="card value-card">
           <div class="value-icon">🌱</div>
-          <h3>Community-owned</h3>
-          <p>No investors. No ads. No data harvesting. Just a thing we built because we wanted it to exist.</p>
+          <h3 class="serif">Community-owned</h3>
+          <p class="muted">No investors. No ads. No data harvesting. Just a thing we built because we wanted it to exist.</p>
         </div>
-        <div class="value-card">
+        <div class="card value-card">
           <div class="value-icon">🔓</div>
-          <h3>Open source</h3>
-          <p>The code is on GitHub. Fork it, improve it, run your own. Ideas want to be shared.</p>
+          <h3 class="serif">Open source</h3>
+          <p class="muted">The code is on GitHub. Fork it, improve it, run your own. Ideas want to be shared.</p>
         </div>
-        <div class="value-card">
+        <div class="card value-card">
           <div class="value-icon">🏘️</div>
-          <h3>Hyper-local</h3>
-          <p>Your matches are in your neighborhood. Walk over. Have coffee. Remember what that's like.</p>
+          <h3 class="serif">Hyper-local</h3>
+          <p class="muted">Your matches are in your neighborhood. Walk over. Have coffee. Remember what that's like.</p>
         </div>
       </div>
     </section>
 
     <section class="chapter alt" id="help-us">
-      <div class="chapter-header">
-        <span class="chapter-number">A Small Request</span>
-        <h2>Help us spread the word</h2>
-        <p class="chapter-intro">biblocal only works if people use it. We don't have a marketing budget—we have you. If this thing resonates, here's how you can help:</p>
-      </div>
+      <div class="chapter-inner">
+        <div class="chapter-header">
+          <span class="eyebrow">A Small Request</span>
+          <h2 class="serif">Help us spread the word</h2>
+          <p class="chapter-intro muted">biblocal only works if people use it. We don't have a marketing budget—we have you. If this thing resonates, here's how you can help:</p>
+        </div>
 
-      <div class="help-grid">
-        <div class="help-card">
-          <div class="help-number">1</div>
-          <h3>Tell a reader</h3>
-          <p>Think of one person who'd love this. Text them. That's it. Personal recommendations beat everything.</p>
+        <div class="help-grid">
+          <div class="card help-card">
+            <div class="help-number">1</div>
+            <h3 class="serif">Tell a reader</h3>
+            <p class="muted">Think of one person who'd love this. Text them. That's it. Personal recommendations beat everything.</p>
+          </div>
+          <div class="card help-card">
+            <div class="help-number">2</div>
+            <h3 class="serif">Share it somewhere</h3>
+            <p class="muted">Post about it. Tweet it. Put it in your book club's group chat. Wherever readers gather.</p>
+          </div>
+          <div class="card help-card">
+            <div class="help-number">3</div>
+            <h3 class="serif">Add your bookstore</h3>
+            <p class="muted">Know an indie bookshop that should be on here? Add it. They'll thank you. We'll thank you.</p>
+          </div>
+          <div class="card help-card">
+            <div class="help-number">4</div>
+            <h3 class="serif">Build with us</h3>
+            <p class="muted">Can code? Design? Write? Have opinions about metadata? We're on GitHub. Pull requests welcome.</p>
+          </div>
         </div>
-        <div class="help-card">
-          <div class="help-number">2</div>
-          <h3>Share it somewhere</h3>
-          <p>Post about it. Tweet it. Put it in your book club's group chat. Wherever readers gather.</p>
-        </div>
-        <div class="help-card">
-          <div class="help-number">3</div>
-          <h3>Add your bookstore</h3>
-          <p>Know an indie bookshop that should be on here? Add it. They'll thank you. We'll thank you.</p>
-        </div>
-        <div class="help-card">
-          <div class="help-number">4</div>
-          <h3>Build with us</h3>
-          <p>Can code? Design? Write? Have opinions about metadata? We're on GitHub. Pull requests welcome.</p>
-        </div>
-      </div>
 
-      <div class="share-box">
-        <p class="share-prompt">Copy this link and send it to someone who'd get it:</p>
-        <div class="share-url">
-          <code>biblocal.com</code>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText('https://biblocal.com'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 2000)">Copy</button>
+        <div class="card share-box">
+          <p class="share-prompt muted">Copy this link and send it to someone who'd get it:</p>
+          <div class="share-url">
+            <code>biblocal.com</code>
+            <button class="btn btn-tinted btn-sm copy-btn" onclick="navigator.clipboard.writeText('https://biblocal.com'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 2000)">Copy</button>
+          </div>
         </div>
       </div>
     </section>
 
     <section class="chapter" id="why">
       <div class="chapter-header">
-        <span class="chapter-number">The Longer Version</span>
-        <h2>Why we built this</h2>
+        <span class="eyebrow">The Longer Version</span>
+        <h2 class="serif">Why we built this</h2>
       </div>
 
       <div class="story-content">
@@ -98,14 +101,14 @@ import Footer from '../components/Footer.astro';
       </div>
 
       <div class="chapter-aside">
-        <span class="marginalia">"A room without books is like a body without a soul." — Cicero. A neighborhood without book-sharing is just a collection of strangers.</span>
+        <span class="marginalia serif">"A room without books is like a body without a soul." — Cicero. A neighborhood without book-sharing is just a collection of strangers.</span>
       </div>
     </section>
 
     <section class="cta-section">
-      <h2>Ready to find your people?</h2>
-      <p>Build your shelf. See who's nearby. Start lending.</p>
-      <a href="/" class="btn-victorian">Get Started</a>
+      <h2 class="serif">Ready to find your people?</h2>
+      <p class="muted">Build your shelf. See who's nearby. Start lending.</p>
+      <a href="/" class="btn btn-filled btn-lg">Get Started</a>
     </section>
 
     <Footer />
@@ -120,94 +123,80 @@ import Footer from '../components/Footer.astro';
   }
 
   .hero-mini {
-    padding: var(--space-2xl) var(--space-2xl) var(--space-xl);
+    padding: var(--s-10) var(--s-6) var(--s-8);
     text-align: center;
-    background: radial-gradient(
-      ellipse at 50% 0%,
-      rgba(184, 134, 11, 0.08) 0%,
-      transparent 60%
-    );
   }
 
   .back-link {
     display: inline-block;
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.9rem;
-    color: var(--color-burgundy);
+    color: var(--accent);
     text-decoration: none;
-    margin-bottom: var(--space-lg);
-    transition: color var(--transition-quick);
+    margin-bottom: var(--s-5);
+    transition: color var(--dur-1) var(--ease-soft);
   }
 
   .back-link:hover {
-    color: var(--color-burgundy-dark);
+    color: var(--accent-hover);
+  }
+
+  .hero-mini .eyebrow {
+    display: block;
+    margin-bottom: var(--s-3);
   }
 
   .hero-mini h1 {
-    font-family: var(--font-display);
     font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 600;
-    font-style: italic;
-    color: var(--color-ink);
-    line-height: 1.2;
-    margin: 0 0 var(--space-md);
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
+    font-weight: 500;
+    line-height: 1.15;
+    margin: 0 auto var(--s-4);
+    max-width: 720px;
   }
 
   .subtitle {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.15rem;
-    color: var(--color-ink-faded);
     margin: 0;
   }
 
   .chapter {
-    padding: var(--space-2xl);
+    padding: var(--s-10) var(--s-6);
     max-width: 1000px;
     margin: 0 auto;
   }
 
   .chapter.alt {
-    background: var(--color-aged-paper);
+    background: var(--surface-sunken);
     max-width: none;
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
   }
 
-  .chapter.alt > * {
+  .chapter-inner {
     max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 0 auto;
   }
 
   .chapter-header {
     text-align: center;
-    margin-bottom: var(--space-2xl);
+    margin-bottom: var(--s-8);
   }
 
-  .chapter-number {
+  .chapter-header .eyebrow {
     display: inline-block;
-    font-family: var(--font-display);
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--color-burgundy);
-    margin-bottom: var(--space-sm);
+    margin-bottom: var(--s-2);
   }
 
   .chapter-header h2 {
-    font-family: var(--font-display);
     font-size: clamp(1.8rem, 4vw, 2.5rem);
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-md);
+    font-weight: 500;
+    margin: 0 0 var(--s-4);
   }
 
   .chapter-intro {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.1rem;
-    color: var(--color-ink-faded);
     max-width: 600px;
     margin: 0 auto;
     line-height: 1.7;
@@ -216,41 +205,33 @@ import Footer from '../components/Footer.astro';
   .values-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--space-lg);
+    gap: var(--s-5);
   }
 
   .value-card {
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    padding: var(--space-lg);
     text-align: center;
-    box-shadow: var(--shadow-card);
-    transition: all var(--transition-gentle);
   }
 
   .value-card:hover {
     transform: translateY(-3px);
-    box-shadow: var(--shadow-lifted);
+    box-shadow: var(--shadow-2);
+    border-color: var(--hairline-strong);
   }
 
   .value-icon {
     font-size: 2.5rem;
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--s-4);
   }
 
   .value-card h3 {
-    font-family: var(--font-display);
     font-size: 1.15rem;
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-sm);
+    font-weight: 500;
+    margin: 0 0 var(--s-2);
   }
 
   .value-card p {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.95rem;
-    color: var(--color-ink-faded);
     margin: 0;
     line-height: 1.6;
   }
@@ -258,17 +239,12 @@ import Footer from '../components/Footer.astro';
   .help-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: var(--space-lg);
-    margin-bottom: var(--space-2xl);
+    gap: var(--s-5);
+    margin-bottom: var(--s-8);
   }
 
   .help-card {
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    padding: var(--space-lg);
     text-align: center;
-    box-shadow: var(--shadow-card);
   }
 
   .help-number {
@@ -277,137 +253,107 @@ import Footer from '../components/Footer.astro';
     justify-content: center;
     width: 2.5rem;
     height: 2.5rem;
-    background: var(--color-burgundy);
-    color: var(--color-cream);
+    background: var(--accent);
+    color: var(--accent-on);
     font-family: var(--font-display);
     font-size: 1.2rem;
     font-weight: 600;
-    border-radius: 50%;
-    margin-bottom: var(--space-md);
+    border-radius: var(--r-full);
+    margin-bottom: var(--s-4);
   }
 
   .help-card h3 {
-    font-family: var(--font-display);
     font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-sm);
+    font-weight: 500;
+    margin: 0 0 var(--s-2);
   }
 
   .help-card p {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.9rem;
-    color: var(--color-ink-faded);
     margin: 0;
     line-height: 1.6;
   }
 
   .share-box {
-    background: var(--color-cream);
-    border: 2px dashed var(--color-gold);
-    border-radius: var(--radius-md);
-    padding: var(--space-xl);
     text-align: center;
     max-width: 500px;
     margin: 0 auto;
+    padding: var(--s-6);
   }
 
   .share-prompt {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1rem;
-    color: var(--color-ink-faded);
-    margin: 0 0 var(--space-md);
+    margin: 0 0 var(--s-4);
   }
 
   .share-url {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-md);
+    gap: var(--s-4);
     flex-wrap: wrap;
   }
 
   .share-url code {
-    font-family: var(--font-mono, monospace);
+    font-family: ui-monospace, 'SF Mono', monospace;
     font-size: 1.2rem;
-    color: var(--color-ink);
-    background: var(--color-parchment);
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--color-gold-pale);
-  }
-
-  .copy-btn {
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-cream);
-    background: var(--color-burgundy);
-    border: none;
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background var(--transition-quick);
-  }
-
-  .copy-btn:hover {
-    background: var(--color-burgundy-dark);
+    color: var(--ink);
+    background: var(--surface-sunken);
+    padding: var(--s-2) var(--s-4);
+    border-radius: var(--r-md);
+    border: 1px solid var(--hairline);
   }
 
   .story-content {
     max-width: 650px;
-    margin: 0 auto var(--space-xl);
+    margin: 0 auto var(--s-8);
   }
 
   .story-content p {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.1rem;
-    color: var(--color-ink-faded);
+    color: var(--ink-muted);
     line-height: 1.8;
-    margin: 0 0 var(--space-lg);
+    margin: 0 0 var(--s-5);
   }
 
   .chapter-aside {
     text-align: center;
-    padding: var(--space-lg);
-    border-top: 1px dashed var(--color-gold-pale);
+    padding: var(--s-5);
+    border-top: 1px solid var(--hairline);
   }
 
   .marginalia {
-    font-family: var(--font-handwritten);
+    font-family: var(--font-display);
     font-size: 1.1rem;
-    color: var(--color-ink-light);
+    color: var(--ink-faint);
     font-style: italic;
   }
 
   .cta-section {
     text-align: center;
-    padding: var(--space-2xl);
-    background: linear-gradient(
-      to bottom,
-      var(--color-parchment),
-      var(--color-aged-paper)
-    );
+    padding: var(--s-10) var(--s-6);
+    background: var(--surface-sunken);
+    border-top: 1px solid var(--hairline);
   }
 
   .cta-section h2 {
-    font-family: var(--font-display);
     font-size: clamp(1.5rem, 3.5vw, 2rem);
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-md);
+    font-weight: 500;
+    margin: 0 0 var(--s-4);
   }
 
   .cta-section p {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.1rem;
-    color: var(--color-ink-faded);
-    margin: 0 0 var(--space-xl);
+    margin: 0 0 var(--s-6);
   }
 
   @media (max-width: 600px) {
     .chapter {
-      padding: var(--space-xl) var(--space-md);
+      padding: var(--s-8) var(--s-4);
     }
 
     .values-grid,
