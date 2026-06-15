@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Spring } from 'svelte/motion';
   import type { Book, BookIntent, BookVisibility, BookOwnership } from '../lib/types';
 
   interface Props {
@@ -14,7 +15,9 @@
 
   let showDeleteConfirm = $state(false);
 
-  let swipeX = $state(0);
+  // Physical, interruptible swipe offset.
+  const swipe = new Spring(0, { stiffness: 0.18, damping: 0.72 });
+  let swipeOpen = $state(false);
   let startX = 0;
   let isSwiping = false;
   const SWIPE_THRESHOLD = 80;
@@ -30,23 +33,27 @@
     const currentX = e.touches[0].clientX;
     const diff = startX - currentX;
     // Only allow left swipe, cap at threshold
-    swipeX = Math.min(Math.max(diff, 0), SWIPE_THRESHOLD);
+    const next = Math.min(Math.max(diff, 0), SWIPE_THRESHOLD);
+    swipe.set(next, { instant: true });
   }
 
   function handleTouchEnd() {
     if (!isSwiping) return;
     isSwiping = false;
     // Snap to threshold or back to 0
-    if (swipeX >= SWIPE_THRESHOLD * 0.6) {
-      swipeX = SWIPE_THRESHOLD;
+    if (swipe.current >= SWIPE_THRESHOLD * 0.6) {
+      swipe.set(SWIPE_THRESHOLD);
+      swipeOpen = true;
     } else {
-      swipeX = 0;
+      swipe.set(0);
+      swipeOpen = false;
     }
   }
 
   function handleSwipeDelete() {
     onDelete?.(book.id);
-    swipeX = 0;
+    swipe.set(0);
+    swipeOpen = false;
   }
 
   function handleDeleteClick() {
@@ -78,15 +85,15 @@
 </script>
 
 <article
-  class="book-card"
+  class="book-card card"
   class:seeking={book.ownership === 'seeking'}
-  class:swiping={swipeX > 0}
+  class:swiping={swipeOpen || swipe.current > 0}
   data-book-id={book.id}
   ontouchstart={handleTouchStart}
   ontouchmove={handleTouchMove}
   ontouchend={handleTouchEnd}
-  ontouchcancel={() => { isSwiping = false; swipeX = 0; }}
-  style="transform: translateX(-{swipeX}px)"
+  ontouchcancel={() => { isSwiping = false; swipe.set(0); swipeOpen = false; }}
+  style="transform: translateX(-{swipe.current}px)"
 >
   {#if book.coverUrl}
     <img src={book.coverUrl} alt="{book.title} cover" class="cover" />
@@ -97,33 +104,43 @@
   {/if}
 
   <div class="info">
-    <h3 class="title">{book.title}</h3>
-    <p class="author">{book.author}</p>
+    <h3 class="title serif">{book.title}</h3>
+    <p class="author muted">{book.author}</p>
 
     <div class="badges">
       {#if book.ownership === 'seeking'}
-        <span class="badge seeking">Seeking</span>
+        <span class="pill" data-status="seeking-home">Seeking</span>
       {/if}
       {#if book.visibility === 'private'}
-        <span class="badge private">Private</span>
+        <span class="pill" data-status="private">Private</span>
       {/if}
       {#each book.intents as intent}
         {#if readonly}
-          <span class="badge intent">{INTENT_LABELS[intent]}</span>
+          <span class="pill" data-status={intent}>{INTENT_LABELS[intent]}</span>
         {:else}
           <button
-            class="badge intent active"
+            class="pill pill-button"
+            data-status={intent}
             onclick={() => toggleIntent(intent)}
             aria-label="Remove {INTENT_LABELS[intent]} intent from {book.title}"
           >
-            {INTENT_LABELS[intent]} ✕
+            {INTENT_LABELS[intent]}
+            <span class="pill-x" aria-hidden="true">
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                <path d="M2 2l6 6M8 2l-6 6" />
+              </svg>
+            </span>
           </button>
         {/if}
       {/each}
     </div>
 
     {#if book.addedVia === 'scan'}
-      <span class="verified" title="Added via ISBN scan">✓</span>
+      <span class="verified" title="Added via ISBN scan" aria-label="Added via ISBN scan">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13.5 4.5 6 12 2.5 8.5" />
+        </svg>
+      </span>
     {/if}
   </div>
 
@@ -133,24 +150,26 @@
       onclick={handleDeleteClick}
       aria-label="Delete {book.title} from shelf"
     >
-      ✕
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
+      </svg>
     </button>
 
     {#if showDeleteConfirm}
-      <div class="delete-confirm">
-        <p>Remove from shelf?</p>
+      <div class="delete-confirm glass">
+        <p class="serif">Remove from shelf?</p>
         <div class="delete-actions">
-          <button class="btn-cancel" onclick={cancelDelete}>Cancel</button>
-          <button class="btn-remove" onclick={confirmDelete}>Remove</button>
+          <button class="btn btn-outline btn-sm" onclick={cancelDelete}>Cancel</button>
+          <button class="btn btn-filled btn-sm btn-remove" onclick={confirmDelete}>Remove</button>
         </div>
       </div>
     {/if}
   {/if}
 
-  {#if !readonly && onDelete && swipeX > 0}
+  {#if !readonly && onDelete && swipe.current > 0}
     <button
       class="swipe-delete"
-      style="width: {swipeX}px"
+      style="width: {swipe.current}px"
       onclick={handleSwipeDelete}
       aria-label="Delete {book.title}"
     >
@@ -162,87 +181,41 @@
 <style>
   .book-card {
     display: flex;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--color-cream);
-    background-image: var(--texture-paper-fine), var(--texture-aged);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
+    gap: var(--s-4);
+    padding: var(--s-4);
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow-resting);
-    transition: transform var(--transition-quick), box-shadow var(--transition-gentle), border-color var(--transition-gentle);
     touch-action: pan-y;
   }
 
   .book-card.seeking {
-    border-left: 3px solid var(--color-burgundy);
-  }
-
-  .book-card::before,
-  .book-card::after {
-    content: '';
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    border: 1px solid var(--color-gold);
-    opacity: 0;
-    transition: opacity var(--transition-gentle);
-    pointer-events: none;
-  }
-
-  .book-card::before {
-    top: 6px;
-    left: 6px;
-    border-right: none;
-    border-bottom: none;
-  }
-
-  .book-card::after {
-    bottom: 6px;
-    right: 6px;
-    border-left: none;
-    border-top: none;
-  }
-
-  .book-card:hover {
-    box-shadow: var(--shadow-hover);
-    border-color: var(--color-gold);
+    border-left: 3px solid var(--accent);
   }
 
   .book-card:hover:not(.swiping) {
     transform: translateY(-2px);
-  }
-
-  .book-card:hover::before,
-  .book-card:hover::after {
-    opacity: 0.5;
+    box-shadow: var(--shadow-2);
+    border-color: var(--hairline-strong);
   }
 
   .cover {
     width: 60px;
     height: 90px;
     object-fit: cover;
-    border-radius: 2px;
+    border-radius: var(--r-sm);
     flex-shrink: 0;
-    box-shadow: 2px 2px 6px rgba(44, 24, 16, 0.2);
+    box-shadow: var(--shadow-2);
   }
 
   .cover.placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(
-      to bottom,
-      var(--color-mahogany-light),
-      var(--color-mahogany)
-    );
+    background: var(--accent-tint);
     font-family: var(--font-display);
     font-size: 1.75rem;
-    font-weight: 600;
-    font-style: italic;
-    color: var(--color-gold);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    font-weight: 500;
+    color: var(--accent);
   }
 
   .info {
@@ -251,97 +224,70 @@
   }
 
   .title {
-    margin: 0 0 0.25rem;
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-ink);
+    margin: 0 0 var(--s-1);
+    font-size: 1.0625rem;
+    font-weight: 500;
+    color: var(--ink);
     line-height: 1.3;
+    letter-spacing: -0.01em;
   }
 
   .author {
-    margin: 0 0 0.625rem;
-    font-family: var(--font-body);
+    margin: 0 0 var(--s-3);
     font-size: 0.875rem;
-    font-style: italic;
-    color: var(--color-ink-faded);
   }
 
   .badges {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem;
+    gap: var(--s-2);
   }
 
-  .badge {
-    display: inline-block;
-    padding: 0.15rem 0.4rem;
-    font-family: var(--font-display);
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    border-radius: 2px;
+  .pill-button {
     border: none;
-    cursor: default;
-  }
-
-  .badge.seeking {
-    background: var(--color-burgundy);
-    color: var(--color-cream);
-  }
-
-  .badge.private {
-    background: var(--color-ink-faded);
-    color: var(--color-cream);
-  }
-
-  .badge.intent {
-    background: var(--color-gold-pale);
-    color: var(--color-forest-dark);
-  }
-
-  .badge.intent.active {
     cursor: pointer;
-    transition: opacity var(--transition-quick);
     min-height: 44px;
-    min-width: 44px;
+    transition: box-shadow var(--dur-1) var(--ease-soft), transform var(--dur-1) var(--ease-spring);
+  }
+
+  .pill-button:hover {
+    box-shadow: inset 0 0 0 1px currentColor;
+  }
+
+  .pill-button:active {
+    transform: scale(0.94);
+  }
+
+  .pill-x {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-  }
-
-  .badge.intent.active:hover {
-    opacity: 0.8;
-  }
-
-  button.badge {
-    font-family: inherit;
+    opacity: 0.7;
   }
 
   .verified {
-    margin-left: 0.5rem;
-    color: var(--color-forest);
-    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    margin-top: var(--s-2);
+    color: var(--accent);
   }
 
   .delete-btn {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    top: var(--s-2);
+    right: var(--s-2);
     width: 28px;
     height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
-    color: var(--color-ink-faded);
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: 50%;
+    color: var(--ink-muted);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-full);
     cursor: pointer;
     opacity: 0;
-    transition: all var(--transition-quick);
+    transition: opacity var(--dur-2) var(--ease-out), color var(--dur-1) var(--ease-soft),
+                background var(--dur-1) var(--ease-soft), border-color var(--dur-1) var(--ease-soft);
     z-index: 2;
   }
 
@@ -350,9 +296,9 @@
   }
 
   .delete-btn:hover {
-    color: var(--color-cream);
-    background: var(--color-burgundy);
-    border-color: var(--color-burgundy-dark);
+    color: var(--accent-on);
+    background: var(--accent);
+    border-color: var(--accent);
   }
 
   .delete-confirm {
@@ -362,72 +308,44 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    background: rgba(253, 250, 243, 0.95);
-    border-radius: var(--radius-md);
+    gap: var(--s-3);
+    border-radius: var(--r-lg);
     z-index: 3;
+    animation: fade var(--dur-2) var(--ease-soft) both;
   }
 
   .delete-confirm p {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--color-ink);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--ink);
   }
 
   .delete-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--s-2);
   }
 
-  .delete-confirm .btn-cancel {
-    padding: 0.5rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    color: var(--color-ink-faded);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .delete-confirm .btn-cancel:hover {
-    border-color: var(--color-gold);
-    color: var(--color-ink);
-  }
-
-  .delete-confirm .btn-remove {
-    padding: 0.5rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--color-cream);
-    background: var(--color-burgundy);
-    border: 1px solid var(--color-burgundy-dark);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .delete-confirm .btn-remove:hover {
-    background: var(--color-burgundy-dark);
+  /* Make the destructive confirm read as destructive while staying on-token. */
+  .btn-remove {
+    --accent: var(--st-giftable-fg);
+    --accent-on: var(--surface);
+    --accent-hover: var(--st-giftable-fg);
   }
 
   :global(.book-card.highlight-pulse) {
-    animation: highlightPulse 1s ease-out;
+    animation: highlightPulse 1s var(--ease-out);
   }
 
   @keyframes highlightPulse {
     0% {
-      box-shadow: 0 0 0 0 var(--color-gold);
+      box-shadow: 0 0 0 0 var(--focus-ring);
     }
     50% {
-      box-shadow: 0 0 0 4px var(--color-gold);
+      box-shadow: 0 0 0 4px var(--focus-ring);
     }
     100% {
-      box-shadow: var(--shadow-resting);
+      box-shadow: var(--shadow-1);
     }
   }
 
@@ -439,14 +357,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--color-cream);
-    background: var(--color-burgundy);
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    font-weight: 590;
+    color: var(--surface);
+    background: var(--st-giftable-fg);
     border: none;
-    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    border-radius: 0 var(--r-lg) var(--r-lg) 0;
     cursor: pointer;
     min-width: 60px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .book-card { transition: none; }
   }
 </style>

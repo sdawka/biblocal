@@ -15,20 +15,32 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
 <Layout title="Your Shelf | biblocal">
   {isQaMode && <QaAuthInit client:load userId={qaUserId} />}
   <main>
-      <div class="header-row">
-        <h1>Your Shelf</h1>
+      <div class="header-row rise">
+        <div class="header-text">
+          <p class="eyebrow">Your library</p>
+          <h1>Your Shelf</h1>
+        </div>
         {!isQaMode && <UserButton />}
       </div>
 
       <PromptIsland client:idle context="shelf" />
 
-      <div class="add-book-section">
+      <div class="add-book-section rise rise-1">
         <AddBookIsland client:load />
       </div>
 
-      <details class="import-section">
-        <summary>Import from Goodreads</summary>
-        <ImportIsland client:visible />
+      <details class="import-section rise rise-2">
+        <summary>
+          <span class="summary-chevron" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3.5 5.5 7 9l3.5-3.5" />
+            </svg>
+          </span>
+          Import from Goodreads
+        </summary>
+        <div class="import-body">
+          <ImportIsland client:visible />
+        </div>
       </details>
 
       <ShelfContainer client:idle />
@@ -39,25 +51,39 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
   .header-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
+    align-items: flex-start;
+    gap: var(--s-4);
+    margin-bottom: var(--s-5);
+  }
+
+  .header-text .eyebrow {
+    margin: 0 0 var(--s-2);
+  }
+
+  .header-text h1 {
+    margin: 0;
   }
 
   .import-section {
-    margin: 1rem 0;
+    margin: var(--s-5) 0;
   }
 
   .import-section summary {
-    padding: 0.75rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 0.6rem 1.05rem;
+    min-height: 44px;
+    font-family: var(--font-ui);
+    font-size: 0.9375rem;
+    font-weight: 590;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--r-full);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: border-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
     list-style: none;
   }
 
@@ -65,20 +91,23 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
     display: none;
   }
 
-  .import-section summary::before {
-    content: "+ ";
+  .summary-chevron {
+    display: inline-flex;
+    color: var(--ink-muted);
+    transition: transform var(--dur-2) var(--ease-spring);
   }
 
-  .import-section[open] summary::before {
-    content: "- ";
+  .import-section[open] .summary-chevron {
+    transform: rotate(180deg);
   }
 
   .import-section summary:hover {
-    border-color: var(--color-gold);
-    color: var(--color-ink);
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
-  .import-section[open] summary {
-    margin-bottom: 0.75rem;
+  .import-section[open] .import-body {
+    margin-top: var(--s-4);
+    animation: rise var(--dur-3) var(--ease-out) both;
   }
 </style>

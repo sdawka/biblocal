@@ -110,7 +110,7 @@
       </p>
       <label class="file-input">
         <input type="file" accept=".csv" onchange={handleFileSelect} />
-        <span class="file-btn">Choose CSV File</span>
+        <span class="btn btn-filled file-btn">Choose CSV File</span>
       </label>
       {#if error}
         <p class="error">{error}</p>
@@ -122,8 +122,8 @@
       <div class="preview-header">
         <h3>{parsedBooks.length} books found</h3>
         <div class="select-actions">
-          <button type="button" class="link-btn" onclick={selectAll}>Select all</button>
-          <button type="button" class="link-btn" onclick={selectNone}>Select none</button>
+          <button type="button" class="btn btn-plain btn-sm" onclick={selectAll}>Select all</button>
+          <button type="button" class="btn btn-plain btn-sm" onclick={selectNone}>Select none</button>
         </div>
       </div>
 
@@ -142,19 +142,19 @@
               onchange={() => toggleBook(i)}
             />
             <div class="book-info">
-              <span class="book-title">{book.title}</span>
-              <span class="book-author">{book.author}</span>
+              <span class="book-title serif">{book.title}</span>
+              <span class="book-author muted">{book.author}</span>
             </div>
-            <span class="book-ownership">{ownershipLabel(book.ownership)}</span>
+            <span class="pill">{ownershipLabel(book.ownership)}</span>
           </label>
         {/each}
       </div>
 
       <div class="preview-actions">
-        <button type="button" class="btn-cancel" onclick={reset}>Cancel</button>
+        <button type="button" class="btn btn-outline btn-cancel" onclick={reset}>Cancel</button>
         <button
           type="button"
-          class="btn-import"
+          class="btn btn-filled btn-import"
           onclick={startImport}
           disabled={selectedIds.size === 0}
         >
@@ -206,33 +206,31 @@
           </div>
         {/if}
       {/if}
-      <button type="button" class="btn-done" onclick={reset}>Done</button>
+      <button type="button" class="btn btn-filled btn-done" onclick={reset}>Done</button>
     </div>
   {/if}
 </div>
 
 <style>
   .import-container {
-    padding: 1.25rem;
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-card);
+    padding: var(--s-5);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-1);
   }
 
   h3 {
-    margin: 0 0 0.75rem;
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--color-ink);
+    margin: 0 0 var(--s-3);
+    font-size: 1.1875rem;
+    font-weight: 500;
+    color: var(--ink);
   }
 
   .instructions {
-    margin: 0 0 1rem;
-    font-family: var(--font-body);
+    margin: 0 0 var(--s-4);
     font-size: 0.9rem;
-    color: var(--color-ink-faded);
+    color: var(--ink-muted);
     line-height: 1.5;
   }
 
@@ -245,41 +243,14 @@
   }
 
   .file-btn {
-    display: inline-block;
-    padding: 0.75rem 1.5rem;
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--color-cream);
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest-light),
-      var(--color-forest),
-      var(--color-forest-dark)
-    );
-    border: 1px solid var(--color-forest-dark);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-gentle);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.15),
-      0 2px 4px rgba(44, 74, 57, 0.3);
-  }
-
-  .file-btn:hover {
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest),
-      var(--color-forest-dark),
-      #152218
-    );
+    display: inline-flex;
   }
 
   .preview-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: var(--s-4);
   }
 
   .preview-header h3 {
@@ -288,50 +259,34 @@
 
   .select-actions {
     display: flex;
-    gap: 1rem;
-  }
-
-  .link-btn {
-    padding: 0;
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    color: var(--color-forest);
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-decoration: underline;
-  }
-
-  .link-btn:hover {
-    color: var(--color-forest-dark);
+    gap: var(--s-1);
   }
 
   .parse-warnings {
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 1rem;
-    font-family: var(--font-body);
+    padding: var(--s-2) var(--s-3);
+    margin-bottom: var(--s-4);
     font-size: 0.85rem;
-    color: var(--color-burgundy-dark);
-    background: rgba(128, 21, 21, 0.1);
-    border-radius: var(--radius-sm);
+    color: var(--st-seeking-fg);
+    background: var(--st-seeking-bg);
+    border-radius: var(--r-sm);
   }
 
   .book-list {
     max-height: 300px;
     overflow-y: auto;
-    margin-bottom: 1rem;
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
+    margin-bottom: var(--s-4);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
   }
 
   .book-row {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.625rem 0.75rem;
-    border-bottom: 1px solid var(--color-gold-pale);
+    gap: var(--s-3);
+    padding: var(--s-3);
+    border-bottom: 1px solid var(--hairline);
     cursor: pointer;
-    transition: background var(--transition-quick);
+    transition: background var(--dur-1) var(--ease-soft);
   }
 
   .book-row:last-child {
@@ -339,17 +294,17 @@
   }
 
   .book-row:hover {
-    background: var(--color-paper);
+    background: var(--surface-sunken);
   }
 
   .book-row.selected {
-    background: rgba(44, 74, 57, 0.05);
+    background: var(--accent-tint);
   }
 
   .book-row input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: var(--color-forest);
+    accent-color: var(--accent);
   }
 
   .book-info {
@@ -359,10 +314,9 @@
 
   .book-title {
     display: block;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
+    font-size: 0.9375rem;
     font-weight: 500;
-    color: var(--color-ink);
+    color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -370,105 +324,46 @@
 
   .book-author {
     display: block;
-    font-family: var(--font-body);
     font-size: 0.8rem;
-    color: var(--color-ink-faded);
-    font-style: italic;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .book-ownership {
+  .book-row .pill {
     flex-shrink: 0;
-    padding: 0.25rem 0.5rem;
-    font-family: var(--font-display);
-    font-size: 0.75rem;
-    color: var(--color-ink-faded);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: 9999px;
   }
 
   .preview-actions {
     display: flex;
-    gap: 0.75rem;
+    gap: var(--s-3);
   }
 
   .btn-cancel {
     flex: 1;
-    padding: 0.75rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .btn-cancel:hover {
-    border-color: var(--color-gold);
-    color: var(--color-ink);
   }
 
   .btn-import {
     flex: 2;
-    padding: 0.75rem 1.25rem;
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--color-cream);
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest-light),
-      var(--color-forest),
-      var(--color-forest-dark)
-    );
-    border: 1px solid var(--color-forest-dark);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-gentle);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.15),
-      0 2px 4px rgba(44, 74, 57, 0.3);
-  }
-
-  .btn-import:hover:not(:disabled) {
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest),
-      var(--color-forest-dark),
-      #152218
-    );
-  }
-
-  .btn-import:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 
   .error {
-    margin: 0.75rem 0 0;
-    font-family: var(--font-body);
+    margin: var(--s-3) 0 0;
     font-size: 0.875rem;
-    font-style: italic;
-    color: var(--color-burgundy-dark);
+    color: var(--st-giftable-fg);
   }
 
   .importing-section {
     text-align: center;
-    padding: 2rem 0;
+    padding: var(--s-6) 0;
   }
 
   .spinner {
     width: 40px;
     height: 40px;
-    margin: 1.5rem auto 0;
-    border: 3px solid var(--color-gold-pale);
-    border-top-color: var(--color-forest);
+    margin: var(--s-5) auto 0;
+    border: 3px solid var(--hairline);
+    border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -484,8 +379,8 @@
   .result-stats {
     display: flex;
     justify-content: center;
-    gap: 2rem;
-    margin: 1.5rem 0;
+    gap: var(--s-6);
+    margin: var(--s-5) 0;
   }
 
   .stat {
@@ -497,68 +392,44 @@
   .stat-num {
     font-family: var(--font-display);
     font-size: 2rem;
-    font-weight: 700;
-    color: var(--color-forest);
+    font-weight: 500;
+    color: var(--accent);
   }
 
   .stat-label {
-    font-family: var(--font-body);
     font-size: 0.85rem;
-    color: var(--color-ink-faded);
+    color: var(--ink-muted);
   }
 
   .import-errors {
-    margin: 1rem 0;
-    padding: 0.75rem;
+    margin: var(--s-4) 0;
+    padding: var(--s-3);
     text-align: left;
-    font-family: var(--font-body);
     font-size: 0.85rem;
-    color: var(--color-burgundy-dark);
-    background: rgba(128, 21, 21, 0.1);
-    border-radius: var(--radius-sm);
+    color: var(--st-giftable-fg);
+    background: var(--st-giftable-bg);
+    border-radius: var(--r-sm);
   }
 
   .import-errors p {
-    margin: 0 0 0.5rem;
-    font-weight: 500;
+    margin: 0 0 var(--s-2);
+    font-weight: 590;
   }
 
   .import-errors ul {
     margin: 0;
-    padding-left: 1.25rem;
+    padding-left: var(--s-5);
   }
 
   .import-errors li {
-    margin-bottom: 0.25rem;
+    margin-bottom: var(--s-1);
   }
 
   .btn-done {
-    padding: 0.75rem 2rem;
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--color-cream);
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest-light),
-      var(--color-forest),
-      var(--color-forest-dark)
-    );
-    border: 1px solid var(--color-forest-dark);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-gentle);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.15),
-      0 2px 4px rgba(44, 74, 57, 0.3);
+    min-width: 8rem;
   }
 
-  .btn-done:hover {
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest),
-      var(--color-forest-dark),
-      #152218
-    );
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation-duration: 0.8s; }
   }
 </style>

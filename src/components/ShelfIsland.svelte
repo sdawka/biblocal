@@ -56,23 +56,21 @@
 
 <section class="shelf">
   <div class="header">
-    <h2>Your Shelf ({totalBooks} books)</h2>
+    <h2 class="serif">Your Shelf <span class="count-tag">{totalBooks} books</span></h2>
   </div>
 
-  <div class="filter-groups">
+  <div class="filter-groups card">
     <div class="filter-row">
-      <span class="filter-label">I...</span>
-      <div class="filter-pills">
+      <span class="filter-label">I…</span>
+      <div class="segmented" role="group" aria-label="Filter by ownership">
         <button
-          class="filter-pill ownership"
-          class:active={filters.ownership.includes('have')}
+          aria-pressed={filters.ownership.includes('have')}
           onclick={() => toggleOwnershipFilter('have')}
         >
           have {#if ownershipCounts.have > 0}<span class="count">{ownershipCounts.have}</span>{/if}
         </button>
         <button
-          class="filter-pill ownership"
-          class:active={filters.ownership.includes('seeking')}
+          aria-pressed={filters.ownership.includes('seeking')}
           onclick={() => toggleOwnershipFilter('seeking')}
         >
           am seeking {#if ownershipCounts.seeking > 0}<span class="count">{ownershipCounts.seeking}</span>{/if}
@@ -81,12 +79,11 @@
     </div>
 
     <div class="filter-row">
-      <span class="filter-label">will...</span>
-      <div class="filter-pills">
+      <span class="filter-label">will…</span>
+      <div class="segmented" role="group" aria-label="Filter by intent">
         {#each INTENT_OPTIONS as opt}
           <button
-            class="filter-pill intent"
-            class:active={filters.intents.includes(opt.value)}
+            aria-pressed={filters.intents.includes(opt.value)}
             onclick={() => toggleIntentFilter(opt.value)}
           >
             {opt.label} {#if intentCounts[opt.value] > 0}<span class="count">{intentCounts[opt.value]}</span>{/if}
@@ -96,18 +93,17 @@
     </div>
 
     <div class="filter-row">
-      <span class="filter-label"></span>
-      <div class="filter-pills">
+      <span class="filter-label" aria-hidden="true"></span>
+      <div class="segmented" role="group" aria-label="Filter by visibility">
         <button
-          class="filter-pill visibility"
-          class:active={filters.visibility.includes('private')}
+          aria-pressed={filters.visibility.includes('private')}
           onclick={() => toggleVisibilityFilter('private')}
         >
           Private only {#if privateCount > 0}<span class="count">{privateCount}</span>{/if}
         </button>
       </div>
       {#if showClear}
-        <button class="clear-link" onclick={() => clearAllFilters()}>
+        <button class="btn btn-plain btn-sm clear-link" onclick={() => clearAllFilters()}>
           Clear filters
         </button>
       {/if}
@@ -115,13 +111,21 @@
   </div>
 
   {#if filteredBooks.length === 0}
-    <p class="empty">
-      {#if totalBooks === 0}
-        No books yet. Add your first book above.
-      {:else}
-        No books match this filter.
-      {/if}
-    </p>
+    <div class="empty card">
+      <span class="empty-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+      </span>
+      <p class="muted">
+        {#if totalBooks === 0}
+          No books yet. Add your first book above.
+        {:else}
+          No books match this filter.
+        {/if}
+      </p>
+    </div>
   {:else}
     {#if booksIHave.length > 0}
       <section class="shelf-section">
@@ -132,8 +136,12 @@
           aria-controls="books-i-have-grid"
           aria-label={haveExpanded ? 'Collapse books I have section' : 'Expand books I have section'}
         >
-          <span class="collapse-icon" aria-hidden="true">{haveExpanded ? '▼' : '▶'}</span>
-          <h3>Books I Have ({booksIHave.length})</h3>
+          <span class="collapse-icon" class:open={haveExpanded} aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3.5 5.5 7 9l3.5-3.5" />
+            </svg>
+          </span>
+          <h3 class="serif">Books I Have <span class="count-tag">{booksIHave.length}</span></h3>
         </button>
         {#if haveExpanded}
           <div class="grid" id="books-i-have-grid">
@@ -160,8 +168,12 @@
           aria-controls="books-seeking-grid"
           aria-label={seekingExpanded ? 'Collapse books I am seeking section' : 'Expand books I am seeking section'}
         >
-          <span class="collapse-icon" aria-hidden="true">{seekingExpanded ? '▼' : '▶'}</span>
-          <h3>Books I'm Seeking ({booksImSeeking.length})</h3>
+          <span class="collapse-icon" class:open={seekingExpanded} aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3.5 5.5 7 9l3.5-3.5" />
+            </svg>
+          </span>
+          <h3 class="serif">Books I'm Seeking <span class="count-tag">{booksImSeeking.length}</span></h3>
         </button>
         {#if seekingExpanded}
           <div class="grid" id="books-seeking-grid">
@@ -183,213 +195,157 @@
 
 <style>
   .shelf {
-    margin-top: 2rem;
+    margin-top: var(--s-7);
   }
 
   .header {
-    margin-bottom: 1rem;
+    margin-bottom: var(--s-4);
   }
 
   h2 {
     margin: 0;
-    font-family: var(--font-display);
     font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--color-ink);
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .count-tag {
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 590;
+    color: var(--ink-faint);
+    letter-spacing: 0;
   }
 
   /* Filter groups */
   .filter-groups {
-    padding: 1rem;
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+    margin-bottom: var(--s-6);
   }
 
   .filter-row {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .filter-row:last-child {
-    margin-bottom: 0;
+    flex-wrap: wrap;
+    gap: var(--s-3);
   }
 
   .filter-label {
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    color: var(--color-ink-faded);
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 590;
+    color: var(--ink-muted);
     min-width: 3rem;
   }
 
-  .filter-pills {
-    display: flex;
+  .segmented {
     flex-wrap: wrap;
-    gap: 0.5rem;
   }
 
-  .filter-pill {
-    padding: 0.4rem 0.9rem;
-    min-height: 44px;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: all var(--transition-quick);
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .filter-pill:hover {
-    border-color: var(--color-gold);
-    color: var(--color-ink);
-  }
-
-  .filter-pill.ownership.active {
-    color: var(--color-cream);
-    background: var(--color-forest);
-    border-color: var(--color-forest-dark);
-  }
-
-  .filter-pill.intent.active {
-    color: var(--color-cream);
-    background: var(--color-burgundy);
-    border-color: var(--color-burgundy-dark);
-  }
-
-  .filter-pill.visibility.active {
-    color: var(--color-paper);
-    background: var(--color-ink-faded);
-    border-color: var(--color-ink);
-  }
-
-  .filter-pill .count {
+  .count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 1.25rem;
-    height: 1.25rem;
-    padding: 0 0.35rem;
-    margin-left: 0.35rem;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    padding: 0 0.3rem;
+    margin-left: 0.3rem;
     font-size: 0.7rem;
-    font-weight: 600;
-    background: var(--color-gold-pale);
-    color: var(--color-ink);
-    border-radius: 9999px;
+    font-weight: 640;
+    background: var(--surface-sunken);
+    color: var(--ink-muted);
+    border-radius: var(--r-full);
   }
 
-  .filter-pill.active .count {
-    background: rgba(255, 255, 255, 0.25);
-    color: inherit;
+  .segmented button[aria-pressed="true"] .count {
+    background: var(--accent-tint);
+    color: var(--accent);
   }
 
   .clear-link {
     margin-left: auto;
-    padding: 0.25rem 0.5rem;
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    color: var(--color-burgundy);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    text-decoration: underline;
-    transition: color var(--transition-quick);
-  }
-
-  .clear-link:hover {
-    color: var(--color-burgundy-dark);
   }
 
   /* Ownership sections */
   .shelf-section {
-    margin-bottom: 2rem;
+    margin-bottom: var(--s-6);
   }
 
   .shelf-section.seeking {
-    border-left: 3px solid var(--color-burgundy);
-    padding-left: 1rem;
+    border-left: 3px solid var(--accent);
+    padding-left: var(--s-4);
   }
 
   .section-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--s-2);
     width: 100%;
-    padding: 0.75rem 0;
+    padding: var(--s-3) 0;
     background: transparent;
     border: none;
     cursor: pointer;
     text-align: left;
-    border-bottom: 1px solid var(--color-gold-pale);
-    margin-bottom: 1rem;
-    transition: opacity var(--transition-quick);
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: var(--s-4);
+    transition: opacity var(--dur-1) var(--ease-soft);
   }
 
   .section-header:hover {
-    opacity: 0.8;
+    opacity: 0.75;
   }
 
   .collapse-icon {
-    font-size: 0.75rem;
-    color: var(--color-ink-faded);
-    width: 1rem;
+    display: inline-flex;
+    color: var(--ink-muted);
+    transition: transform var(--dur-2) var(--ease-spring);
+  }
+
+  .collapse-icon.open {
+    transform: rotate(0deg);
+  }
+
+  .collapse-icon:not(.open) {
+    transform: rotate(-90deg);
   }
 
   .section-header h3 {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--color-ink);
+    font-size: 1.1875rem;
+    font-weight: 500;
+    color: var(--ink);
   }
 
   .empty {
-    padding: 3rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-8) var(--s-6);
     text-align: center;
-    font-family: var(--font-body);
-    font-style: italic;
-    color: var(--color-ink-faded);
-    background: var(--color-cream);
-    border: 1px dashed var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    position: relative;
+    border-style: dashed;
   }
 
-  .empty::before {
-    content: '📚';
-    display: block;
-    font-size: 2rem;
-    margin-bottom: 0.75rem;
-    opacity: 0.6;
+  .empty-icon {
+    display: inline-flex;
+    color: var(--ink-faint);
+  }
+
+  .empty p {
+    margin: 0;
   }
 
   .grid {
     display: grid;
-    gap: 1.25rem;
+    gap: var(--s-4);
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   }
 
   .book-wrapper {
     opacity: 0;
-    animation: slideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    animation: rise var(--dur-3) var(--ease-out) forwards;
   }
 
   @media (max-width: 600px) {
@@ -398,13 +354,12 @@
       align-items: flex-start;
     }
 
-    .filter-label {
-      margin-bottom: 0.25rem;
-    }
-
     .clear-link {
       margin-left: 0;
-      margin-top: 0.5rem;
     }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .book-wrapper { opacity: 1; animation: none; }
   }
 </style>

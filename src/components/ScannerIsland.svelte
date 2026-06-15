@@ -158,7 +158,7 @@
   aria-labelledby="scanner-title"
   bind:this={dialogRef}
 >
-  <div class="scanner-sheet" role="document">
+  <div class="scanner-sheet glass" role="document">
     <h2 id="scanner-title" class="visually-hidden">Scan ISBN Barcode</h2>
     <div class="drag-handle"></div>
 
@@ -168,11 +168,17 @@
           <span class="scan-line"></span>
         </div>
       </div>
-      <p class="instruction">Point camera at ISBN barcode</p>
+      <p class="instruction muted">Point camera at ISBN barcode</p>
     {:else}
       <div class="no-camera">
-        <p>📷</p>
-        <p>Camera not available</p>
+        <span class="no-camera-icon" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 4h2A1.5 1.5 0 0 1 18 5.5l1 1.5h1.5A1.5 1.5 0 0 1 22 8.5v9A1.5 1.5 0 0 1 20.5 19h-17A1.5 1.5 0 0 1 2 17.5v-9A1.5 1.5 0 0 1 3.5 7H5l1-1.5A1.5 1.5 0 0 1 7.5 4h2" />
+            <circle cx="12" cy="12.5" r="3.5" />
+            <path d="M2 2l20 20" />
+          </svg>
+        </span>
+        <p class="muted">Camera not available</p>
       </div>
     {/if}
 
@@ -183,16 +189,16 @@
     <div class="actions">
       <button
         type="button"
-        class="upload-btn"
+        class="btn btn-outline upload-btn"
         onclick={triggerFileInput}
         disabled={decoding}
         aria-label={decoding ? 'Scanning barcode image' : 'Upload a photo of ISBN barcode'}
       >
-        {decoding ? 'Scanning...' : '📷 Upload Photo'}
+        {decoding ? 'Scanning…' : 'Upload Photo'}
       </button>
       <button
         type="button"
-        class="cancel-btn"
+        class="btn btn-plain cancel-btn"
         onclick={onClose}
         aria-label="Close scanner"
       >
@@ -227,37 +233,40 @@
   .scanner-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: oklch(0.18 0.012 270 / 0.5);
     z-index: 1000;
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--dur-2) var(--ease-soft);
   }
 
   .scanner-sheet {
     width: 100%;
     max-width: 500px;
-    background: var(--color-cream);
-    border-radius: 16px 16px 0 0;
-    padding: 1rem 1.5rem 2rem;
-    animation: slideUp 0.3s ease;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-bottom: none;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    padding: var(--s-4) var(--s-5) var(--s-6);
+    box-shadow: var(--shadow-4);
+    animation: sheetUp var(--dur-3) var(--ease-out);
   }
 
   .drag-handle {
     width: 40px;
     height: 4px;
-    background: var(--color-gold-pale);
-    border-radius: 2px;
-    margin: 0 auto 1rem;
+    background: var(--hairline-strong);
+    border-radius: var(--r-full);
+    margin: 0 auto var(--s-4);
   }
 
   .viewfinder {
     position: relative;
     width: 100%;
     height: 200px;
-    background: #1a1a1a;
-    border-radius: var(--radius-md);
+    background: oklch(0.18 0.012 270);
+    border-radius: var(--r-md);
     overflow: hidden;
   }
 
@@ -274,8 +283,8 @@
     transform: translate(-50%, -50%);
     width: 80%;
     height: 60px;
-    border: 2px solid var(--color-brass);
-    border-radius: 4px;
+    border: 2px solid var(--accent);
+    border-radius: var(--r-sm);
     pointer-events: none;
   }
 
@@ -285,7 +294,7 @@
     left: 10%;
     right: 10%;
     height: 2px;
-    background: var(--color-brass);
+    background: var(--accent);
     animation: scanMove 2s ease-in-out infinite;
   }
 
@@ -297,38 +306,38 @@
   .no-camera {
     width: 100%;
     height: 200px;
-    background: var(--color-aged-paper);
-    border-radius: var(--radius-md);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: var(--color-ink-faded);
+    gap: var(--s-2);
+    color: var(--ink-muted);
   }
 
-  .no-camera p:first-child {
-    font-size: 2rem;
+  .no-camera-icon {
+    display: inline-flex;
+    color: var(--ink-faint);
+  }
+
+  .no-camera p {
     margin: 0;
-  }
-
-  .no-camera p:last-child {
-    margin: 0.5rem 0 0;
     font-size: 0.9rem;
   }
 
   .instruction {
     text-align: center;
-    margin: 1rem 0;
+    margin: var(--s-4) 0;
     font-size: 0.9rem;
-    color: var(--color-ink-faded);
   }
 
   .error {
     text-align: center;
-    margin: 0.5rem 0;
+    margin: var(--s-2) 0;
     font-size: 0.875rem;
-    color: var(--color-burgundy-dark);
-    font-style: italic;
+    color: var(--st-giftable-fg);
   }
 
   .upload-btn:disabled {
@@ -338,42 +347,13 @@
 
   .actions {
     display: flex;
-    gap: 0.75rem;
-    margin-top: 1rem;
+    gap: var(--s-3);
+    margin-top: var(--s-4);
   }
 
   .upload-btn,
   .cancel-btn {
     flex: 1;
-    padding: 0.75rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 500;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .upload-btn {
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    color: var(--color-ink);
-  }
-
-  .upload-btn:hover {
-    border-color: var(--color-gold);
-    background: var(--color-gold-pale);
-  }
-
-  .cancel-btn {
-    background: transparent;
-    border: 1px solid var(--color-ink-light);
-    color: var(--color-ink-faded);
-  }
-
-  .cancel-btn:hover {
-    border-color: var(--color-ink-faded);
-    color: var(--color-ink);
   }
 
   @keyframes fadeIn {
@@ -381,8 +361,13 @@
     to { opacity: 1; }
   }
 
-  @keyframes slideUp {
+  @keyframes sheetUp {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scanner-sheet, .scanner-backdrop { animation: none; }
+    .scan-line { animation: none; }
   }
 </style>
