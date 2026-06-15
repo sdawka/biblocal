@@ -16,7 +16,13 @@ assert_url "/shelf"
 info "Test: Shelf page has required sections"
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
 assert_element "Your Shelf"
-assert_element "Open user menu"
+# "Open user menu" is the Clerk UserButton label, which only exists in authed
+# (non-QA) mode. In QA mode assert the always-present nav chrome instead.
+if is_qa_mode; then
+  assert_element "Profile"
+else
+  assert_element "Open user menu"
+fi
 
 # Test 2: Add book section exists
 info "Test: Add book functionality present"

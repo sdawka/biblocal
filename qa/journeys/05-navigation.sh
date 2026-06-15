@@ -44,14 +44,22 @@ for page in "${pages[@]}"; do
   fi
 done
 
-# Test 4: Logo redirects authenticated user to shelf
+# Test 4: Logo click behavior
+# In normal mode an authenticated user is redirected / → /shelf. QA_MODE bypasses
+# Clerk, so that redirect (gated on a Clerk userId) doesn't fire and the logo lands
+# on the marketing home page instead.
 info "Test: Logo click behavior"
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
 ref=$(echo "$snapshot" | grep -i "biblocal" | grep "link" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
 agent-browser click @"$ref" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
-assert_url "/shelf"
-pass "Logo redirects to shelf for authenticated user"
+if is_qa_mode; then
+  assert_url "/"
+  pass "Logo navigates to home (QA mode: no authenticated redirect)"
+else
+  assert_url "/shelf"
+  pass "Logo redirects to shelf for authenticated user"
+fi
 
 # Test 5: User menu
 info "Test: User menu accessible"
