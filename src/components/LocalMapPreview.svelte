@@ -179,7 +179,7 @@
     stroke-width: 0.3;
     stroke-dasharray: 2 2;
     opacity: 0;
-    transition: opacity 1s ease 1s;
+    transition: opacity 1s var(--ease-soft) 1s;
   }
 
   .connection-line.visible {
@@ -206,7 +206,7 @@
       transparent 70%
     );
     opacity: 0;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.5s var(--ease-soft);
     transition-delay: var(--delay);
   }
 
@@ -269,7 +269,7 @@
     white-space: nowrap;
     text-align: center;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--dur-2) var(--ease-soft);
     transition-delay: calc(var(--delay) + 0.3s);
   }
 

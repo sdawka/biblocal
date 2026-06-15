@@ -98,7 +98,14 @@
       });
     } catch (err) {
       hasCamera = false;
-      error = 'Camera not available. Try uploading a photo.';
+      const name = err instanceof Error ? err.name : '';
+      if (name === 'NotAllowedError') {
+        error = 'Camera permission denied. Allow camera access or upload a photo.';
+      } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+        error = 'No camera found. Try uploading a photo.';
+      } else {
+        error = 'Camera not available. Try uploading a photo.';
+      }
     }
   }
 
