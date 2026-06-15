@@ -190,7 +190,7 @@
           {#each CURATED_TOPICS as topic}
             <button
               type="button"
-              class="specialty-chip"
+              class="chip"
               class:selected={selectedSpecialties.includes(topic)}
               aria-pressed={selectedSpecialties.includes(topic)}
               onclick={() => toggleSpecialty(topic)}
@@ -258,50 +258,7 @@
     border-radius: var(--r-md);
   }
 
-  .specialty-chip {
-    padding: 0.5rem 0.85rem;
-    min-height: 40px;
-    font-family: var(--font-ui);
-    font-size: 0.8125rem;
-    font-weight: 540;
-    color: var(--ink-muted);
-    background: var(--surface);
-    border: 1px solid var(--hairline-strong);
-    border-radius: var(--r-full);
-    cursor: pointer;
-    transition: color var(--dur-1) var(--ease-soft),
-                background var(--dur-2) var(--ease-out),
-                border-color var(--dur-1) var(--ease-soft),
-                transform var(--dur-1) var(--ease-spring);
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .specialty-chip:active {
-    transform: scale(0.96);
-  }
-
-  .specialty-chip:hover:not(:disabled) {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .specialty-chip.selected {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--accent-on);
-  }
-
-  .specialty-chip.selected:hover:not(:disabled) {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
-    color: var(--accent-on);
-  }
-
-  .specialty-chip:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
+  /* Specialty toggles use the shared .chip from theme.css (no local styles needed). */
 
   .btn:disabled {
     opacity: 0.6;

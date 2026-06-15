@@ -1,10 +1,8 @@
-<svelte:head>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-</svelte:head>
-
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Spring } from 'svelte/motion';
+  // Self-hosted (bundled) instead of a render-blocking unpkg stylesheet.
+  import 'leaflet/dist/leaflet.css';
   import { matches } from '../stores/matches';
   import { profile } from '../stores/profile';
   import { loadSeedUsers } from '../stores/users';
@@ -66,7 +64,15 @@
     const s = new Spring(0, { stiffness: 0.18, damping: 0.55 });
     s.target = target;
     const start = performance.now();
+    // Stop animating if the marker was removed (e.g. markers cleared on a theme swap).
+    const stillLive = () => {
+      for (const entry of markerMap.values()) {
+        if (entry.marker === marker) return true;
+      }
+      return false;
+    };
     const tickFn = () => {
+      if (!stillLive()) return;
       marker.setRadius(s.current);
       // Stop once settled (or after a safety window).
       if (Math.abs(s.current - target) > 0.05 && performance.now() - start < 1200) {

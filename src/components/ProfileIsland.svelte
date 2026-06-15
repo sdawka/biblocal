@@ -41,16 +41,17 @@
     profileData.topics.inferred.length > 0
   );
 
-  $effect(() =>
-    profile.subscribe((p) => {
-      profileData = { ...p };
-      borrowStyle = p.borrowStyle ?? '';
-      obsessions = p.currentObsessions?.join(', ') ?? '';
-      contactMethod = p.contactMethod ?? '';
-      contactValue = p.contactValue ?? '';
-      contactVisibility = p.contactVisibility ?? 'hidden';
-    })
-  );
+  // Auto-subscribe to the profile store (idiomatic Svelte 5: $store auto-tracks
+  // and auto-cleans, no manual subscribe/unsubscribe to leak).
+  $effect(() => {
+    const p = $profile;
+    profileData = { ...p };
+    borrowStyle = p.borrowStyle ?? '';
+    obsessions = p.currentObsessions?.join(', ') ?? '';
+    contactMethod = p.contactMethod ?? '';
+    contactValue = p.contactValue ?? '';
+    contactVisibility = p.contactVisibility ?? 'hidden';
+  });
 
   $effect(() => {
     const inferred = getInferredTopics();

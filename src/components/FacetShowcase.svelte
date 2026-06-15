@@ -44,14 +44,18 @@
   $effect(() => {
     if (!sectionElement) return;
 
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !visible) {
           visible = true;
           facets.forEach((_, i) => {
-            setTimeout(() => {
-              revealedCards = [...revealedCards, i];
-            }, 200 + i * 150);
+            timeouts.push(
+              setTimeout(() => {
+                revealedCards = [...revealedCards, i];
+              }, 200 + i * 150)
+            );
           });
         }
       },
@@ -59,7 +63,10 @@
     );
     observer.observe(sectionElement);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      timeouts.forEach((id) => clearTimeout(id));
+    };
   });
 </script>
 
