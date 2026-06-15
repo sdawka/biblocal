@@ -54,7 +54,7 @@
             timeouts.push(
               setTimeout(() => {
                 revealedCards = [...revealedCards, i];
-              }, 200 + i * 150)
+              }, 200 + i * 120)
             );
           });
         }
@@ -70,234 +70,222 @@
   });
 </script>
 
-<section class="facets-section" bind:this={sectionElement} class:visible>
-  <div class="section-content">
-    <p class="eyebrow">Find your people</p>
-    <h2 class="section-title">Five ways we match you with the right people.</h2>
-    <p class="section-desc">
-      Not just who's nearby — who actually gets the reference.
-    </p>
+<section class="facets-section" bind:this={sectionElement} class:visible aria-labelledby="facets-title">
+  <div class="section-inner">
+    <header class="section-head">
+      <p class="eyebrow"><span class="rule"></span><span class="num">02</span> — Find your people</p>
+      <h2 id="facets-title" class="section-title">
+        Five ways we match you with <em>the right people.</em>
+      </h2>
+      <p class="section-lede">
+        Not just who's nearby — who actually gets the reference. Each signal adds
+        weight; together they find the readers worth meeting.
+      </p>
+    </header>
 
-    <div class="facets-grid">
+    <ol class="facets-grid">
       {#each facets as facet, i}
-        <div
+        <li
           class="facet-card"
           class:revealed={revealedCards.includes(i)}
           style="--index: {i}"
         >
-          <div class="card-inner">
-            <div class="card-front">
-              <span class="facet-icon">{facet.icon}</span>
-              <span class="tap-hint">Tap to reveal</span>
-            </div>
-            <div class="card-back">
-              <div class="weight-indicator">
-                {#each Array(facet.weight) as _}
-                  <span class="weight-dot"></span>
-                {/each}
-              </div>
-              <h3 class="facet-name">{facet.name}</h3>
-              <p class="facet-tagline">{facet.tagline}</p>
-              <div class="facet-example">
-                <span class="example-label">Example:</span>
-                <span class="example-text">{facet.example}</span>
-              </div>
-            </div>
+          <div class="facet-top">
+            <span class="facet-icon" aria-hidden="true">{facet.icon}</span>
+            <span class="weight-indicator" aria-label="Connection strength {facet.weight} of 3">
+              {#each Array(3) as _, w}
+                <span class="weight-dot" class:on={w < facet.weight}></span>
+              {/each}
+            </span>
           </div>
-        </div>
-      {/each}
-    </div>
 
-    <svg class="connection-lines" viewBox="0 0 800 100" preserveAspectRatio="none">
-      <path
-        class="connection-path"
-        class:animate={revealedCards.length === 5}
-        d="M80,50 C200,20 300,80 400,50 C500,20 600,80 720,50"
-        fill="none"
-        stroke="url(#accentGradient)"
-        stroke-width="2"
-      />
-      <defs>
-        <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="transparent" />
-          <stop offset="20%" stop-color="var(--accent)" />
-          <stop offset="80%" stop-color="var(--accent)" />
-          <stop offset="100%" stop-color="transparent" />
-        </linearGradient>
-      </defs>
-    </svg>
+          <h3 class="facet-name">{facet.name}</h3>
+          <p class="facet-tagline">{facet.tagline}</p>
+
+          <div class="facet-example">
+            <span class="example-label">Example</span>
+            <span class="example-text">{facet.example}</span>
+          </div>
+        </li>
+      {/each}
+    </ol>
 
     <p class="facets-note">
-      <span class="marginalia">More dots = stronger connection. Simple as that.</span>
+      <span class="marginalia">More dots, stronger connection — simple as that.</span>
     </p>
   </div>
 </section>
 
 <style>
   .facets-section {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--s-10) var(--s-6) var(--s-12);
-    background: var(--surface-sunken);
     position: relative;
+    padding: clamp(5rem, 12vh, 9rem) clamp(1.25rem, 5vw, 5rem);
+    background: var(--surface-sunken);
   }
 
-  .section-content {
-    text-align: center;
-    max-width: 1100px;
-    width: 100%;
+  .section-inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  /* ── Editorial header ───────────────────────────────── */
+  .section-head {
+    max-width: 52rem;
+    margin-bottom: clamp(2.5rem, 5vw, 4rem);
   }
 
   .eyebrow {
-    margin: 0 0 var(--s-3);
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0 0 var(--s-5);
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    font-weight: 590;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
     opacity: 0;
     transform: translateY(14px);
     transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
   }
+  .eyebrow .rule {
+    width: 30px;
+    height: 1.5px;
+    background: var(--accent);
+    border-radius: 2px;
+    flex: none;
+  }
+  .eyebrow .num { color: var(--accent); }
 
   .section-title {
-    font-size: clamp(1.8rem, 4vw, 2.5rem);
-    margin: 0 0 var(--s-4);
+    margin: 0 0 var(--s-5);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2rem, 4.5vw, 3.2rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    color: var(--ink);
     opacity: 0;
     transform: translateY(18px);
-    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
+    transition: opacity var(--dur-3) var(--ease-out) 60ms, transform var(--dur-3) var(--ease-out) 60ms;
+  }
+  .section-title em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  .section-lede {
+    margin: 0;
+    max-width: 46ch;
+    font-family: var(--font-ui);
+    font-size: 1.15rem;
+    line-height: 1.55;
+    color: var(--ink-muted);
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity var(--dur-3) var(--ease-out) 120ms, transform var(--dur-3) var(--ease-out) 120ms;
   }
 
   .visible .eyebrow,
-  .visible .section-title {
+  .visible .section-title,
+  .visible .section-lede {
     opacity: 1;
     transform: translateY(0);
   }
 
-  .section-desc {
-    font-family: var(--font-ui);
-    font-size: 1.1rem;
-    color: var(--ink-muted);
-    margin: 0 auto var(--s-10);
-    max-width: 600px;
-    opacity: 0;
-    transform: translateY(18px);
-    transition: opacity var(--dur-3) var(--ease-out) 80ms, transform var(--dur-3) var(--ease-out) 80ms;
-  }
-
-  .visible .section-desc {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
+  /* ── Facet grid ─────────────────────────────────────── */
   .facets-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: var(--s-4);
-    margin-bottom: var(--s-5);
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(0.9rem, 1.6vw, 1.5rem);
   }
 
   .facet-card {
-    perspective: 1000px;
-    height: 280px;
-  }
-
-  .card-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transform-style: preserve-3d;
-    transition: transform 0.8s var(--ease-out);
-  }
-
-  .facet-card.revealed .card-inner {
-    transform: rotateY(180deg);
-  }
-
-  .card-front,
-  .card-back {
-    position: absolute;
-    inset: 0;
-    backface-visibility: hidden;
-    border-radius: var(--r-lg);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--s-4);
+    padding: clamp(1.4rem, 2vw, 1.9rem);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-1);
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity var(--dur-4) var(--ease-out),
+                transform var(--dur-4) var(--ease-out),
+                border-color var(--dur-2) var(--ease-out),
+                box-shadow var(--dur-2) var(--ease-out);
   }
-
-  .card-front {
-    background: var(--accent);
+  .facet-card.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .facet-card:hover {
+    border-color: var(--hairline-strong);
     box-shadow: var(--shadow-2);
   }
 
+  /* The first facet (strongest signal) is emphasized with an accent wash. */
+  .facet-card:nth-child(1) {
+    background:
+      radial-gradient(120% 90% at 100% 0%, var(--accent-tint) 0%, transparent 60%),
+      var(--surface);
+  }
+  .facet-example { margin-top: auto; }
+
+  .facet-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--s-5);
+  }
+
   .facet-icon {
-    font-size: 3rem;
-    position: relative;
-    z-index: 1;
+    font-size: 1.9rem;
+    line-height: 1;
   }
-
-  .tap-hint {
-    position: absolute;
-    bottom: var(--s-4);
-    font-family: var(--font-ui);
-    font-size: 0.75rem;
-    color: var(--accent-on);
-    opacity: 0.75;
-  }
-
-  .card-back {
-    background: var(--surface);
-    border: 1px solid var(--hairline);
-    transform: rotateY(180deg);
-    box-shadow: var(--shadow-1);
-  }
-
-  .card-back::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--accent);
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
-  }
+  .facet-card:nth-child(1) .facet-icon { font-size: 2.6rem; }
 
   .weight-indicator {
-    display: flex;
-    gap: 4px;
-    margin-bottom: var(--s-3);
+    display: inline-flex;
+    gap: 5px;
   }
-
   .weight-dot {
-    width: 8px;
-    height: 8px;
-    background: var(--accent);
+    width: 7px;
+    height: 7px;
     border-radius: var(--r-full);
+    background: var(--hairline-strong);
+    transition: background var(--dur-2) var(--ease-out);
   }
+  .weight-dot.on { background: var(--accent); }
 
   .facet-name {
-    font-family: var(--font-display);
-    font-size: 1.15rem;
-    font-weight: 500;
-    color: var(--ink);
     margin: 0 0 var(--s-1);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--ink);
   }
+  .facet-card:nth-child(1) .facet-name { font-size: clamp(1.5rem, 2.4vw, 2rem); }
 
   .facet-tagline {
+    margin: 0 0 var(--s-4);
     font-family: var(--font-ui);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: var(--ink-muted);
-    margin: 0 0 var(--s-3);
   }
 
   .facet-example {
-    background: var(--surface-sunken);
-    padding: var(--s-3);
-    border-radius: var(--r-sm);
+    margin-top: auto;
+    padding-left: var(--s-4);
     border-left: 2px solid var(--accent);
-    text-align: left;
   }
-
   .example-label {
     display: block;
     font-family: var(--font-ui);
@@ -306,90 +294,48 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--ink-faint);
-    margin-bottom: 2px;
+    margin-bottom: 3px;
   }
-
   .example-text {
-    font-family: var(--font-ui);
-    font-size: 0.8rem;
-    color: var(--ink-muted);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1rem;
     line-height: 1.4;
-  }
-
-  .connection-lines {
-    width: 100%;
-    height: 60px;
-    margin: var(--s-4) 0;
-  }
-
-  .connection-path {
-    stroke-dasharray: 1000;
-    stroke-dashoffset: 1000;
-    opacity: 0.7;
-  }
-
-  .connection-path.animate {
-    animation: drawLine 1.5s var(--ease-out) forwards;
-  }
-
-  @keyframes drawLine {
-    to {
-      stroke-dashoffset: 0;
-    }
+    color: var(--ink-muted);
   }
 
   .facets-note {
-    margin: 0;
+    margin: clamp(2rem, 4vw, 3rem) 0 0;
   }
-
   .marginalia {
     font-family: var(--font-display);
     font-style: italic;
-    font-size: 1.1rem;
-    color: var(--ink-muted);
-    display: inline-block;
+    font-size: 1.05rem;
+    color: var(--ink-faint);
   }
 
-  @media (max-width: 900px) {
-    .facets-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .facet-card:nth-child(4),
-    .facet-card:nth-child(5) {
-      grid-column: span 1;
+  /* ── Responsive ─────────────────────────────────────── */
+  @media (max-width: 880px) {
+    .facets-grid { grid-template-columns: repeat(2, 1fr); }
+    .facet-card:nth-child(1) {
+      grid-row: auto;
+      grid-column: span 2;
     }
   }
 
-  @media (max-width: 600px) {
-    .facets-grid {
-      grid-template-columns: 1fr;
-      gap: var(--s-4);
-    }
+  @media (max-width: 560px) {
+    .facets-grid { grid-template-columns: 1fr; }
+    .facet-card:nth-child(1) { grid-column: auto; }
+  }
 
+  @media (prefers-reduced-motion: reduce) {
+    .eyebrow,
+    .section-title,
+    .section-lede,
     .facet-card {
-      height: auto;
-      min-height: 200px;
-    }
-
-    .card-inner {
-      transform: rotateY(180deg);
-    }
-
-    .card-front {
-      display: none;
-    }
-
-    .card-back {
-      position: relative;
-    }
-
-    .connection-lines {
-      display: none;
-    }
-
-    .section-title {
-      font-size: 1.5rem;
+      transition: none;
+      opacity: 1;
+      transform: none;
     }
   }
 </style>
