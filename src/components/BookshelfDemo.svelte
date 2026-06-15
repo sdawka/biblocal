@@ -65,118 +65,174 @@
 
 <section class="bookshelf-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
-    <p class="eyebrow">Your shelf</p>
-    <h2 class="section-title">Your shelf tells people who you are.</h2>
-    <p class="section-desc">
-      Every shelf is a branch of the neighborhood library. Add your books, mark what you'll share —
-      that's how matches find you.
-    </p>
+    <div class="lede-col">
+      <p class="eyebrow">
+        <span class="rule"></span>
+        <span class="num">01</span>
+        <span class="label">— Your shelf</span>
+      </p>
 
-    <div class="shelf-container">
-      <div class="books-row">
-        {#each demoBooks as book, i}
-          <div
-            class="book-spine"
-            style="--delay: {i * 0.12}s"
-          >
-            <div class="book-front">
-              {#if failedImages.has(i)}
-                <div class="cover-placeholder">
-                  <span>{book.title.charAt(0)}</span>
-                </div>
-              {:else}
-                <img
-                  src={book.cover}
-                  alt={book.title}
-                  width="120"
-                  height="180"
-                  loading="lazy"
-                  onerror={() => handleImageError(i)}
-                />
-              {/if}
-            </div>
-            <span class="pill" data-status={book.status}>{book.statusLabel}</span>
-            <div class="book-note">
-              <span class="marginalia">{book.note}</span>
-            </div>
-          </div>
-        {/each}
-      </div>
+      <h2 class="section-title">
+        Your shelf tells people <em>who you are.</em>
+      </h2>
+
+      <p class="section-desc">
+        Every shelf is a branch of the neighborhood library. Add your books, mark what you'll share —
+        that's how matches find you.
+      </p>
+
+      <p class="shelf-caption">Hover a cover to see the marginalia</p>
     </div>
 
-    <p class="shelf-caption">Hover to see the marginalia</p>
+    <div class="shelf-col">
+      <div class="shelf-container">
+        <div class="books-row">
+          {#each demoBooks as book, i}
+            <div
+              class="book-spine"
+              style="--delay: {0.18 + i * 0.09}s; --i: {i}"
+            >
+              <div class="book-front">
+                {#if failedImages.has(i)}
+                  <div class="cover-placeholder">
+                    <span>{book.title.charAt(0)}</span>
+                  </div>
+                {:else}
+                  <img
+                    src={book.cover}
+                    alt={book.title}
+                    width="120"
+                    height="180"
+                    loading="lazy"
+                    onerror={() => handleImageError(i)}
+                  />
+                {/if}
+              </div>
+              <span class="pill" data-status={book.status}>{book.statusLabel}</span>
+              <div class="book-note">
+                <span class="marginalia">{book.note}</span>
+              </div>
+            </div>
+          {/each}
+        </div>
+        <div class="shelf-plane" aria-hidden="true"></div>
+      </div>
+    </div>
   </div>
 </section>
 
 <style>
   .bookshelf-section {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--s-10) var(--s-6) var(--s-12);
+    padding: clamp(5rem, 12vh, 9rem) clamp(1.25rem, 5vw, 5rem);
     background: var(--canvas);
   }
 
   .section-content {
-    text-align: center;
-    max-width: 1000px;
+    width: 100%;
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    align-items: center;
+    gap: clamp(2.5rem, 6vw, 6rem);
+  }
+
+  /* ── Editorial header (left) ───────────────────────── */
+  .lede-col {
+    max-width: 32rem;
   }
 
   .eyebrow {
-    margin: 0 0 var(--s-3);
-    opacity: 0;
-    transform: translateY(14px);
-    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
-  }
-
-  .section-title {
-    font-size: clamp(1.8rem, 4vw, 2.5rem);
-    margin: 0 0 var(--s-4);
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0 0 var(--s-5);
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    font-weight: 590;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     opacity: 0;
     transform: translateY(18px);
     transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
   }
+  .eyebrow .rule {
+    width: 30px;
+    height: 1.5px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .eyebrow .num { color: var(--accent); }
+  .eyebrow .label { color: var(--ink-muted); }
 
-  .visible .eyebrow,
-  .visible .section-title {
-    opacity: 1;
-    transform: translateY(0);
+  .section-title {
+    margin: 0 0 var(--s-5);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2rem, 4.5vw, 3.2rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity var(--dur-3) var(--ease-out) 60ms, transform var(--dur-3) var(--ease-out) 60ms;
+  }
+  .section-title em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
   }
 
   .section-desc {
+    margin: 0 0 var(--s-6);
+    max-width: 46ch;
     font-family: var(--font-ui);
     font-size: 1.15rem;
-    color: var(--ink-muted);
-    max-width: 640px;
-    margin: 0 auto var(--s-10);
     line-height: 1.6;
+    color: var(--ink-muted);
     opacity: 0;
     transform: translateY(18px);
-    transition: opacity var(--dur-3) var(--ease-out) 80ms, transform var(--dur-3) var(--ease-out) 80ms;
+    transition: opacity var(--dur-3) var(--ease-out) 120ms, transform var(--dur-3) var(--ease-out) 120ms;
   }
 
+  .shelf-caption {
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--ink-faint);
+    margin: 0;
+    opacity: 0;
+    transition: opacity var(--dur-3) var(--ease-soft) 600ms;
+  }
+
+  .visible .eyebrow,
+  .visible .section-title,
   .visible .section-desc {
     opacity: 1;
     transform: translateY(0);
   }
+  .visible .shelf-caption { opacity: 1; }
+
+  /* ── Composed shelf (right) ────────────────────────── */
+  .shelf-col {
+    min-width: 0;
+  }
 
   .shelf-container {
     position: relative;
-    padding: var(--s-4) 0 var(--s-6);
-    margin-bottom: var(--s-5);
+    padding: var(--s-5) 0 var(--s-8);
   }
 
   .books-row {
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    gap: var(--s-6);
+    justify-content: flex-start;
+    align-items: flex-end;
     position: relative;
+    z-index: 1;
   }
 
   .book-spine {
-    width: 140px;
+    width: 120px;
+    flex: 0 0 auto;
     opacity: 0;
     transform: translateY(28px);
     transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
@@ -188,6 +244,10 @@
     align-items: center;
     gap: var(--s-3);
   }
+  /* Slightly-overlapping shelf row with a gentle alternating lift for depth. */
+  .book-spine:not(:first-child) { margin-left: -22px; }
+  .book-spine:nth-child(even) { transform: translateY(28px); margin-bottom: 14px; }
+  .visible .book-spine:nth-child(even) { transform: translateY(0); }
 
   .visible .book-spine {
     opacity: 1;
@@ -202,14 +262,18 @@
     position: relative;
     border-radius: var(--r-sm);
     overflow: hidden;
-    box-shadow: var(--shadow-2);
+    box-shadow:
+      0 1px 1px oklch(0 0 0 / 0.16),
+      0 14px 30px var(--drop-shadow-color);
     transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) var(--ease-out);
     width: 120px;
   }
 
   .book-spine:hover .book-front {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-3);
+    transform: translateY(-8px);
+    box-shadow:
+      0 2px 3px oklch(0 0 0 / 0.18),
+      0 22px 46px var(--drop-shadow-color);
   }
 
   .book-front img {
@@ -234,6 +298,29 @@
     font-weight: 500;
     color: var(--accent);
   }
+
+  /* Grounding "shelf" baseline beneath the covers. */
+  .shelf-plane {
+    position: absolute;
+    left: -4%;
+    right: -4%;
+    bottom: var(--s-6);
+    height: 1.5px;
+    background: var(--hairline-strong);
+    z-index: 0;
+  }
+  .shelf-plane::after {
+    content: '';
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    top: 1.5px;
+    height: 26px;
+    background: radial-gradient(60% 100% at 50% 0%, var(--drop-shadow-color) 0%, transparent 72%);
+    opacity: 0;
+    transition: opacity var(--dur-4) var(--ease-out) 400ms;
+  }
+  .visible .shelf-plane::after { opacity: 1; }
 
   .book-note {
     position: absolute;
@@ -265,30 +352,33 @@
     color: var(--ink-muted);
     text-align: center;
     line-height: 1.4;
+    display: block;
   }
 
-  .shelf-caption {
-    font-family: var(--font-ui);
-    font-size: 0.9rem;
-    color: var(--ink-faint);
-    margin: 0;
-    opacity: 0;
-    transition: opacity var(--dur-3) var(--ease-soft) 600ms;
-  }
-
-  .visible .shelf-caption {
-    opacity: 1;
+  /* ── Responsive ────────────────────────────────────── */
+  @media (max-width: 920px) {
+    .section-content {
+      grid-template-columns: 1fr;
+      gap: clamp(2rem, 7vw, 3.5rem);
+    }
+    .lede-col { max-width: none; }
+    .shelf-col { overflow-x: auto; }
+    .books-row { justify-content: center; }
   }
 
   @media (max-width: 768px) {
     .books-row {
       flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
       gap: var(--s-4);
     }
 
     .book-spine {
       width: 92px;
     }
+    .book-spine:not(:first-child) { margin-left: 0; }
+    .book-spine:nth-child(even) { margin-bottom: 0; }
 
     .book-front,
     .book-front img,
@@ -300,6 +390,8 @@
     .cover-placeholder {
       height: 138px;
     }
+
+    .shelf-plane { display: none; }
 
     .book-note {
       display: none;
