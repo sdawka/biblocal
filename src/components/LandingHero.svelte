@@ -1,6 +1,4 @@
 <script lang="ts">
-  let heroEl: HTMLElement;
-  let visible = $state(false);
   let failedImages = $state<Set<number>>(new Set());
 
   const handleImageError = (i: number) => {
@@ -20,23 +18,13 @@
     { title: 'House of Leaves', cover: '/covers/0375703764.jpg' },
   ];
 
-  $effect(() => {
-    if (!heroEl) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) visible = true; },
-      { threshold: 0.12 }
-    );
-    obs.observe(heroEl);
-    return () => obs.disconnect();
-  });
-
   const scrollToSignIn = () =>
     document.getElementById('signin-section')?.scrollIntoView({ behavior: 'smooth' });
   const scrollDown = () =>
     window.scrollTo({ top: window.innerHeight * 0.92, behavior: 'smooth' });
 </script>
 
-<section class="hero" bind:this={heroEl} class:visible aria-label="biblocal">
+<section class="hero" aria-label="biblocal">
   <div class="grain" aria-hidden="true"></div>
 
   <div class="grid">
@@ -146,7 +134,6 @@
     align-items: center;
     gap: 0.7rem;
     margin: 0 0 var(--s-5);
-    opacity: 0;
   }
   .eyebrow .rule {
     width: 30px;
@@ -228,21 +215,6 @@
   }
   .meta i { width: 3px; height: 3px; border-radius: 50%; background: var(--accent); opacity: 0.7; }
 
-  /* Staggered entrance for the copy. */
-  .visible .eyebrow { animation: rise 0.7s var(--ease-out) 0.05s both; }
-  .visible h1 .line { animation: rise 0.85s var(--ease-out) both; opacity: 0; }
-  .visible h1 .line:nth-child(1) { animation-delay: 0.12s; }
-  .visible h1 .line:nth-child(2) { animation-delay: 0.20s; }
-  .visible h1 .line:nth-child(3) { animation-delay: 0.30s; }
-  .visible .lede { animation: rise 0.8s var(--ease-out) 0.42s both; }
-  .visible .actions { animation: rise 0.8s var(--ease-out) 0.52s both; }
-  .visible .meta { animation: rise 0.8s var(--ease-out) 0.62s both; }
-
-  @keyframes rise {
-    from { opacity: 0; transform: translateY(18px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
   /* ── Cover wall ─────────────────────────────────────── */
   .wall {
     perspective: 1600px;
@@ -265,7 +237,6 @@
     margin: 0;
     aspect-ratio: 2 / 3;
     transition: transform var(--dur-2) var(--ease-out);
-    opacity: 0;
   }
   .tile:hover { z-index: 5; }
   .tile img,
@@ -296,26 +267,6 @@
     font-family: var(--font-display);
     font-size: 1.8rem;
     color: var(--accent);
-  }
-
-  .visible .tile {
-    animation: tileIn 0.7s var(--ease-out) both;
-    animation-delay: calc(0.35s + var(--i) * 0.07s);
-  }
-  @keyframes tileIn {
-    from { opacity: 0; transform: translateY(34px) scale(0.94); }
-    to { opacity: 1; }
-  }
-  /* Keep the column-offset translate after entrance. */
-  .visible .wall-inner .tile:nth-child(3n + 2) { animation-name: tileIn2; }
-  .visible .wall-inner .tile:nth-child(3n) { animation-name: tileIn3; }
-  @keyframes tileIn2 {
-    from { opacity: 0; transform: translateY(60px) scale(0.94); }
-    to { opacity: 1; transform: translateY(26px); }
-  }
-  @keyframes tileIn3 {
-    from { opacity: 0; transform: translateY(86px) scale(0.94); }
-    to { opacity: 1; transform: translateY(52px); }
   }
 
   /* ── Scroll hint ────────────────────────────────────── */
@@ -360,9 +311,6 @@
     .wall-inner .tile:nth-child(3n) { transform: none; }
     /* Show the first 5 as a tidy shelf strip on tablet/mobile. */
     .wall-inner .tile:nth-child(n + 6) { display: none; }
-    .visible .wall-inner .tile:nth-child(3n + 2) { animation-name: tileIn; }
-    .visible .wall-inner .tile:nth-child(3n) { animation-name: tileIn; }
-    .visible .wall-inner .tile { animation-delay: calc(0.3s + var(--i) * 0.06s); }
   }
 
   @media (max-width: 920px) and (min-width: 561px) {

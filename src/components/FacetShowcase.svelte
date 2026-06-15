@@ -1,8 +1,4 @@
 <script lang="ts">
-  let visible = $state(false);
-  let sectionElement: HTMLElement;
-  let revealedCards = $state<number[]>([]);
-
   // Custom line-icons (stroke = currentColor → accent) for a cohesive, premium feel.
   const ICONS = {
     twin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="6" height="14" rx="1"/><rect x="14" y="5" width="6" height="14" rx="1"/><path d="M4 9h6M14 9h6"/></svg>',
@@ -49,37 +45,9 @@
       weight: 1,
     },
   ];
-
-  $effect(() => {
-    if (!sectionElement) return;
-
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !visible) {
-          visible = true;
-          facets.forEach((_, i) => {
-            timeouts.push(
-              setTimeout(() => {
-                revealedCards = [...revealedCards, i];
-              }, 200 + i * 120)
-            );
-          });
-        }
-      },
-      { threshold: 0.2 }
-    );
-    observer.observe(sectionElement);
-
-    return () => {
-      observer.disconnect();
-      timeouts.forEach((id) => clearTimeout(id));
-    };
-  });
 </script>
 
-<section class="facets-section" bind:this={sectionElement} class:visible aria-labelledby="facets-title">
+<section class="facets-section" aria-labelledby="facets-title">
   <div class="section-inner">
     <header class="section-head">
       <p class="eyebrow"><span class="rule"></span><span class="num">02</span> — Find your people</p>
@@ -94,11 +62,7 @@
 
     <ol class="facets-grid">
       {#each facets as facet, i}
-        <li
-          class="facet-card"
-          class:revealed={revealedCards.includes(i)}
-          style="--index: {i}"
-        >
+        <li class="facet-card" style="--index: {i}">
           <div class="facet-top">
             <span class="facet-icon" aria-hidden="true">{@html facet.icon}</span>
             <span class="weight-indicator" aria-label="Connection strength {facet.weight} of 3">
@@ -154,9 +118,6 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--ink-muted);
-    opacity: 0;
-    transform: translateY(14px);
-    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
   }
   .eyebrow .rule {
     width: 30px;
@@ -175,9 +136,6 @@
     line-height: 1.04;
     letter-spacing: -0.03em;
     color: var(--ink);
-    opacity: 0;
-    transform: translateY(18px);
-    transition: opacity var(--dur-3) var(--ease-out) 60ms, transform var(--dur-3) var(--ease-out) 60ms;
   }
   .section-title em {
     font-style: italic;
@@ -192,16 +150,6 @@
     font-size: 1.15rem;
     line-height: 1.55;
     color: var(--ink-muted);
-    opacity: 0;
-    transform: translateY(18px);
-    transition: opacity var(--dur-3) var(--ease-out) 120ms, transform var(--dur-3) var(--ease-out) 120ms;
-  }
-
-  .visible .eyebrow,
-  .visible .section-title,
-  .visible .section-lede {
-    opacity: 1;
-    transform: translateY(0);
   }
 
   /* ── Facet grid ─────────────────────────────────────── */
@@ -222,16 +170,8 @@
     border: 1px solid var(--hairline);
     border-radius: var(--r-lg);
     box-shadow: var(--shadow-1);
-    opacity: 0;
-    transform: translateY(22px);
-    transition: opacity var(--dur-4) var(--ease-out),
-                transform var(--dur-4) var(--ease-out),
-                border-color var(--dur-2) var(--ease-out),
+    transition: border-color var(--dur-2) var(--ease-out),
                 box-shadow var(--dur-2) var(--ease-out);
-  }
-  .facet-card.revealed {
-    opacity: 1;
-    transform: translateY(0);
   }
   .facet-card:hover {
     border-color: var(--hairline-strong);
@@ -355,13 +295,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .eyebrow,
-    .section-title,
-    .section-lede,
-    .facet-card {
+    .facet-card,
+    .facet-icon {
       transition: none;
-      opacity: 1;
-      transform: none;
     }
   }
 </style>

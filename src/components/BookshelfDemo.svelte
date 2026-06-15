@@ -1,6 +1,4 @@
 <script lang="ts">
-  let visible = $state(false);
-  let sectionElement: HTMLElement;
   let failedImages = $state<Set<number>>(new Set());
 
   function handleImageError(index: number) {
@@ -49,21 +47,9 @@
       note: "The ambiguous utopia awaits"
     },
   ];
-
-  $effect(() => {
-    if (!sectionElement) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => { visible = entry.isIntersecting; },
-      { threshold: 0.3 }
-    );
-    observer.observe(sectionElement);
-
-    return () => observer.disconnect();
-  });
 </script>
 
-<section class="bookshelf-section" bind:this={sectionElement} class:visible>
+<section class="bookshelf-section">
   <div class="section-content">
     <div class="lede-col">
       <p class="eyebrow">
@@ -88,10 +74,7 @@
       <div class="shelf-container">
         <div class="books-row">
           {#each demoBooks as book, i}
-            <div
-              class="book-spine"
-              style="--delay: {0.18 + i * 0.09}s; --i: {i}"
-            >
+            <div class="book-spine">
               <div class="book-front">
                 {#if failedImages.has(i)}
                   <div class="cover-placeholder">
@@ -152,9 +135,6 @@
     font-weight: 590;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    opacity: 0;
-    transform: translateY(18px);
-    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
   }
   .eyebrow .rule {
     width: 30px;
@@ -173,9 +153,6 @@
     line-height: 1.04;
     letter-spacing: -0.03em;
     color: var(--ink);
-    opacity: 0;
-    transform: translateY(18px);
-    transition: opacity var(--dur-3) var(--ease-out) 60ms, transform var(--dur-3) var(--ease-out) 60ms;
   }
   .section-title em {
     font-style: italic;
@@ -190,9 +167,6 @@
     font-size: 1.15rem;
     line-height: 1.6;
     color: var(--ink-muted);
-    opacity: 0;
-    transform: translateY(18px);
-    transition: opacity var(--dur-3) var(--ease-out) 120ms, transform var(--dur-3) var(--ease-out) 120ms;
   }
 
   .shelf-caption {
@@ -200,17 +174,7 @@
     font-size: 0.9rem;
     color: var(--ink-faint);
     margin: 0;
-    opacity: 0;
-    transition: opacity var(--dur-3) var(--ease-soft) 600ms;
   }
-
-  .visible .eyebrow,
-  .visible .section-title,
-  .visible .section-desc {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  .visible .shelf-caption { opacity: 1; }
 
   /* ── Composed shelf (right) ────────────────────────── */
   .shelf-col {
@@ -233,10 +197,6 @@
   .book-spine {
     width: 120px;
     flex: 0 0 auto;
-    opacity: 0;
-    transform: translateY(28px);
-    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
-    transition-delay: var(--delay);
     position: relative;
     z-index: 1;
     display: flex;
@@ -246,13 +206,7 @@
   }
   /* Slightly-overlapping shelf row with a gentle alternating lift for depth. */
   .book-spine:not(:first-child) { margin-left: -22px; }
-  .book-spine:nth-child(even) { transform: translateY(28px); margin-bottom: 14px; }
-  .visible .book-spine:nth-child(even) { transform: translateY(0); }
-
-  .visible .book-spine {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  .book-spine:nth-child(even) { margin-bottom: 14px; }
 
   .book-spine:hover {
     z-index: 10;
@@ -317,10 +271,7 @@
     top: 1.5px;
     height: 26px;
     background: radial-gradient(60% 100% at 50% 0%, var(--drop-shadow-color) 0%, transparent 72%);
-    opacity: 0;
-    transition: opacity var(--dur-4) var(--ease-out) 400ms;
   }
-  .visible .shelf-plane::after { opacity: 1; }
 
   .book-note {
     position: absolute;

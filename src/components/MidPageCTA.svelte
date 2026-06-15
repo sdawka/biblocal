@@ -1,25 +1,10 @@
 <script lang="ts">
-  let visible = $state(false);
-  let sectionElement: HTMLElement;
-
   function scrollToSignIn() {
     document.getElementById('signin-section')?.scrollIntoView({ behavior: 'smooth' });
   }
-
-  $effect(() => {
-    if (!sectionElement) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => { visible = entry.isIntersecting; },
-      { threshold: 0.3 }
-    );
-    observer.observe(sectionElement);
-
-    return () => observer.disconnect();
-  });
 </script>
 
-<section class="mid-cta" bind:this={sectionElement} class:visible aria-labelledby="mid-cta-title">
+<section class="mid-cta" aria-labelledby="mid-cta-title">
   <div class="cta-inner">
     <p class="cta-kicker"><span class="rule"></span>Your shelf is waiting</p>
     <h2 id="mid-cta-title" class="cta-title">
@@ -60,9 +45,6 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--ink-muted);
-    opacity: 0;
-    transform: translateY(12px);
-    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
   }
   .cta-kicker .rule {
     width: 30px;
@@ -81,9 +63,6 @@
     line-height: 1.05;
     letter-spacing: -0.03em;
     color: var(--ink);
-    opacity: 0;
-    transform: translateY(16px);
-    transition: opacity var(--dur-3) var(--ease-out) 70ms, transform var(--dur-3) var(--ease-out) 70ms;
   }
   .cta-title em {
     font-style: italic;
@@ -94,30 +73,9 @@
   .cta-btn {
     gap: 0.5rem;
     padding-inline: 1.5rem;
-    opacity: 0;
-    transform: translateY(14px);
-    transition: opacity var(--dur-3) var(--ease-out) 140ms,
-                transform var(--dur-3) var(--ease-out) 140ms,
-                background var(--dur-2) var(--ease-soft),
+    transition: background var(--dur-2) var(--ease-soft),
                 box-shadow var(--dur-2) var(--ease-soft);
   }
   .cta-btn svg { transition: transform var(--dur-2) var(--ease-spring); }
   .cta-btn:hover svg { transform: translateX(3px); }
-
-  .visible .cta-kicker,
-  .visible .cta-title,
-  .visible .cta-btn {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cta-kicker,
-    .cta-title,
-    .cta-btn {
-      transition: none;
-      opacity: 1;
-      transform: none;
-    }
-  }
 </style>

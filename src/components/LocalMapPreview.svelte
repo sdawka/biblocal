@@ -1,7 +1,4 @@
 <script lang="ts">
-  let visible = $state(false);
-  let sectionElement: HTMLElement;
-
   const matchPoints = [
     { x: 35, y: 40, type: 'reader', label: 'Sarah K.', books: 7 },
     { x: 62, y: 28, type: 'store', label: 'Corner Books', books: 340 },
@@ -10,21 +7,9 @@
     { x: 25, y: 70, type: 'store', label: "Reader's Haven", books: 520 },
     { x: 55, y: 45, type: 'you', label: 'You', books: 0 },
   ];
-
-  $effect(() => {
-    if (!sectionElement) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => { visible = entry.isIntersecting; },
-      { threshold: 0.3 }
-    );
-    observer.observe(sectionElement);
-
-    return () => observer.disconnect();
-  });
 </script>
 
-<section class="local-section" bind:this={sectionElement} class:visible aria-labelledby="local-title">
+<section class="local-section" aria-labelledby="local-title">
   <div class="section-content">
     <div class="text-content">
       <p class="eyebrow"><span class="rule"></span><span class="num">03</span>&nbsp;— Right next door</p>
@@ -57,7 +42,6 @@
           {#each matchPoints as point, i}
             <div
               class="map-point {point.type}"
-              class:visible
               style="left: {point.x}%; top: {point.y}%; --delay: {0.3 + i * 0.15}s;"
             >
               <div class="point-glow"></div>
@@ -72,10 +56,10 @@
           {/each}
 
           <svg class="connection-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <line class="connection-line" class:visible x1="55" y1="45" x2="35" y2="40" />
-            <line class="connection-line" class:visible x1="55" y1="45" x2="62" y2="28" />
-            <line class="connection-line" class:visible x1="55" y1="45" x2="48" y2="65" />
-            <line class="connection-line" class:visible x1="55" y1="45" x2="75" y2="55" />
+            <line class="connection-line" x1="55" y1="45" x2="35" y2="40" />
+            <line class="connection-line" x1="55" y1="45" x2="62" y2="28" />
+            <line class="connection-line" x1="55" y1="45" x2="48" y2="65" />
+            <line class="connection-line" x1="55" y1="45" x2="75" y2="55" />
           </svg>
         </div>
       </div>
@@ -102,18 +86,6 @@
     max-width: 1240px;
     margin: 0 auto;
     align-items: center;
-  }
-
-  /* ── Editorial copy ─────────────────────────────────── */
-  .text-content {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity var(--dur-4) var(--ease-out), transform var(--dur-4) var(--ease-out);
-  }
-
-  .visible .text-content {
-    opacity: 1;
-    transform: translateY(0);
   }
 
   /* Numbered left-aligned header — mirrors the hero eyebrow. */
@@ -199,27 +171,12 @@
   }
 
   /* ── Map product mock ───────────────────────────────── */
-  .map-container {
-    opacity: 0;
-    transform: translateY(28px);
-    transition: opacity var(--dur-4) var(--ease-out) 150ms, transform var(--dur-4) var(--ease-out) 150ms;
-  }
-
-  .visible .map-container {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
   /* Framed, elevated product surface — reads as a polished screenshot. */
   .map-frame {
     padding: 0;
     border-radius: var(--r-xl);
-    box-shadow: var(--shadow-3);
-    overflow: hidden;
-  }
-  .visible .map-frame {
     box-shadow: var(--shadow-4);
-    transition: box-shadow var(--dur-4) var(--ease-out) 200ms;
+    overflow: hidden;
   }
 
   .map-chrome {
@@ -310,11 +267,6 @@
     stroke: var(--accent);
     stroke-width: 0.3;
     stroke-dasharray: 2 2;
-    opacity: 0;
-    transition: opacity 1s var(--ease-soft) 1s;
-  }
-
-  .connection-line.visible {
     opacity: 0.45;
   }
 
@@ -337,12 +289,6 @@
       var(--accent-tint) 0%,
       transparent 70%
     );
-    opacity: 0;
-    transition: opacity 0.5s var(--ease-soft);
-    transition-delay: var(--delay);
-  }
-
-  .visible .point-glow {
     opacity: 1;
     animation: pulseGlow 3s ease-in-out infinite;
     animation-delay: var(--delay);
@@ -364,15 +310,6 @@
     height: 12px;
     border-radius: var(--r-full);
     position: relative;
-    opacity: 0;
-    transform: scale(0);
-    transition: opacity var(--dur-2) var(--ease-spring), transform var(--dur-2) var(--ease-spring);
-    transition-delay: var(--delay);
-  }
-
-  .visible .point-dot {
-    opacity: 1;
-    transform: scale(1);
   }
 
   .map-point.reader .point-dot {
@@ -407,13 +344,6 @@
     border: 1px solid var(--hairline);
     border-radius: var(--r-sm);
     box-shadow: var(--shadow-1);
-    opacity: 0;
-    transition: opacity var(--dur-2) var(--ease-soft);
-    transition-delay: calc(var(--delay) + 0.3s);
-  }
-
-  .visible .point-label {
-    opacity: 1;
   }
 
   .label-name {
