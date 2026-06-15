@@ -44,12 +44,13 @@
 <div class="topic-picker">
   {#if mode === 'curated' || mode === 'both'}
     <div class="section">
-      <h3>Pick your interests ({topics.curated.length}/{maxCurated})</h3>
-      <div class="curated-grid">
+      <h3>Pick your interests <span class="count-tag">{topics.curated.length}/{maxCurated}</span></h3>
+      <div class="curated-grid" role="group" aria-label="Curated interests">
         {#each CURATED_TOPICS as topic}
           <button
-            class="topic-chip"
+            class="chip"
             class:selected={topics.curated.includes(topic)}
+            aria-pressed={topics.curated.includes(topic)}
             onclick={() => toggleCurated(topic)}
             disabled={!topics.curated.includes(topic) &&
               topics.curated.length >= maxCurated}
@@ -66,20 +67,29 @@
       <h3>Add your own tags</h3>
       <div class="freeform-input">
         <input
+          class="input"
           type="text"
           bind:value={freeformInput}
           placeholder="e.g., Le Guin fan, solarpunk"
           onkeydown={(e) =>
             e.key === 'Enter' && (e.preventDefault(), addFreeform())}
         />
-        <button onclick={addFreeform}>Add</button>
+        <button class="btn btn-tinted" onclick={addFreeform}>Add</button>
       </div>
       {#if topics.freeform.length > 0}
         <div class="freeform-tags">
           {#each topics.freeform as tag}
             <span class="tag">
               {tag}
-              <button onclick={() => removeFreeform(tag)}>x</button>
+              <button
+                class="tag-remove"
+                aria-label={`Remove ${tag}`}
+                onclick={() => removeFreeform(tag)}
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                  <path d="M3 3l6 6M9 3l-6 6" />
+                </svg>
+              </button>
             </span>
           {/each}
         </div>
@@ -92,163 +102,119 @@
   .topic-picker {
     display: flex;
     flex-direction: column;
-    gap: 1.75rem;
+    gap: var(--s-6);
   }
 
   .section h3 {
-    margin: 0 0 0.875rem;
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
+    margin: 0 0 var(--s-3);
+    font-family: var(--font-ui);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-2);
+  }
+
+  .count-tag {
+    font-size: 0.8125rem;
+    font-weight: 590;
+    color: var(--ink-faint);
   }
 
   .curated-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--s-2);
   }
 
-  .topic-chip {
-    padding: 0.375rem 0.875rem;
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: 2px;
+  /* Accent-tint selectable chip */
+  .chip {
+    appearance: none;
+    padding: 0.45rem 0.875rem;
+    min-height: 38px;
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    font-weight: 540;
+    color: var(--ink-muted);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-full);
     cursor: pointer;
     text-transform: capitalize;
-    transition: all var(--transition-quick);
-    box-shadow: var(--shadow-inset);
+    transition: color var(--dur-1) var(--ease-soft),
+                background var(--dur-2) var(--ease-out),
+                border-color var(--dur-2) var(--ease-out),
+                transform var(--dur-1) var(--ease-spring);
   }
 
-  .topic-chip:hover:not(:disabled) {
-    border-color: var(--color-gold);
-    background: var(--color-cream);
+  .chip:hover:not(:disabled):not(.selected) {
+    color: var(--ink);
+    border-color: var(--hairline-strong);
   }
 
-  .topic-chip.selected {
-    color: var(--color-cream);
-    background: linear-gradient(
-      to bottom,
-      var(--color-burgundy-light),
-      var(--color-burgundy),
-      var(--color-burgundy-dark)
-    );
-    border-color: var(--color-burgundy-dark);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.15),
-      0 1px 2px rgba(74, 44, 42, 0.2);
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  .chip:active:not(:disabled) {
+    transform: scale(0.96);
   }
 
-  .topic-chip:disabled {
+  .chip.selected {
+    color: var(--accent);
+    background: var(--accent-tint);
+    border-color: transparent;
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+
+  .chip:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
 
   .freeform-input {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--s-2);
   }
 
-  .freeform-input input {
+  .freeform-input .input {
     flex: 1;
-    padding: 0.625rem 0.875rem;
-    font-family: var(--font-body);
-    font-size: 0.95rem;
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-quick);
-    box-shadow: var(--shadow-inset);
-  }
-
-  .freeform-input input::placeholder {
-    color: var(--color-ink-light);
-    font-style: italic;
-  }
-
-  .freeform-input input:focus {
-    outline: none;
-    border-color: var(--color-gold);
-    box-shadow: var(--shadow-inset), 0 0 0 3px rgba(184, 134, 11, 0.15);
-  }
-
-  .freeform-input button {
-    padding: 0.625rem 1.25rem;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-cream);
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest-light),
-      var(--color-forest),
-      var(--color-forest-dark)
-    );
-    border: 1px solid var(--color-forest-dark);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-gentle);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.15),
-      0 2px 4px rgba(44, 74, 57, 0.25);
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-  }
-
-  .freeform-input button:hover {
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest),
-      var(--color-forest-dark),
-      #152218
-    );
-    transform: translateY(-1px);
   }
 
   .freeform-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.875rem;
+    gap: var(--s-2);
+    margin-top: var(--s-3);
   }
 
   .tag {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    padding: 0.25rem 0.625rem;
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    color: var(--color-ink);
-    background: linear-gradient(
-      to bottom,
-      var(--color-gold-pale),
-      var(--color-gold-light) 50%,
-      var(--color-gold-pale)
-    );
-    border: 1px solid var(--color-gold);
-    border-radius: 2px;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.4),
-      0 1px 2px rgba(0, 0, 0, 0.1);
+    gap: 0.35rem;
+    padding: 0.25rem 0.35rem 0.25rem 0.7rem;
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 540;
+    color: var(--accent);
+    background: var(--accent-tint);
+    border-radius: var(--r-full);
   }
 
-  .tag button {
-    background: none;
-    border: none;
+  .tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
     padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--r-full);
     cursor: pointer;
-    font-size: 0.9rem;
-    line-height: 1;
-    color: var(--color-ink-faded);
-    transition: color var(--transition-quick);
+    color: var(--accent);
+    transition: color var(--dur-1) var(--ease-soft), background var(--dur-1) var(--ease-soft);
   }
 
-  .tag button:hover {
-    color: var(--color-burgundy);
+  .tag-remove:hover {
+    color: var(--danger);
+    background: var(--danger-tint);
   }
 </style>
