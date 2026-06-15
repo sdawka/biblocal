@@ -11,10 +11,12 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 <Layout title="Bookstore | biblocal">
   {isQaMode ? (
     <main>
-      <div class="header-row">
+      <div class="header-row rise">
         <a href="/matches" class="back-link">← Back to matches</a>
       </div>
-      <StoreDetailIsland storeId={id!} client:load />
+      <div class="rise rise-1">
+        <StoreDetailIsland storeId={id!} client:load />
+      </div>
     </main>
   ) : (
     <>
@@ -23,11 +25,13 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
       </Show>
       <Show when="signed-in">
         <main>
-          <div class="header-row">
+          <div class="header-row rise">
             <a href="/matches" class="back-link">← Back to matches</a>
             <UserButton />
           </div>
-          <StoreDetailIsland storeId={id!} client:load />
+          <div class="rise rise-1">
+            <StoreDetailIsland storeId={id!} client:load />
+          </div>
         </main>
       </Show>
     </>
@@ -39,17 +43,20 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--s-6);
   }
 
   .back-link {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.9rem;
-    color: var(--color-ink-faded);
+    font-weight: 540;
+    color: var(--ink-muted);
     text-decoration: none;
+    padding: 0.4rem 0;
+    transition: color var(--dur-1) var(--ease-soft);
   }
 
   .back-link:hover {
-    color: var(--color-ink);
+    color: var(--accent);
   }
 </style>

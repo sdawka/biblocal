@@ -95,23 +95,24 @@
 
 <div class="store-detail">
   {#if loading}
-    <div class="loading">Loading store...</div>
+    <div class="loading muted">Loading store...</div>
   {:else if error}
     <div class="error">{error}</div>
   {:else if store}
     <header class="store-header">
-      <div class="store-badge">🏪</div>
+      <div class="store-badge" aria-hidden="true">🏪</div>
       <div class="store-info">
-        <h1>{store.name}</h1>
+        <span class="eyebrow">Bookstore</span>
+        <h1 class="serif">{store.name}</h1>
         {#if store.neighborhood}
           <p class="neighborhood">{store.neighborhood}</p>
         {/if}
       </div>
     </header>
 
-    <div class="store-meta">
+    <div class="store-meta card">
       {#if store.address}
-        <p class="address">📍 {store.address}</p>
+        <p class="address muted">📍 {store.address}</p>
       {/if}
       {#if store.website}
         <p class="website">
@@ -121,7 +122,7 @@
         </p>
       {/if}
       {#if store.phone}
-        <p class="phone">📞 {store.phone}</p>
+        <p class="phone muted">📞 {store.phone}</p>
       {/if}
     </div>
 
@@ -136,11 +137,11 @@
       </div>
     {/if}
 
-    <section class="featured-shelf">
+    <section class="featured-shelf card">
       <div class="section-header">
         <h2>Featured Books</h2>
         {#if canEdit}
-          <button class="add-btn" onclick={() => showAddBook = !showAddBook}>
+          <button class="btn btn-tinted btn-sm" onclick={() => showAddBook = !showAddBook}>
             {showAddBook ? 'Cancel' : '+ Add book'}
           </button>
         {/if}
@@ -149,25 +150,31 @@
       {#if showAddBook}
         <div class="add-book-form">
           <input
+            class="input"
             type="text"
             bind:value={newBookTitle}
             placeholder="Book title"
+            aria-label="Book title"
             disabled={addingBook}
           />
           <input
+            class="input"
             type="text"
             bind:value={newBookAuthor}
             placeholder="Author"
+            aria-label="Author"
             disabled={addingBook}
           />
           <input
+            class="input"
             type="text"
             bind:value={newBookIsbn}
             placeholder="ISBN (optional)"
+            aria-label="ISBN (optional)"
             disabled={addingBook}
           />
           <button
-            class="submit-btn"
+            class="btn btn-filled"
             onclick={handleAddBook}
             disabled={addingBook || !newBookTitle.trim() || !newBookAuthor.trim()}
           >
@@ -177,7 +184,7 @@
       {/if}
 
       {#if books.length === 0}
-        <p class="empty">No featured books yet.</p>
+        <p class="empty faint">No featured books yet.</p>
       {:else}
         <div class="books-grid">
           {#each books as book (book.id)}
@@ -197,21 +204,20 @@
 
   .loading,
   .error {
-    padding: 2rem;
+    padding: var(--s-6);
     text-align: center;
-    font-family: var(--font-body);
-    color: var(--color-ink-faded);
+    font-family: var(--font-ui);
   }
 
   .error {
-    color: #8B2500;
+    color: var(--danger);
   }
 
   .store-header {
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    gap: var(--s-4);
+    margin-bottom: var(--s-5);
   }
 
   .store-badge {
@@ -220,161 +226,116 @@
   }
 
   .store-info h1 {
-    margin: 0;
-    font-family: var(--font-display);
+    margin: var(--s-1) 0 0;
     font-size: 2rem;
-    color: var(--color-ink);
   }
 
   .neighborhood {
-    margin: 0.25rem 0 0;
-    font-family: var(--font-body);
+    margin: var(--s-1) 0 0;
+    font-family: var(--font-ui);
     font-size: 1rem;
-    color: var(--color-ink-faded);
-    font-style: italic;
+    font-weight: 540;
+    color: var(--accent);
   }
 
   .store-meta {
-    padding: 1rem 1.25rem;
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    margin-bottom: 1.5rem;
+    padding: var(--s-4) var(--s-5);
+    margin-bottom: var(--s-5);
   }
 
   .store-meta p {
-    margin: 0.375rem 0;
-    font-family: var(--font-body);
+    margin: var(--s-2) 0;
+    font-family: var(--font-ui);
     font-size: 0.9rem;
-    color: var(--color-ink-faded);
   }
 
+  .store-meta p:first-child { margin-top: 0; }
+  .store-meta p:last-child { margin-bottom: 0; }
+
   .store-meta a {
-    color: var(--color-burgundy, #722f37);
+    color: var(--accent);
     text-decoration: none;
+    font-weight: 540;
+    transition: color var(--dur-1) var(--ease-soft);
   }
 
   .store-meta a:hover {
-    text-decoration: underline;
+    color: var(--accent-hover);
   }
 
   .specialties {
-    margin-bottom: 2rem;
+    margin-bottom: var(--s-6);
   }
 
   .specialties h3 {
-    margin: 0 0 0.75rem;
-    font-family: var(--font-display);
-    font-size: 1rem;
-    color: var(--color-ink);
+    margin: 0 0 var(--s-3);
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 640;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
   }
 
   .specialty-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.375rem;
+    gap: var(--s-2);
   }
 
   .tag {
-    padding: 0.25rem 0.5rem;
-    font-family: var(--font-body);
+    padding: 0.2rem 0.6rem;
+    font-family: var(--font-ui);
     font-size: 0.8rem;
-    color: var(--color-cream);
-    background: var(--color-burgundy, #722f37);
-    border-radius: 2px;
+    font-weight: 540;
+    color: var(--accent);
+    background: var(--accent-tint);
+    border-radius: var(--r-full);
   }
 
   .featured-shelf {
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    padding: 1.5rem;
+    padding: var(--s-5);
   }
 
   .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--color-gold-pale);
+    margin-bottom: var(--s-4);
+    padding-bottom: var(--s-3);
+    border-bottom: 1px solid var(--hairline);
   }
 
   .section-header h2 {
     margin: 0;
-    font-family: var(--font-display);
     font-size: 1.25rem;
-    color: var(--color-ink);
-  }
-
-  .add-btn {
-    padding: 0.375rem 0.75rem;
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    color: var(--color-burgundy, #722f37);
-    background: transparent;
-    border: 1px solid var(--color-burgundy, #722f37);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .add-btn:hover {
-    background: var(--color-burgundy, #722f37);
-    color: var(--color-cream);
   }
 
   .add-book-form {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background: var(--color-paper);
-    border: 1px dashed var(--color-gold-pale);
-    border-radius: var(--radius-sm);
+    gap: var(--s-3);
+    padding: var(--s-4);
+    margin-bottom: var(--s-4);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
   }
 
-  .add-book-form input {
-    padding: 0.5rem 0.75rem;
-    font-family: var(--font-body);
-    font-size: 0.9rem;
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-  }
-
-  .add-book-form input:focus {
-    outline: none;
-    border-color: var(--color-gold);
-  }
-
-  .submit-btn {
-    padding: 0.5rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    color: var(--color-cream);
-    background: var(--color-burgundy, #722f37);
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-  }
-
-  .submit-btn:disabled {
+  .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
   .empty {
-    padding: 2rem;
+    padding: var(--s-6);
     text-align: center;
-    font-family: var(--font-body);
-    font-style: italic;
-    color: var(--color-ink-faded);
+    font-family: var(--font-ui);
   }
 
   .books-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 1rem;
+    gap: var(--s-4);
   }
 </style>

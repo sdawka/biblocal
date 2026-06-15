@@ -99,21 +99,23 @@
   }
 </script>
 
-<div class="add-store">
-  <h2>Add a Bookstore</h2>
-  <p class="subtitle">Know a great local bookstore? Add it to help others discover it.</p>
+<div class="add-store card">
+  <span class="eyebrow">Local</span>
+  <h2 class="serif">Add a Bookstore</h2>
+  <p class="subtitle muted">Know a great local bookstore? Add it to help others discover it.</p>
 
   {#if success}
     <div class="success-message">
-      <span class="icon">✓</span>
+      <span class="icon" aria-hidden="true">✓</span>
       <p>Store added! It will appear in matches for users with similar interests.</p>
-      <button type="button" onclick={reset}>Add another</button>
+      <button type="button" class="btn btn-tinted" onclick={reset}>Add another</button>
     </div>
   {:else}
     <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
       <div class="field">
-        <label for="name">Store name *</label>
+        <label class="label" for="name">Store name *</label>
         <input
+          class="input"
           id="name"
           type="text"
           bind:value={name}
@@ -126,8 +128,9 @@
       </div>
 
       <div class="field">
-        <label for="neighborhood">Neighborhood *</label>
+        <label class="label" for="neighborhood">Neighborhood *</label>
         <select
+          class="select"
           id="neighborhood"
           bind:value={neighborhood}
           disabled={loading}
@@ -143,8 +146,9 @@
       </div>
 
       <div class="field">
-        <label for="address">Address *</label>
+        <label class="label" for="address">Address *</label>
         <input
+          class="input"
           id="address"
           type="text"
           bind:value={address}
@@ -157,8 +161,9 @@
       </div>
 
       <div class="field">
-        <label for="website">Website</label>
+        <label class="label" for="website">Website</label>
         <input
+          class="input"
           id="website"
           type="url"
           bind:value={website}
@@ -168,8 +173,9 @@
       </div>
 
       <div class="field">
-        <label for="phone">Phone</label>
+        <label class="label" for="phone">Phone</label>
         <input
+          class="input"
           id="phone"
           type="tel"
           bind:value={phone}
@@ -179,13 +185,14 @@
       </div>
 
       <div class="field specialties-field">
-        <label>Specialties <span class="hint">(select up to 6)</span></label>
+        <span class="label">Specialties <span class="hint faint">(select up to 6)</span></span>
         <div class="specialties-grid">
           {#each CURATED_TOPICS as topic}
             <button
               type="button"
               class="specialty-chip"
               class:selected={selectedSpecialties.includes(topic)}
+              aria-pressed={selectedSpecialties.includes(topic)}
               onclick={() => toggleSpecialty(topic)}
               disabled={loading || (!selectedSpecialties.includes(topic) && selectedSpecialties.length >= 6)}
             >
@@ -199,7 +206,7 @@
         <p class="error" id="store-error" role="alert">{error}</p>
       {/if}
 
-      <button type="submit" class="submit-btn" disabled={loading}>
+      <button type="submit" class="btn btn-filled btn-lg" disabled={loading}>
         {loading ? 'Adding...' : 'Add Store'}
       </button>
     </form>
@@ -210,123 +217,85 @@
   .add-store {
     max-width: 560px;
     margin: 0 auto;
-    padding: 2rem;
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-card);
+    padding: var(--s-6);
   }
 
   h2 {
-    margin: 0 0 0.25rem;
-    font-family: var(--font-display);
+    margin: var(--s-1) 0 var(--s-1);
     font-size: 1.5rem;
-    color: var(--color-ink);
   }
 
   .subtitle {
-    margin: 0 0 1.5rem;
-    font-family: var(--font-body);
+    margin: 0 0 var(--s-6);
+    font-family: var(--font-ui);
     font-size: 0.9rem;
-    color: var(--color-ink-faded);
-    font-style: italic;
   }
 
   form {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: var(--s-5);
   }
 
   .field {
     display: flex;
     flex-direction: column;
-    gap: 0.375rem;
-  }
-
-  label {
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-ink);
   }
 
   .hint {
     font-weight: 400;
-    font-style: italic;
-    color: var(--color-ink-faded);
-  }
-
-  input,
-  select {
-    padding: 0.625rem 0.875rem;
-    font-family: var(--font-body);
-    font-size: 1rem;
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-quick);
-    box-shadow: var(--shadow-inset);
-  }
-
-  input::placeholder {
-    color: var(--color-ink-light);
-    font-style: italic;
-  }
-
-  input:focus,
-  select:focus {
-    outline: none;
-    border-color: var(--color-gold);
-    box-shadow: var(--shadow-inset), 0 0 0 3px rgba(184, 134, 11, 0.15);
-  }
-
-  select {
-    appearance: none;
-    padding-right: 2.5rem;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B5B4F' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.875rem center;
-    cursor: pointer;
   }
 
   .specialties-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.375rem;
-    max-height: 180px;
+    gap: var(--s-2);
+    max-height: 200px;
     overflow-y: auto;
-    padding: 0.5rem;
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
+    padding: var(--s-3);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
   }
 
   .specialty-chip {
-    padding: 0.5rem 0.75rem;
-    min-height: 44px;
-    font-family: var(--font-body);
-    font-size: 0.75rem;
-    color: var(--color-ink-faded);
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: 2px;
+    padding: 0.5rem 0.85rem;
+    min-height: 40px;
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 540;
+    color: var(--ink-muted);
+    background: var(--surface);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--r-full);
     cursor: pointer;
-    transition: all var(--transition-quick);
+    transition: color var(--dur-1) var(--ease-soft),
+                background var(--dur-2) var(--ease-out),
+                border-color var(--dur-1) var(--ease-soft),
+                transform var(--dur-1) var(--ease-spring);
     display: inline-flex;
     align-items: center;
   }
 
+  .specialty-chip:active {
+    transform: scale(0.96);
+  }
+
   .specialty-chip:hover:not(:disabled) {
-    border-color: var(--color-gold);
-    color: var(--color-ink);
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   .specialty-chip.selected {
-    background: var(--color-burgundy, #722f37);
-    border-color: var(--color-burgundy, #722f37);
-    color: var(--color-cream);
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-on);
+  }
+
+  .specialty-chip.selected:hover:not(:disabled) {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: var(--accent-on);
   }
 
   .specialty-chip:disabled {
@@ -334,84 +303,39 @@
     cursor: not-allowed;
   }
 
-  .submit-btn {
-    padding: 0.875rem 1.5rem;
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-cream);
-    background: linear-gradient(
-      to bottom,
-      #8B3A3A,
-      #722F37,
-      #5A252C
-    );
-    border: 1px solid #5A252C;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-gentle);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.15),
-      0 2px 4px rgba(90, 37, 44, 0.3);
-  }
-
-  .submit-btn:hover:not(:disabled) {
-    background: linear-gradient(
-      to bottom,
-      #722F37,
-      #5A252C,
-      #421B21
-    );
-    transform: translateY(-1px);
-  }
-
-  .submit-btn:disabled {
+  .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
 
   .error {
     margin: 0;
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.875rem;
-    color: #8B2500;
+    color: var(--danger);
   }
 
   .success-message {
     text-align: center;
-    padding: 2rem;
+    padding: var(--s-6) var(--s-4);
   }
 
   .success-message .icon {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 48px;
     height: 48px;
-    line-height: 48px;
     font-size: 1.5rem;
-    background: var(--color-forest, #2C4A39);
-    color: var(--color-cream);
-    border-radius: 50%;
-    margin-bottom: 1rem;
+    background: var(--accent);
+    color: var(--accent-on);
+    border-radius: var(--r-full);
+    margin-bottom: var(--s-4);
   }
 
   .success-message p {
-    margin: 0 0 1.5rem;
-    font-family: var(--font-body);
-    color: var(--color-ink);
-  }
-
-  .success-message button {
-    padding: 0.5rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-  }
-
-  .success-message button:hover {
-    background: var(--color-gold-pale);
+    margin: 0 0 var(--s-5);
+    font-family: var(--font-ui);
+    color: var(--ink);
   }
 </style>

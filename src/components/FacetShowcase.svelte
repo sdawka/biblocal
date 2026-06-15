@@ -65,6 +65,7 @@
 
 <section class="facets-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
+    <p class="eyebrow">Find your people</p>
     <h2 class="section-title">Five ways we match you with the right people.</h2>
     <p class="section-desc">
       Not just who's nearby — who actually gets the reference.
@@ -106,14 +107,14 @@
         class:animate={revealedCards.length === 5}
         d="M80,50 C200,20 300,80 400,50 C500,20 600,80 720,50"
         fill="none"
-        stroke="url(#goldGradient)"
+        stroke="url(#accentGradient)"
         stroke-width="2"
       />
       <defs>
-        <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stop-color="transparent" />
-          <stop offset="20%" stop-color="var(--color-gold)" />
-          <stop offset="80%" stop-color="var(--color-gold)" />
+          <stop offset="20%" stop-color="var(--accent)" />
+          <stop offset="80%" stop-color="var(--accent)" />
           <stop offset="100%" stop-color="transparent" />
         </linearGradient>
       </defs>
@@ -131,8 +132,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-2xl) var(--space-2xl) calc(var(--space-2xl) * 1.2);
-    background: var(--color-parchment);
+    padding: var(--s-10) var(--s-6) var(--s-12);
+    background: var(--surface-sunken);
     position: relative;
   }
 
@@ -142,33 +143,36 @@
     width: 100%;
   }
 
-  .section-title {
-    font-family: var(--font-display);
-    font-size: clamp(1.8rem, 4vw, 2.5rem);
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-md);
+  .eyebrow {
+    margin: 0 0 var(--s-3);
     opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(14px);
+    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
   }
 
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    margin: 0 0 var(--s-4);
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
+  }
+
+  .visible .eyebrow,
   .visible .section-title {
     opacity: 1;
     transform: translateY(0);
   }
 
   .section-desc {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.1rem;
-    color: var(--color-ink-faded);
-    margin: 0 0 var(--space-2xl);
+    color: var(--ink-muted);
+    margin: 0 auto var(--s-10);
     max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
     opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+    transform: translateY(18px);
+    transition: opacity var(--dur-3) var(--ease-out) 80ms, transform var(--dur-3) var(--ease-out) 80ms;
   }
 
   .visible .section-desc {
@@ -179,8 +183,8 @@
   .facets-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: var(--space-md);
-    margin-bottom: var(--space-lg);
+    gap: var(--s-4);
+    margin-bottom: var(--s-5);
   }
 
   .facet-card {
@@ -193,7 +197,7 @@
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.8s var(--ease-out);
   }
 
   .facet-card.revealed .card-inner {
@@ -205,32 +209,17 @@
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
-    border-radius: var(--radius-md);
+    border-radius: var(--r-lg);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--space-md);
+    padding: var(--s-4);
   }
 
   .card-front {
-    background: linear-gradient(
-      135deg,
-      var(--color-mahogany) 0%,
-      var(--color-mahogany-deep) 100%
-    );
-    box-shadow:
-      0 4px 16px rgba(74, 44, 42, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  }
-
-  .card-front::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--wood-grain);
-    opacity: 0.3;
-    border-radius: var(--radius-md);
+    background: var(--accent);
+    box-shadow: var(--shadow-2);
   }
 
   .facet-icon {
@@ -241,19 +230,18 @@
 
   .tap-hint {
     position: absolute;
-    bottom: var(--space-md);
-    font-family: var(--font-body);
+    bottom: var(--s-4);
+    font-family: var(--font-ui);
     font-size: 0.75rem;
-    color: var(--color-gold-pale);
-    font-style: italic;
-    opacity: 0.7;
+    color: var(--accent-on);
+    opacity: 0.75;
   }
 
   .card-back {
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     transform: rotateY(180deg);
-    box-shadow: 0 4px 16px rgba(74, 44, 42, 0.15);
+    box-shadow: var(--shadow-1);
   }
 
   .card-back::before {
@@ -262,84 +250,79 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
-    background: linear-gradient(
-      to right,
-      var(--color-burgundy),
-      var(--color-gold) 50%,
-      var(--color-burgundy)
-    );
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    height: 3px;
+    background: var(--accent);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
   }
 
   .weight-indicator {
     display: flex;
     gap: 4px;
-    margin-bottom: var(--space-sm);
+    margin-bottom: var(--s-3);
   }
 
   .weight-dot {
     width: 8px;
     height: 8px;
-    background: var(--color-gold);
-    border-radius: 50%;
-    box-shadow: 0 0 8px rgba(184, 134, 11, 0.4);
+    background: var(--accent);
+    border-radius: var(--r-full);
   }
 
   .facet-name {
     font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-xs);
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--ink);
+    margin: 0 0 var(--s-1);
   }
 
   .facet-tagline {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.9rem;
-    color: var(--color-ink-faded);
-    font-style: italic;
-    margin: 0 0 var(--space-md);
+    color: var(--ink-muted);
+    margin: 0 0 var(--s-3);
   }
 
   .facet-example {
-    background: var(--color-aged-paper);
-    padding: var(--space-sm);
-    border-radius: var(--radius-sm);
-    border-left: 2px solid var(--color-gold-pale);
+    background: var(--surface-sunken);
+    padding: var(--s-3);
+    border-radius: var(--r-sm);
+    border-left: 2px solid var(--accent);
+    text-align: left;
   }
 
   .example-label {
     display: block;
-    font-family: var(--font-display);
+    font-family: var(--font-ui);
     font-size: 0.65rem;
+    font-weight: 640;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--color-ink-light);
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
     margin-bottom: 2px;
   }
 
   .example-text {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.8rem;
-    color: var(--color-ink-faded);
+    color: var(--ink-muted);
     line-height: 1.4;
   }
 
   .connection-lines {
     width: 100%;
     height: 60px;
-    margin: var(--space-md) 0;
+    margin: var(--s-4) 0;
   }
 
   .connection-path {
     stroke-dasharray: 1000;
     stroke-dashoffset: 1000;
-    opacity: 0.6;
+    opacity: 0.7;
   }
 
   .connection-path.animate {
-    animation: drawLine 1.5s ease forwards;
+    animation: drawLine 1.5s var(--ease-out) forwards;
   }
 
   @keyframes drawLine {
@@ -353,10 +336,10 @@
   }
 
   .marginalia {
-    font-family: var(--font-handwritten);
+    font-family: var(--font-display);
+    font-style: italic;
     font-size: 1.1rem;
-    color: var(--color-ink-faded);
-    transform: rotate(-1deg);
+    color: var(--ink-muted);
     display: inline-block;
   }
 
@@ -374,7 +357,7 @@
   @media (max-width: 600px) {
     .facets-grid {
       grid-template-columns: 1fr;
-      gap: var(--space-md);
+      gap: var(--s-4);
     }
 
     .facet-card {
@@ -388,6 +371,10 @@
 
     .card-front {
       display: none;
+    }
+
+    .card-back {
+      position: relative;
     }
 
     .connection-lines {

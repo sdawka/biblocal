@@ -102,8 +102,8 @@
     <svg viewBox="0 0 100 100" class="constellation">
       <defs>
         <radialGradient id="starGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="var(--color-gold)" stop-opacity="0.8" />
-          <stop offset="100%" stop-color="var(--color-gold)" stop-opacity="0" />
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.8" />
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
         </radialGradient>
         <filter id="glow">
           <feGaussianBlur stdDeviation="0.5" result="blur" />
@@ -167,16 +167,14 @@
 
 <style>
   .constellation-container {
-    background: linear-gradient(
-      135deg,
-      var(--color-ink) 0%,
-      #1a1612 50%,
-      var(--color-mahogany-deep) 100%
-    );
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
+    background:
+      radial-gradient(ellipse at 30% 20%, oklch(0.30 0.08 270) 0%, transparent 55%),
+      oklch(0.18 0.04 270);
+    border-radius: var(--r-lg);
+    padding: var(--s-4);
     position: relative;
     overflow: hidden;
+    border: 1px solid var(--hairline);
   }
 
   .constellation-container::before {
@@ -185,17 +183,17 @@
     inset: 0;
     background-image: radial-gradient(
       1px 1px at 20% 30%,
-      rgba(255, 255, 255, 0.15) 0%,
+      oklch(1 0 0 / 0.18) 0%,
       transparent 100%
     ),
     radial-gradient(
       1px 1px at 70% 60%,
-      rgba(255, 255, 255, 0.1) 0%,
+      oklch(1 0 0 / 0.12) 0%,
       transparent 100%
     ),
     radial-gradient(
       1px 1px at 40% 80%,
-      rgba(255, 255, 255, 0.12) 0%,
+      oklch(1 0 0 / 0.14) 0%,
       transparent 100%
     );
     pointer-events: none;
@@ -209,14 +207,14 @@
   }
 
   .connection {
-    stroke: var(--color-gold-pale);
+    stroke: var(--accent);
     stroke-width: 0.3;
-    opacity: calc(0.15 + var(--strength) * 0.25);
+    opacity: calc(0.18 + var(--strength) * 0.28);
   }
 
   .star-group {
     opacity: 0;
-    animation: starAppear 0.6s ease forwards;
+    animation: starAppear 0.6s var(--ease-out) forwards;
     animation-delay: var(--delay);
   }
 
@@ -233,7 +231,7 @@
 
   .star-glow {
     fill: url(#starGlow);
-    opacity: 0.4;
+    opacity: 0.45;
   }
 
   .star {
@@ -241,15 +239,15 @@
   }
 
   .star.curated {
-    fill: var(--color-gold);
+    fill: oklch(0.78 0.14 270);
   }
 
   .star.freeform {
-    fill: var(--color-burgundy-light, #c77d7d);
+    fill: oklch(0.74 0.10 300);
   }
 
   .star.inferred {
-    fill: var(--color-cream);
+    fill: oklch(0.96 0.006 85);
     opacity: 0.7;
   }
 
@@ -258,17 +256,17 @@
   }
 
   .star-label {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 2.5px;
     text-anchor: middle;
-    fill: var(--color-cream);
+    fill: oklch(0.96 0.006 85);
     opacity: 0.8;
     text-transform: capitalize;
     pointer-events: none;
   }
 
   .star-label.curated {
-    fill: var(--color-gold-pale);
+    fill: oklch(0.84 0.10 270);
     font-weight: 500;
   }
 
@@ -279,53 +277,54 @@
   .legend {
     display: flex;
     justify-content: center;
-    gap: var(--space-md);
-    margin-top: var(--space-sm);
-    padding-top: var(--space-sm);
-    border-top: 1px solid rgba(184, 134, 11, 0.2);
+    gap: var(--s-4);
+    margin-top: var(--s-3);
+    padding-top: var(--s-3);
+    border-top: 1px solid oklch(1 0 0 / 0.12);
   }
 
   .legend-item {
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.7rem;
-    color: var(--color-cream);
-    opacity: 0.7;
+    color: oklch(0.96 0.006 85);
+    opacity: 0.75;
   }
 
   .dot {
     width: 6px;
     height: 6px;
-    border-radius: 50%;
+    border-radius: var(--r-full);
   }
 
   .legend-item.curated .dot {
-    background: var(--color-gold);
+    background: oklch(0.78 0.14 270);
   }
 
   .legend-item.freeform .dot {
-    background: var(--color-burgundy-light, #c77d7d);
+    background: oklch(0.74 0.10 300);
   }
 
   .legend-item.inferred .dot {
-    background: var(--color-cream);
+    background: oklch(0.96 0.006 85);
     opacity: 0.7;
   }
 
   .empty-constellation {
-    background: var(--color-aged-paper);
-    border-radius: var(--radius-md);
-    padding: var(--space-xl);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    padding: var(--s-7);
     text-align: center;
   }
 
   .empty-constellation p {
-    font-family: var(--font-body);
-    font-size: 0.9rem;
-    color: var(--color-ink-light);
+    font-family: var(--font-display);
     font-style: italic;
+    font-size: 0.95rem;
+    color: var(--ink-faint);
     margin: 0;
   }
 </style>

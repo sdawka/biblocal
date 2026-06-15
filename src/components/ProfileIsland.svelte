@@ -141,21 +141,22 @@
 {#if isEditing}
   <!-- Edit Mode -->
   <div class="profile">
-    <section>
+    <section class="card rise rise-1">
       <div class="section-header">
-        <h2>Edit Profile</h2>
+        <h2 class="serif">Edit Profile</h2>
         <div class="header-actions">
           {#if showSaved}
-            <span class="saved-indicator">Saved</span>
+            <span class="saved-indicator" role="status">Saved</span>
           {/if}
-          <button class="btn-done" onclick={() => isEditing = false}>Done</button>
+          <button class="btn btn-tinted btn-sm" onclick={() => isEditing = false}>Done</button>
         </div>
       </div>
 
       <div class="field">
-        <label for="name">Name</label>
+        <label class="label" for="name">Name</label>
         <input
           id="name"
+          class="input"
           type="text"
           bind:value={profileData.name}
           onblur={handleSave}
@@ -163,8 +164,8 @@
       </div>
 
       <div class="field">
-        <label for="city">City</label>
-        <select id="city" bind:value={profileData.city} onchange={handleSave}>
+        <label class="label" for="city">City</label>
+        <select id="city" class="select" bind:value={profileData.city} onchange={handleSave}>
           {#each CITIES as city}
             <option value={city}>{city}</option>
           {/each}
@@ -172,9 +173,10 @@
       </div>
 
       <div class="field">
-        <label for="radius">Search radius: {profileData.radiusKm} km</label>
+        <label class="label" for="radius">Search radius: {profileData.radiusKm} km</label>
         <input
           id="radius"
+          class="range"
           type="range"
           min="1"
           max="20"
@@ -184,7 +186,7 @@
       </div>
 
       <div class="field location-field">
-        <label>Location</label>
+        <span class="label">Location</span>
         {#if profileData.latitude && profileData.longitude}
           <div class="location-status">
             <span class="location-badge">
@@ -194,30 +196,30 @@
                 Your location (~100m precision)
               {/if}
             </span>
-            <button class="btn-small" onclick={handleEnableLocation} disabled={requestingLocation}>
-              {requestingLocation ? 'Getting...' : 'Update'}
+            <button class="btn btn-outline btn-sm" onclick={handleEnableLocation} disabled={requestingLocation}>
+              {requestingLocation ? 'Getting…' : 'Update'}
             </button>
           </div>
         {:else}
-          <button class="btn-location" onclick={handleEnableLocation} disabled={requestingLocation}>
-            {requestingLocation ? 'Getting location...' : 'Enable precise location'}
+          <button class="btn btn-outline btn-location" onclick={handleEnableLocation} disabled={requestingLocation}>
+            {requestingLocation ? 'Getting location…' : 'Enable precise location'}
           </button>
-          <p class="location-hint">Your location is stored approximately (~100m) and never shared with other users.</p>
+          <p class="location-hint faint">Your location is stored approximately (~100m) and never shared with other users.</p>
         {/if}
         {#if locationError}
-          <p class="location-error">{locationError}</p>
+          <p class="location-error" role="alert">{locationError}</p>
         {/if}
       </div>
     </section>
 
-    <section>
-      <h2>Contact Info</h2>
-      <p class="section-desc">Let matches connect with you. Only shared when you accept a connection request.</p>
+    <section class="card rise rise-2">
+      <h2 class="serif">Contact Info</h2>
+      <p class="section-desc muted">Let matches connect with you. Only shared when you accept a connection request.</p>
 
       <div class="field">
-        <label for="contact-method">How can people reach you?</label>
-        <select id="contact-method" bind:value={contactMethod} onchange={handleContactSave}>
-          <option value="">Select...</option>
+        <label class="label" for="contact-method">How can people reach you?</label>
+        <select id="contact-method" class="select" bind:value={contactMethod} onchange={handleContactSave}>
+          <option value="">Select…</option>
           <option value="email">Email</option>
           <option value="social">Social media</option>
           <option value="custom">Other</option>
@@ -226,7 +228,7 @@
 
       {#if contactMethod}
         <div class="field">
-          <label for="contact-value">
+          <label class="label" for="contact-value">
             {#if contactMethod === 'email'}Email address
             {:else if contactMethod === 'social'}Social handle or link
             {:else}Contact info
@@ -234,6 +236,7 @@
           </label>
           <input
             id="contact-value"
+            class="input"
             type="text"
             bind:value={contactValue}
             placeholder={contactMethod === 'email' ? 'you@example.com' : contactMethod === 'social' ? '@handle or URL' : 'How to reach you'}
@@ -242,8 +245,8 @@
         </div>
 
         <div class="field">
-          <label for="contact-visibility">Visibility</label>
-          <select id="contact-visibility" bind:value={contactVisibility} onchange={handleContactSave}>
+          <label class="label" for="contact-visibility">Visibility</label>
+          <select id="contact-visibility" class="select" bind:value={contactVisibility} onchange={handleContactSave}>
             <option value="hidden">Hidden (no contact)</option>
             <option value="on-request">On request (reveal when accepted)</option>
             <option value="public">Public (visible on match cards)</option>
@@ -252,8 +255,8 @@
       {/if}
     </section>
 
-    <section>
-      <h2>Your Interests</h2>
+    <section class="card rise rise-3">
+      <h2 class="serif">Your Interests</h2>
       <TopicPickerIsland mode="both" maxCurated={5} />
 
       <div class="constellation-wrapper">
@@ -266,13 +269,14 @@
       </div>
     </section>
 
-    <section>
-      <h2>Optional Details</h2>
+    <section class="card rise rise-4">
+      <h2 class="serif">Optional Details</h2>
 
       <div class="field">
-        <label for="borrow">Lending style</label>
+        <label class="label" for="borrow">Lending style</label>
         <input
           id="borrow"
+          class="input"
           type="text"
           bind:value={borrowStyle}
           placeholder="e.g., careful, notes welcome, 3-week returns"
@@ -281,9 +285,10 @@
       </div>
 
       <div class="field">
-        <label for="obsessions">Current obsessions (comma-separated)</label>
+        <label class="label" for="obsessions">Current obsessions (comma-separated)</label>
         <input
           id="obsessions"
+          class="input"
           type="text"
           bind:value={obsessions}
           placeholder="e.g., program theory, parables, coordination"
@@ -292,21 +297,21 @@
       </div>
     </section>
 
-    <section class="profile-section">
-      <h2>Lending Style</h2>
+    <section class="card rise rise-5">
+      <h2 class="serif">Lending Style</h2>
       {#if editingPersonality}
         <div class="edit-row">
-          <input type="text" bind:value={personalityInput} placeholder="e.g., Generous lender" />
-          <button onclick={savePersonality}>Save</button>
-          <button class="secondary" onclick={() => editingPersonality = false}>Cancel</button>
+          <input class="input" type="text" bind:value={personalityInput} placeholder="e.g., Generous lender" />
+          <button class="btn btn-filled btn-sm" onclick={savePersonality}>Save</button>
+          <button class="btn btn-plain btn-sm" onclick={() => editingPersonality = false}>Cancel</button>
         </div>
       {:else}
         <div class="derived-value">
           <span class="value">{$profile.lendingPersonality || 'Add some books to see your style'}</span>
           {#if $profile.lendingPersonality}
-            <button class="edit-btn" onclick={startEditPersonality}>Edit</button>
+            <button class="btn btn-outline btn-sm" onclick={startEditPersonality}>Edit</button>
             {#if $profile.lendingPersonalityOverride}
-              <button class="clear-btn" onclick={clearPersonalityOverride}>Reset to auto</button>
+              <button class="btn btn-plain btn-sm" onclick={clearPersonalityOverride}>Reset to auto</button>
             {/if}
           {/if}
         </div>
@@ -316,19 +321,23 @@
 {:else}
   <!-- View Mode -->
   <div class="profile-view">
-    <header class="profile-header">
+    <header class="profile-header card rise rise-1">
       <div class="identity">
-        <h1 class="name">{profileData.name || 'Your Profile'}</h1>
+        <h2 class="name serif">{profileData.name || 'Your Profile'}</h2>
         {#if profileData.city}
-          <span class="location">{profileData.city} · {profileData.radiusKm} km radius</span>
+          <span class="location muted">{profileData.city} · {profileData.radiusKm} km radius</span>
         {/if}
       </div>
-      <button class="btn-edit" onclick={() => isEditing = true}>
-        <span class="edit-icon">✎</span> Edit
+      <button class="btn btn-tinted btn-sm" onclick={() => isEditing = true}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+        </svg>
+        Edit
       </button>
     </header>
 
-    <section class="constellation-hero">
+    <section class="constellation-hero rise rise-2">
       {#if hasTopics}
         <InterestConstellation
           curated={profileData.topics.curated}
@@ -336,9 +345,9 @@
           inferred={profileData.topics.inferred}
         />
       {:else}
-        <div class="empty-constellation">
-          <p>Your interest constellation awaits</p>
-          <button class="btn-add-interests" onclick={() => isEditing = true}>
+        <div class="empty-constellation card">
+          <p class="muted">Your interest constellation awaits</p>
+          <button class="btn btn-filled" onclick={() => isEditing = true}>
             Add interests
           </button>
         </div>
@@ -346,13 +355,13 @@
     </section>
 
     {#if borrowStyle || obsessions}
-      <section class="profile-details">
+      <section class="profile-details card rise rise-3">
         {#if borrowStyle}
-          <blockquote class="lending-style">"{borrowStyle}"</blockquote>
+          <blockquote class="lending-style serif">"{borrowStyle}"</blockquote>
         {/if}
         {#if obsessions}
           <p class="obsessions">
-            <span class="label">Currently obsessing over:</span>
+            <span class="label-inline muted">Currently obsessing over:</span>
             <span class="value">{obsessions}</span>
           </p>
         {/if}
@@ -360,9 +369,9 @@
     {/if}
 
     {#if $profile.lendingPersonality}
-      <section class="profile-details lending-personality-view">
-        <p class="personality-label">Lending Personality</p>
-        <p class="personality-value">{$profile.lendingPersonality}</p>
+      <section class="profile-details lending-personality-view card rise rise-4">
+        <p class="eyebrow personality-label">Lending Personality</p>
+        <p class="personality-value serif">{$profile.lendingPersonality}</p>
         {#if $profile.lendingPersonalityOverride}
           <span class="override-badge">custom</span>
         {/if}
@@ -372,284 +381,105 @@
 {/if}
 
 <style>
-  .profile {
+  .profile,
+  .profile-view {
     max-width: 640px;
     display: flex;
     flex-direction: column;
-    gap: 1.75rem;
-  }
-
-  section {
-    padding: 1.75rem;
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-card);
-    position: relative;
-    opacity: 0;
-    animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
-
-  section:nth-child(1) { animation-delay: 0.05s; }
-  section:nth-child(2) { animation-delay: 0.12s; }
-  section:nth-child(3) { animation-delay: 0.19s; }
-
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Subtle corner dots */
-  section::before,
-  section::after {
-    content: '';
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    background: var(--color-gold);
-    border-radius: 50%;
-    opacity: 0.25;
-  }
-
-  section::before {
-    top: 10px;
-    left: 10px;
-  }
-
-  section::after {
-    bottom: 10px;
-    right: 10px;
+    gap: var(--s-5);
   }
 
   h2 {
-    margin: 0 0 1.25rem;
-    font-family: var(--font-display);
+    margin: 0 0 var(--s-5);
     font-size: 1.375rem;
-    font-weight: 600;
-    color: var(--color-ink);
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--color-gold-pale);
+    font-weight: 500;
+    color: var(--ink);
   }
 
   h3 {
-    margin: 1.25rem 0 0.625rem;
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
+    margin: var(--s-5) 0 var(--s-3);
+    font-family: var(--font-ui);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink-muted);
   }
 
   .field {
-    margin-bottom: 1.125rem;
+    margin-bottom: var(--s-4);
   }
 
   .field:last-child {
     margin-bottom: 0;
   }
 
-  label {
-    display: block;
-    margin-bottom: 0.375rem;
-    font-family: var(--font-display);
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
-    letter-spacing: 0.02em;
-  }
-
-  input[type='text'],
-  select {
-    width: 100%;
-    padding: 0.625rem 0.875rem;
-    font-family: var(--font-body);
-    font-size: 1rem;
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-quick);
-    box-shadow: var(--shadow-inset);
-  }
-
-  input[type='text']::placeholder {
-    color: var(--color-ink-light);
-    font-style: italic;
-  }
-
-  input[type='text']:focus,
-  select:focus {
-    outline: none;
-    border-color: var(--color-gold);
-    box-shadow: var(--shadow-inset), 0 0 0 3px rgba(184, 134, 11, 0.15);
-  }
-
-  select {
-    appearance: none;
-    padding-right: 2.5rem;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B5B4F' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.875rem center;
-    cursor: pointer;
-  }
-
-  input[type='range'] {
-    width: 100%;
-    height: 6px;
-    margin-top: 0.5rem;
-    appearance: none;
-    background: linear-gradient(
-      to right,
-      var(--color-gold-pale),
-      var(--color-gold)
-    );
-    border-radius: 3px;
-    cursor: pointer;
-  }
-
-  input[type='range']::-webkit-slider-thumb {
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    background: linear-gradient(
-      to bottom,
-      var(--color-mahogany-light),
-      var(--color-mahogany)
-    );
-    border: 2px solid var(--color-gold);
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-
-  input[type='range']::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    background: linear-gradient(
-      to bottom,
-      var(--color-mahogany-light),
-      var(--color-mahogany)
-    );
-    border: 2px solid var(--color-gold);
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
+  /* Range slider */
+  /* Appearance comes from the shared .range in theme.css; only positioning here. */
+  .range { margin-top: var(--s-2); }
 
   .constellation-wrapper {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--color-gold-pale);
+    margin-top: var(--s-6);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--hairline);
   }
 
   .constellation-wrapper h3 {
-    margin: 0 0 0.75rem;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
+    margin: 0 0 var(--s-3);
     text-align: center;
   }
 
-  /* View Mode Styles */
-  .profile-view {
-    max-width: 640px;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
+  /* Header / identity */
   .profile-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    padding: 1.5rem;
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-card);
+    gap: var(--s-4);
   }
 
   .identity {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: var(--s-1);
   }
 
   .name {
     margin: 0;
-    font-family: var(--font-display);
     font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--color-ink);
+    font-weight: 500;
+    color: var(--ink);
   }
 
   .location {
-    font-family: var(--font-body);
     font-size: 0.95rem;
-    color: var(--color-ink-faded);
   }
 
-  .btn-edit, .btn-done {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .btn-edit:hover, .btn-done:hover {
-    border-color: var(--color-gold);
-    background: var(--color-gold-pale);
-  }
-
-  .edit-icon {
-    font-size: 1rem;
-  }
-
+  /* Edit-section header */
   .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--color-gold-pale);
+    gap: var(--s-3);
+    margin-bottom: var(--s-5);
   }
 
   .section-header h2 {
     margin: 0;
-    padding: 0;
-    border: none;
   }
 
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: var(--s-3);
   }
 
   .saved-indicator {
-    padding: 0.25rem 0.625rem;
-    font-family: var(--font-display);
+    padding: 0.2rem 0.6rem;
+    font-family: var(--font-ui);
     font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--color-forest);
-    background: rgba(34, 139, 34, 0.1);
-    border-radius: var(--radius-sm);
-    animation: fadeInOut 2s ease-in-out forwards;
+    font-weight: 590;
+    color: var(--accent);
+    background: var(--accent-tint);
+    border-radius: var(--r-full);
+    animation: fadeInOut 2s var(--ease-soft) forwards;
   }
 
   @keyframes fadeInOut {
@@ -659,68 +489,39 @@
     100% { opacity: 0; transform: translateY(-4px); }
   }
 
+  /* Constellation hero */
   .constellation-hero {
-    border-radius: var(--radius-md);
+    border-radius: var(--r-lg);
     overflow: hidden;
-    box-shadow: var(--shadow-lifted);
+    box-shadow: var(--shadow-2);
   }
 
   .empty-constellation {
-    padding: 3rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-4);
+    padding: var(--s-8) var(--s-6);
     text-align: center;
-    background: linear-gradient(
-      135deg,
-      var(--color-ink) 0%,
-      #1a1612 50%,
-      var(--color-mahogany-deep) 100%
-    );
-    border-radius: var(--radius-md);
+    border-style: dashed;
   }
 
   .empty-constellation p {
-    margin: 0 0 1rem;
+    margin: 0;
     font-family: var(--font-display);
     font-size: 1.125rem;
-    color: var(--color-gold-pale);
-    font-style: italic;
   }
 
-  .btn-add-interests {
-    padding: 0.625rem 1.25rem;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-ink);
-    background: linear-gradient(to bottom, var(--color-gold-pale), var(--color-gold));
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .btn-add-interests:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3);
-  }
-
-  .profile-details {
-    padding: 1.5rem;
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-card);
-  }
-
+  /* Detail sections */
   .lending-style {
-    margin: 0 0 1rem;
-    padding: 0.75rem 1rem;
-    font-family: var(--font-body);
-    font-size: 1rem;
+    margin: 0 0 var(--s-4);
+    padding: var(--s-3) var(--s-4);
+    font-size: 1.0625rem;
     font-style: italic;
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border-left: 3px solid var(--color-gold);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: var(--ink);
+    background: var(--surface-sunken);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--r-md) var(--r-md) 0;
   }
 
   .lending-style:last-child {
@@ -729,241 +530,116 @@
 
   .obsessions {
     margin: 0;
-    font-family: var(--font-body);
     font-size: 0.95rem;
-    color: var(--color-ink);
+    color: var(--ink);
   }
 
-  .obsessions .label {
-    color: var(--color-ink-faded);
-    font-weight: 500;
+  .obsessions .label-inline {
+    font-weight: 590;
   }
 
-  .obsessions .value {
-    font-style: italic;
-  }
-
-  /* Lending Style Section (Edit Mode) */
-  .profile-section h2 {
-    margin: 0 0 1rem;
-    font-family: var(--font-display);
-    font-size: 1.375rem;
-    font-weight: 600;
-    color: var(--color-ink);
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--color-gold-pale);
-  }
-
+  /* Lending-personality edit/view rows */
   .derived-value {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: var(--s-3);
     flex-wrap: wrap;
   }
 
   .derived-value .value {
-    font-family: var(--font-body);
-    font-size: 1rem;
-    color: var(--color-ink);
-    font-style: italic;
-  }
-
-  .edit-btn,
-  .clear-btn {
-    padding: 0.375rem 0.75rem;
-    font-family: var(--font-display);
-    font-size: 0.8rem;
-    font-weight: 500;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .edit-btn {
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-  }
-
-  .edit-btn:hover {
-    border-color: var(--color-gold);
-    background: var(--color-gold-pale);
-  }
-
-  .clear-btn {
-    color: var(--color-ink-faded);
-    background: transparent;
-    border: 1px dashed var(--color-gold-pale);
-  }
-
-  .clear-btn:hover {
-    border-color: var(--color-gold);
-    color: var(--color-ink);
+    font-size: 1.0625rem;
+    color: var(--ink);
   }
 
   .edit-row {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--s-2);
     align-items: center;
     flex-wrap: wrap;
   }
 
-  .edit-row input[type='text'] {
+  .edit-row .input {
     flex: 1;
     min-width: 200px;
   }
 
-  .edit-row button {
-    padding: 0.625rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.875rem;
-    font-weight: 500;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .edit-row button:first-of-type {
-    color: var(--color-cream);
-    background: var(--color-mahogany);
-    border: 1px solid var(--color-mahogany);
-  }
-
-  .edit-row button:first-of-type:hover {
-    background: var(--color-mahogany-light);
-  }
-
-  .edit-row button.secondary {
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-  }
-
-  .edit-row button.secondary:hover {
-    border-color: var(--color-gold);
-    background: var(--color-gold-pale);
-  }
-
-  /* Lending Personality View Mode */
   .lending-personality-view {
     position: relative;
   }
 
   .personality-label {
-    margin: 0 0 0.25rem;
-    font-family: var(--font-display);
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    margin: 0 0 var(--s-1);
   }
 
   .personality-value {
     margin: 0;
-    font-family: var(--font-display);
     font-size: 1.125rem;
     font-weight: 500;
-    color: var(--color-ink);
+    color: var(--ink);
   }
 
   .override-badge {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
-    padding: 0.25rem 0.5rem;
-    font-family: var(--font-display);
+    top: var(--s-4);
+    right: var(--s-4);
+    padding: 0.2rem 0.5rem;
+    font-family: var(--font-ui);
     font-size: 0.7rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
-    background: var(--color-gold-pale);
-    border-radius: var(--radius-xs, 3px);
+    font-weight: 640;
+    color: var(--ink-muted);
+    background: var(--surface-sunken);
+    border-radius: var(--r-full);
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
   }
 
-  /* Location styles */
+  /* Location */
   .location-field {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px dashed var(--color-gold-pale);
+    margin-top: var(--s-4);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--hairline);
   }
 
   .location-status {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: var(--s-3);
+    flex-wrap: wrap;
   }
 
   .location-badge {
-    padding: 0.375rem 0.75rem;
-    font-family: var(--font-body);
-    font-size: 0.9rem;
-    color: var(--color-forest);
-    background: rgba(34, 139, 34, 0.1);
-    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.7rem;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 540;
+    color: var(--accent);
+    background: var(--accent-tint);
+    border-radius: var(--r-full);
   }
 
   .btn-location {
     width: 100%;
-    padding: 0.75rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .btn-location:hover:not(:disabled) {
-    border-color: var(--color-gold);
-    background: var(--color-gold-pale);
-  }
-
-  .btn-location:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .btn-small {
-    padding: 0.375rem 0.75rem;
-    font-family: var(--font-display);
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .btn-small:hover:not(:disabled) {
-    border-color: var(--color-gold);
   }
 
   .location-hint {
-    margin: 0.5rem 0 0;
-    font-family: var(--font-body);
+    margin: var(--s-2) 0 0;
     font-size: 0.8rem;
-    color: var(--color-ink-faded);
-    font-style: italic;
   }
 
   .location-error {
-    margin: 0.5rem 0 0;
-    font-family: var(--font-body);
+    margin: var(--s-2) 0 0;
     font-size: 0.85rem;
-    color: var(--color-burgundy);
+    color: var(--danger);
   }
 
   .section-desc {
-    margin: -0.5rem 0 1rem;
-    font-family: var(--font-body);
+    margin: calc(-1 * var(--s-2)) 0 var(--s-4);
     font-size: 0.9rem;
-    color: var(--color-ink-faded);
+  }
+
+  @media (max-width: 600px) {
+    .profile-header {
+      flex-direction: column;
+    }
   }
 </style>

@@ -37,25 +37,27 @@
 </script>
 
 {#if incoming.length > 0}
-  <section class="connection-requests">
-    <h2>Connection Requests ({incoming.length})</h2>
+  <section class="connection-requests card rise">
+    <h2 class="serif">Connection Requests <span class="count-tag">{incoming.length}</span></h2>
     <div class="requests-list">
       {#each incoming as request (request.id)}
-        <div class="request-card">
+        <div class="request-card card">
           <div class="request-info">
-            <span class="from-name">{request.fromUser?.name || 'Someone'}</span>
-            <span class="from-city">{request.fromUser?.city || ''}</span>
+            <span class="from-name serif">{request.fromUser?.name || 'Someone'}</span>
+            {#if request.fromUser?.city}
+              <span class="from-city muted">{request.fromUser.city}</span>
+            {/if}
           </div>
           <div class="request-actions">
             <button
-              class="btn-accept"
+              class="btn btn-filled btn-sm"
               onclick={() => handleRespond(request.id, 'accepted')}
               disabled={responding === request.id}
             >
-              {responding === request.id ? '...' : 'Accept'}
+              {responding === request.id ? '…' : 'Accept'}
             </button>
             <button
-              class="btn-decline"
+              class="btn btn-sm btn-decline"
               onclick={() => handleRespond(request.id, 'declined')}
               disabled={responding === request.id}
             >
@@ -70,38 +72,40 @@
 
 <style>
   .connection-requests {
-    padding: 1.5rem;
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-card);
-    margin-bottom: 1.25rem;
+    margin-bottom: var(--s-5);
   }
 
   h2 {
-    margin: 0 0 1rem;
-    font-family: var(--font-display);
+    margin: 0 0 var(--s-4);
     font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--color-ink);
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--color-gold-pale);
+    font-weight: 500;
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-2);
+  }
+
+  .count-tag {
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 590;
+    color: var(--ink-faint);
   }
 
   .requests-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--s-3);
   }
 
   .request-card {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1rem;
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
+    gap: var(--s-3);
+    flex-wrap: wrap;
+    padding: var(--s-3) var(--s-4);
+    background: var(--surface-sunken);
+    box-shadow: none;
   }
 
   .request-info {
@@ -111,58 +115,31 @@
   }
 
   .from-name {
-    font-family: var(--font-display);
-    font-size: 1rem;
+    font-size: 1.0625rem;
     font-weight: 500;
-    color: var(--color-ink);
+    color: var(--ink);
   }
 
   .from-city {
-    font-family: var(--font-body);
     font-size: 0.85rem;
-    color: var(--color-ink-faded);
   }
 
   .request-actions {
     display: flex;
-    gap: 0.5rem;
-  }
-
-  .btn-accept,
-  .btn-decline {
-    padding: 0.375rem 0.75rem;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 500;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .btn-accept {
-    color: var(--color-cream);
-    background: var(--color-forest);
-    border: 1px solid var(--color-forest);
-  }
-
-  .btn-accept:hover:not(:disabled) {
-    background: #1a6b1a;
+    gap: var(--s-2);
   }
 
   .btn-decline {
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
+    background: var(--danger-tint);
+    color: var(--danger);
   }
 
   .btn-decline:hover:not(:disabled) {
-    border-color: var(--color-burgundy);
-    color: var(--color-burgundy);
+    box-shadow: inset 0 0 0 1px var(--danger);
   }
 
-  .btn-accept:disabled,
-  .btn-decline:disabled {
-    opacity: 0.6;
+  .btn:disabled {
+    opacity: 0.55;
     cursor: not-allowed;
   }
 </style>

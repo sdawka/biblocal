@@ -21,16 +21,18 @@ const isQaMode = runtime?.env?.QA_MODE === 'true';
   }
 
   .avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--color-burgundy, #722f37);
-    color: var(--color-cream, #f5f0e6);
+    width: 36px;
+    height: 36px;
+    border-radius: var(--r-full);
+    background: var(--accent);
+    color: var(--accent-on);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.75rem;
-    font-weight: 600;
-    font-family: var(--font-display);
+    font-weight: 640;
+    letter-spacing: 0.02em;
+    font-family: var(--font-ui);
+    box-shadow: var(--shadow-1);
   }
 </style>

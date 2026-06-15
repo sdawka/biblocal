@@ -27,6 +27,7 @@
 <section class="local-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
     <div class="text-content">
+      <p class="eyebrow">Nearby</p>
       <h2 class="section-title">See who is reading what near you.</h2>
       <p class="section-desc">
         Find a new book and maybe a new friend.
@@ -73,19 +74,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: calc(var(--space-2xl) * 1.2) var(--space-2xl);
-    background: linear-gradient(
-      135deg,
-      var(--color-aged-paper) 0%,
-      var(--color-parchment) 50%,
-      var(--color-paper) 100%
-    );
+    padding: var(--s-12) var(--s-6);
+    background: var(--canvas);
   }
 
   .section-content {
     display: grid;
     grid-template-columns: 1fr 1.2fr;
-    gap: var(--space-2xl);
+    gap: var(--s-10);
     max-width: 1100px;
     align-items: center;
   }
@@ -93,7 +89,7 @@
   .text-content {
     opacity: 0;
     transform: translateX(-30px);
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity var(--dur-4) var(--ease-out), transform var(--dur-4) var(--ease-out);
   }
 
   .visible .text-content {
@@ -101,27 +97,28 @@
     transform: translateX(0);
   }
 
+  .eyebrow {
+    margin: 0 0 var(--s-3);
+  }
+
   .section-title {
-    font-family: var(--font-display);
     font-size: clamp(2rem, 4vw, 2.8rem);
-    font-weight: 600;
-    color: var(--color-ink);
-    line-height: 1.2;
-    margin: 0 0 var(--space-lg);
+    line-height: 1.15;
+    margin: 0 0 var(--s-5);
   }
 
   .section-desc {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.15rem;
-    color: var(--color-ink-faded);
-    line-height: 1.7;
-    margin: 0 0 var(--space-lg);
+    color: var(--ink-muted);
+    line-height: 1.6;
+    margin: 0;
   }
 
   .map-container {
     opacity: 0;
     transform: translateX(30px);
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s;
+    transition: opacity var(--dur-4) var(--ease-out) 150ms, transform var(--dur-4) var(--ease-out) 150ms;
   }
 
   .visible .map-container {
@@ -130,26 +127,19 @@
   }
 
   .map-frame {
-    background: var(--color-cream);
-    border: 2px solid var(--color-gold-pale);
-    border-radius: var(--radius-lg);
-    padding: var(--space-sm);
-    box-shadow:
-      0 8px 32px rgba(74, 44, 42, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-xl);
+    padding: var(--s-2);
+    box-shadow: var(--shadow-3);
   }
 
   .map-surface {
     position: relative;
     width: 100%;
     padding-bottom: 75%;
-    background:
-      radial-gradient(
-        ellipse at 50% 50%,
-        var(--color-aged-paper) 0%,
-        #E5D9C7 100%
-      );
-    border-radius: var(--radius-md);
+    background: var(--surface-sunken);
+    border-radius: var(--r-lg);
     overflow: hidden;
   }
 
@@ -162,16 +152,17 @@
         0deg,
         transparent 0px,
         transparent 40px,
-        rgba(139, 111, 20, 0.03) 40px,
-        rgba(139, 111, 20, 0.03) 41px
+        var(--hairline) 40px,
+        var(--hairline) 41px
       ),
       repeating-linear-gradient(
         90deg,
         transparent 0px,
         transparent 40px,
-        rgba(139, 111, 20, 0.03) 40px,
-        rgba(139, 111, 20, 0.03) 41px
+        var(--hairline) 40px,
+        var(--hairline) 41px
       );
+    opacity: 0.6;
     pointer-events: none;
   }
 
@@ -184,7 +175,7 @@
   }
 
   .connection-line {
-    stroke: var(--color-gold);
+    stroke: var(--accent);
     stroke-width: 0.3;
     stroke-dasharray: 2 2;
     opacity: 0;
@@ -192,7 +183,7 @@
   }
 
   .connection-line.visible {
-    opacity: 0.4;
+    opacity: 0.45;
   }
 
   .map-point {
@@ -208,10 +199,10 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    border-radius: 50%;
+    border-radius: var(--r-full);
     background: radial-gradient(
       circle,
-      rgba(184, 134, 11, 0.3) 0%,
+      var(--accent-tint) 0%,
       transparent 70%
     );
     opacity: 0;
@@ -239,11 +230,11 @@
   .point-dot {
     width: 12px;
     height: 12px;
-    border-radius: 50%;
+    border-radius: var(--r-full);
     position: relative;
     opacity: 0;
     transform: scale(0);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity var(--dur-2) var(--ease-spring), transform var(--dur-2) var(--ease-spring);
     transition-delay: var(--delay);
   }
 
@@ -253,18 +244,18 @@
   }
 
   .map-point.reader .point-dot {
-    background: var(--color-forest);
-    box-shadow: 0 0 0 3px var(--color-forest-light);
+    background: var(--st-borrowable-fg);
+    box-shadow: 0 0 0 3px var(--st-borrowable-bg);
   }
 
   .map-point.store .point-dot {
-    background: var(--color-burgundy);
-    box-shadow: 0 0 0 3px var(--color-burgundy-light);
+    background: var(--st-giftable-fg);
+    box-shadow: 0 0 0 3px var(--st-giftable-bg);
   }
 
   .map-point.you .point-dot {
-    background: var(--color-gold);
-    box-shadow: 0 0 0 4px var(--color-gold-light);
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-tint);
     width: 16px;
     height: 16px;
   }
@@ -288,28 +279,29 @@
 
   .label-name {
     display: block;
-    font-family: var(--font-display);
+    font-family: var(--font-ui);
     font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-ink);
+    font-weight: 590;
+    color: var(--ink);
   }
 
   .label-books {
     display: block;
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.65rem;
-    color: var(--color-ink-faded);
+    color: var(--ink-muted);
   }
 
   .map-caption {
     text-align: center;
-    margin: var(--space-md) 0 0;
+    margin: var(--s-4) 0 0;
   }
 
   .marginalia {
-    font-family: var(--font-handwritten);
+    font-family: var(--font-display);
+    font-style: italic;
     font-size: 1.1rem;
-    color: var(--color-ink-faded);
+    color: var(--ink-muted);
   }
 
   @media (max-width: 800px) {

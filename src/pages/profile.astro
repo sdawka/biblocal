@@ -13,8 +13,8 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
 <Layout title="Your Profile | biblocal">
   {isQaMode && <QaAuthInit client:load userId={qaUserId} />}
   <main>
-      <div class="header-row">
-        <h1>Your Profile</h1>
+      <div class="header-row rise">
+        <h1 class="serif">Your Profile</h1>
         {!isQaMode && <UserButton />}
       </div>
 
@@ -28,6 +28,7 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    gap: var(--s-4);
+    margin-bottom: var(--s-5);
   }
 </style>

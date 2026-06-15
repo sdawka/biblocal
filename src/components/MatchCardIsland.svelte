@@ -54,15 +54,20 @@
   let specialties = $derived(
     isStore && match.user.specialties ? match.user.specialties : []
   );
+
+  // Strongest active facet count — used to scale strength meters relatively.
+  let maxFacetCount = $derived(
+    activeFacets.reduce((m, { facet }) => Math.max(m, facet.count), 0)
+  );
 </script>
 
-<article class="match-card" class:expanded class:store={isStore} onclick={onToggle}>
+<article class="match-card card card-interactive" class:expanded class:store={isStore} onclick={onToggle}>
   <header>
     <div class="title-row">
       {#if isStore}
-        <span class="store-badge">🏪</span>
+        <span class="store-badge" aria-hidden="true">🏪</span>
       {/if}
-      <h3>{match.user.name}</h3>
+      <h3 class="serif">{match.user.name}</h3>
     </div>
     <span class="distance">
       {#if isStore && match.user.neighborhood}
@@ -87,8 +92,13 @@
   <div class="facets">
     {#each activeFacets as { key, facet, meta }}
       <span class="facet-badge" title={meta.label}>
-        {meta.icon}
-        {facet.count}
+        <span class="facet-icon" aria-hidden="true">{meta.icon}</span>
+        <span class="facet-count">{facet.count}</span>
+        <span
+          class="facet-meter"
+          aria-hidden="true"
+          style={`--fill:${maxFacetCount > 0 ? Math.max(0.18, facet.count / maxFacetCount) : 0}`}
+        ></span>
       </span>
     {/each}
   </div>
@@ -146,7 +156,7 @@
               {/if}
             </p>
           {:else}
-            <button class="btn-connect" onclick={(e) => { e.stopPropagation(); }}>
+            <button class="btn btn-filled btn-connect" onclick={(e) => { e.stopPropagation(); }}>
               Request to Connect
             </button>
           {/if}
@@ -158,153 +168,126 @@
 
 <style>
   .match-card {
-    padding: 1.25rem;
-    background: var(--color-cream);
-    background-image: var(--texture-paper-fine);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: all var(--transition-gentle);
-    box-shadow: var(--shadow-resting);
+    /* .card + .card-interactive supply surface, border, radius, shadow, hover lift */
     position: relative;
   }
 
-  .match-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 12px;
-    right: 12px;
-    height: 2px;
-    background: linear-gradient(
-      to right,
-      transparent,
-      var(--color-gold-pale) 20%,
-      var(--color-gold) 50%,
-      var(--color-gold-pale) 80%,
-      transparent
-    );
-    opacity: 0;
-    transition: opacity var(--transition-gentle);
-  }
-
-  .match-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: var(--radius-md);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.05);
-    pointer-events: none;
-  }
-
-  .match-card:hover {
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-2px);
-    border-color: var(--color-gold);
-  }
-
-  .match-card:hover::before {
-    opacity: 0.8;
-  }
-
   .match-card.expanded {
-    box-shadow: var(--shadow-elevated);
-    border-color: var(--color-gold);
+    box-shadow: var(--shadow-2);
+    border-color: var(--hairline-strong);
   }
 
-  .match-card.expanded::before {
-    opacity: 0.8;
+  /* Store accent rail */
+  .match-card.store {
+    border-left: 3px solid var(--accent);
   }
 
   header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
+    align-items: baseline;
+    gap: var(--s-3);
+    margin-bottom: var(--s-3);
   }
 
   h3 {
     margin: 0;
-    font-family: var(--font-display);
     font-size: 1.25rem;
-    font-weight: 600;
-    font-style: italic;
-    color: var(--color-ink);
+    font-weight: 500;
+    color: var(--ink);
   }
 
   .distance {
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    font-style: italic;
-    color: var(--color-ink-faded);
-    padding: 0.125rem 0.5rem;
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: 2px;
+    flex-shrink: 0;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 540;
+    color: var(--ink-muted);
+    padding: 0.2rem 0.55rem;
+    background: var(--surface-sunken);
+    border-radius: var(--r-full);
+    white-space: nowrap;
   }
 
   .facets {
     display: flex;
-    gap: 0.375rem;
+    gap: var(--s-2);
     flex-wrap: wrap;
   }
 
+  /* Facet badge: icon + count, with a subtle accent strength meter underline. */
   .facet-badge {
-    padding: 0.5rem 0.75rem;
-    min-height: 44px;
-    font-size: 0.8rem;
-    background: linear-gradient(
-      to bottom,
-      var(--color-gold-pale),
-      var(--color-gold-light) 50%,
-      var(--color-gold-pale)
-    );
-    border: 1px solid var(--color-gold);
-    border-radius: 2px;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.4),
-      0 1px 2px rgba(0, 0, 0, 0.1);
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.35rem;
+    min-height: 36px;
+    padding: 0.35rem 0.7rem 0.45rem;
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 590;
+    color: var(--ink);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+
+  .facet-icon { font-size: 0.95rem; line-height: 1; }
+  .facet-count { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  /* Strength meter — accent fill over sunken track, scaled by relative count. */
+  .facet-meter {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 100%;
+    background: var(--hairline);
+  }
+  .facet-meter::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 100%;
+    width: calc(var(--fill, 0) * 100%);
+    background: var(--accent);
+    border-radius: var(--r-full);
+    transform-origin: left center;
+    transition: width var(--dur-3) var(--ease-out);
   }
 
   .details {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--color-gold-pale);
-    animation: unfold 0.3s ease-out;
+    margin-top: var(--s-4);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--hairline);
+    animation: unfold var(--dur-3) var(--ease-out);
   }
 
   @keyframes unfold {
-    from {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   .facet-detail {
-    margin-bottom: 1rem;
+    margin-bottom: var(--s-4);
   }
 
   .facet-detail h4 {
-    margin: 0 0 0.375rem;
-    font-family: var(--font-display);
+    margin: 0 0 var(--s-2);
+    font-family: var(--font-ui);
     font-size: 0.9rem;
     font-weight: 600;
-    color: var(--color-ink);
+    color: var(--ink);
   }
 
   .facet-detail ul {
     margin: 0;
-    padding-left: 1.25rem;
-    font-family: var(--font-body);
+    padding-left: var(--s-5);
+    font-family: var(--font-ui);
     font-size: 0.875rem;
-    color: var(--color-ink-faded);
+    color: var(--ink-muted);
   }
 
   .facet-detail li {
@@ -312,142 +295,119 @@
   }
 
   .facet-detail li::marker {
-    color: var(--color-gold);
+    color: var(--accent);
   }
 
   .more {
-    color: var(--color-ink-light);
-    font-style: italic;
+    color: var(--ink-faint);
   }
 
   .borrow-style {
-    margin: 1rem 0 0;
-    padding: 0.75rem;
-    font-family: var(--font-body);
-    font-size: 0.9rem;
+    margin: var(--s-4) 0 0;
+    padding: var(--s-3) var(--s-4);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
     font-style: italic;
-    color: var(--color-ink-faded);
-    background: var(--color-paper);
-    border-left: 3px solid var(--color-gold);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: var(--ink-muted);
+    background: var(--surface-sunken);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--r-md) var(--r-md) 0;
   }
 
-  /* Store-specific styles */
-  .match-card.store {
-    border-left: 3px solid var(--color-burgundy, #722f37);
-  }
-
+  /* Store-specific */
   .title-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--s-2);
+    min-width: 0;
   }
 
   .store-badge {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+    line-height: 1;
   }
 
   .specialties {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem;
-    margin-bottom: 0.75rem;
+    gap: var(--s-1);
+    margin-bottom: var(--s-3);
   }
 
   .specialty-tag {
-    padding: 0.125rem 0.375rem;
-    font-family: var(--font-body);
+    padding: 0.15rem 0.5rem;
+    font-family: var(--font-ui);
     font-size: 0.7rem;
-    color: var(--color-ink-faded);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: 2px;
+    font-weight: 540;
+    color: var(--ink-muted);
+    background: var(--surface-sunken);
+    border-radius: var(--r-full);
   }
 
   .specialty-tag.more {
-    font-style: italic;
-    color: var(--color-ink-light);
+    color: var(--ink-faint);
   }
 
   .store-info {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px dashed var(--color-gold-pale);
+    margin-bottom: var(--s-4);
+    padding-bottom: var(--s-3);
+    border-bottom: 1px solid var(--hairline);
   }
 
   .store-info p {
-    margin: 0.25rem 0;
-    font-family: var(--font-body);
+    margin: var(--s-1) 0;
+    font-family: var(--font-ui);
     font-size: 0.85rem;
-    color: var(--color-ink-faded);
-  }
-
-  .store-info .address {
-    font-style: italic;
+    color: var(--ink-muted);
   }
 
   .store-info a {
-    color: var(--color-burgundy, #722f37);
+    color: var(--accent);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 590;
   }
 
   .store-info a:hover {
-    text-decoration: underline;
+    color: var(--accent-hover);
   }
 
   .view-store {
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px dashed var(--color-gold-pale);
+    margin-top: var(--s-3);
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--hairline);
   }
 
   .view-store a {
-    font-weight: 500;
+    font-weight: 590;
   }
 
   .connect-section {
-    margin-top: 1rem;
-    padding-top: 0.75rem;
-    border-top: 1px dashed var(--color-gold-pale);
+    margin-top: var(--s-4);
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--hairline);
   }
 
   .btn-connect {
     width: 100%;
-    padding: 0.625rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-cream);
-    background: linear-gradient(to bottom, var(--color-mahogany-light), var(--color-mahogany));
-    border: 1px solid var(--color-mahogany);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .btn-connect:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(114, 47, 55, 0.3);
   }
 
   .contact-info {
     margin: 0;
-    padding: 0.625rem;
-    font-family: var(--font-body);
+    padding: var(--s-3);
+    font-family: var(--font-ui);
     font-size: 0.9rem;
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border-radius: var(--radius-sm);
+    color: var(--ink);
+    background: var(--surface-sunken);
+    border-radius: var(--r-md);
     text-align: center;
   }
 
   .contact-info a {
-    color: var(--color-burgundy);
+    color: var(--accent);
     text-decoration: none;
   }
 
   .contact-info a:hover {
-    text-decoration: underline;
+    color: var(--accent-hover);
   }
 </style>

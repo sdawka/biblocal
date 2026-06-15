@@ -13,10 +13,13 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
 <Layout title="Find Matches | biblocal">
   {isQaMode && <QaAuthInit client:load userId={qaUserId} />}
   <main>
-      <div class="header-row">
-        <h1>Nearby</h1>
+      <div class="header-row rise">
+        <div class="header-titles">
+          <span class="eyebrow">Discover</span>
+          <h1>Nearby</h1>
+        </div>
         <div class="header-actions">
-          <a href="/stores/new" class="add-store-link">+ Add a bookstore</a>
+          <a href="/stores/new" class="btn btn-outline btn-sm add-store-link">+ Add a bookstore</a>
           {!isQaMode && <UserButton />}
         </div>
       </div>
@@ -29,14 +32,22 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
 
 <style>
   main {
-    max-width: none;
+    max-width: var(--maxw);
   }
 
   .header-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
+    align-items: flex-end;
+    gap: var(--s-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--s-5);
+  }
+
+  .header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
   }
 
   h1 {
@@ -46,22 +57,10 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: var(--s-4);
   }
 
   .add-store-link {
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    color: var(--color-burgundy, #722f37);
     text-decoration: none;
-    padding: 0.375rem 0.75rem;
-    border: 1px solid var(--color-burgundy, #722f37);
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-quick);
-  }
-
-  .add-store-link:hover {
-    background: var(--color-burgundy, #722f37);
-    color: var(--color-cream);
   }
 </style>

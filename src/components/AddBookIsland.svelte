@@ -167,7 +167,7 @@
   }
 </script>
 
-<div class="add-book">
+<div class="add-book card">
   {#if previewBook}
     <!-- Preview mode -->
     <div class="preview-card">
@@ -179,26 +179,24 @@
         </div>
       {/if}
       <div class="preview-info">
-        <h3 class="preview-title">{previewBook.title}</h3>
-        <p class="preview-author">{previewBook.author}</p>
+        <h3 class="preview-title serif">{previewBook.title}</h3>
+        <p class="preview-author muted">{previewBook.author}</p>
       </div>
     </div>
 
     <div class="pill-section">
-      <label class="pill-label">I...</label>
-      <div class="pill-group">
+      <span class="label">I…</span>
+      <div class="segmented" role="group" aria-label="Ownership">
         <button
           type="button"
-          class="pill ownership"
-          class:active={ownership === 'have'}
+          aria-pressed={ownership === 'have'}
           onclick={() => ownership = 'have'}
         >
           have this
         </button>
         <button
           type="button"
-          class="pill ownership"
-          class:active={ownership === 'seeking'}
+          aria-pressed={ownership === 'seeking'}
           onclick={() => ownership = 'seeking'}
         >
           am seeking
@@ -208,13 +206,12 @@
 
     {#if ownership === 'have'}
       <div class="pill-section">
-        <label class="pill-label">I will...</label>
-        <div class="pill-group">
+        <span class="label">I will…</span>
+        <div class="segmented" role="group" aria-label="Intent">
           {#each INTENT_OPTIONS as opt}
             <button
               type="button"
-              class="pill intent"
-              class:active={intents.includes(opt.value)}
+              aria-pressed={intents.includes(opt.value)}
               onclick={() => toggleIntent(opt.value)}
             >
               {opt.label}
@@ -225,11 +222,10 @@
     {/if}
 
     <div class="pill-section">
-      <div class="pill-group">
+      <div class="segmented" role="group" aria-label="Visibility">
         <button
           type="button"
-          class="pill visibility"
-          class:active={visibility === 'private'}
+          aria-pressed={visibility === 'private'}
           onclick={() => visibility = visibility === 'private' ? 'visible' : 'private'}
         >
           Private
@@ -238,10 +234,10 @@
     </div>
 
     <div class="preview-actions">
-      <button type="button" class="btn-cancel" onclick={resetForm}>
+      <button type="button" class="btn btn-outline" onclick={resetForm}>
         Cancel
       </button>
-      <button type="button" class="btn-confirm" onclick={confirmAdd}>
+      <button type="button" class="btn btn-filled btn-confirm" onclick={confirmAdd}>
         Add to Shelf
       </button>
     </div>
@@ -250,10 +246,10 @@
       <div class="duplicate-warning">
         <p>You already have <strong>{duplicateBook.title}</strong> on your shelf.</p>
         <div class="duplicate-actions">
-          <button type="button" class="btn-view" onclick={viewExisting}>
+          <button type="button" class="btn btn-outline btn-sm" onclick={viewExisting}>
             View Existing
           </button>
-          <button type="button" class="btn-add-anyway" onclick={addAnyway}>
+          <button type="button" class="btn btn-tinted btn-sm" onclick={addAnyway}>
             Add Anyway
           </button>
         </div>
@@ -261,12 +257,12 @@
     {/if}
   {:else}
     <!-- Entry mode -->
-    <div class="tabs">
-      <button class:active={mode === 'isbn'} onclick={() => switchMode('isbn')}>
+    <div class="segmented tabs" role="group" aria-label="Add method">
+      <button aria-pressed={mode === 'isbn'} onclick={() => switchMode('isbn')}>
         ISBN Lookup
       </button>
       <button
-        class:active={mode === 'manual'}
+        aria-pressed={mode === 'manual'}
         onclick={() => switchMode('manual')}
       >
         Manual Entry
@@ -282,6 +278,7 @@
       >
         <div class="isbn-row">
           <input
+            class="input"
             type="text"
             bind:value={isbn}
             placeholder="Enter ISBN (e.g., 9780465026562)"
@@ -295,11 +292,14 @@
             onclick={openScanner}
             aria-label="Scan ISBN barcode with camera"
           >
-            📷
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14.5 4h2A1.5 1.5 0 0 1 18 5.5l1 1.5h1.5A1.5 1.5 0 0 1 22 8.5v9A1.5 1.5 0 0 1 20.5 19h-17A1.5 1.5 0 0 1 2 17.5v-9A1.5 1.5 0 0 1 3.5 7H5l1-1.5A1.5 1.5 0 0 1 7.5 4h2" />
+              <circle cx="12" cy="12.5" r="3.5" />
+            </svg>
           </button>
         </div>
-        <button type="submit" disabled={loading}>
-          {loading ? 'Looking up...' : 'Look Up Book'}
+        <button type="submit" class="btn btn-filled" disabled={loading}>
+          {loading ? 'Looking up…' : 'Look Up Book'}
         </button>
       </form>
     {:else}
@@ -310,6 +310,7 @@
         }}
       >
         <input
+          class="input"
           type="text"
           bind:value={title}
           placeholder="Book title"
@@ -318,6 +319,7 @@
           aria-describedby={error && mode === 'manual' ? 'manual-error' : undefined}
         />
         <input
+          class="input"
           type="text"
           bind:value={author}
           placeholder="Author"
@@ -325,7 +327,7 @@
           aria-invalid={error && mode === 'manual' && !author.trim() ? 'true' : undefined}
           aria-describedby={error && mode === 'manual' ? 'manual-error' : undefined}
         />
-        <button type="submit">Preview Book</button>
+        <button type="submit" class="btn btn-filled">Preview Book</button>
       </form>
     {/if}
 
@@ -341,46 +343,39 @@
 
 <style>
   .add-book {
-    padding: 1.25rem;
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-card);
     position: relative;
-    transition: box-shadow var(--transition-gentle);
   }
 
   .add-book:focus-within {
-    box-shadow: var(--shadow-card), 0 0 0 2px rgba(184, 134, 11, 0.1);
+    border-color: var(--hairline-strong);
   }
 
   /* Preview card styles */
   .preview-card {
     display: flex;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    margin-bottom: 1.25rem;
+    gap: var(--s-4);
+    padding: var(--s-4);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
+    margin-bottom: var(--s-5);
   }
 
   .preview-cover {
     width: 80px;
     height: 120px;
     object-fit: cover;
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-card);
+    border-radius: var(--r-sm);
+    box-shadow: var(--shadow-2);
   }
 
   .preview-cover.placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-gold-pale);
-    color: var(--color-ink-light);
+    background: var(--accent-tint);
+    color: var(--accent);
     font-size: 0.75rem;
-    font-style: italic;
   }
 
   .preview-info {
@@ -392,325 +387,112 @@
 
   .preview-title {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--color-ink);
+    font-size: 1.1875rem;
+    font-weight: 500;
+    color: var(--ink);
     line-height: 1.3;
+    letter-spacing: -0.01em;
   }
 
   .preview-author {
-    margin: 0.25rem 0 0;
-    font-family: var(--font-body);
+    margin: var(--s-1) 0 0;
     font-size: 0.9rem;
-    color: var(--color-ink-faded);
-    font-style: italic;
   }
 
-  /* Pill section styles */
+  /* Pill (segmented) section styles */
   .pill-section {
-    margin-bottom: 1rem;
+    margin-bottom: var(--s-4);
   }
 
-  .pill-label {
-    display: block;
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    color: var(--color-ink-faded);
-    margin-bottom: 0.5rem;
+  .pill-section .label {
+    margin-bottom: var(--s-2);
   }
 
-  .pill-group {
-    display: flex;
+  .segmented {
     flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .pill {
-    padding: 0.5rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .pill:hover {
-    border-color: var(--color-gold);
-    color: var(--color-ink);
-  }
-
-  .pill.ownership.active {
-    color: var(--color-cream);
-    background: var(--color-forest);
-    border-color: var(--color-forest-dark);
-  }
-
-  .pill.intent.active {
-    color: var(--color-cream);
-    background: var(--color-burgundy);
-    border-color: var(--color-burgundy-dark);
-  }
-
-  .pill.visibility.active {
-    color: var(--color-paper);
-    background: var(--color-ink-faded);
-    border-color: var(--color-ink);
   }
 
   /* Preview actions */
   .preview-actions {
     display: flex;
-    gap: 0.75rem;
-    margin-top: 1.25rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--color-gold-pale);
+    gap: var(--s-3);
+    margin-top: var(--s-5);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--hairline);
   }
 
-  .btn-cancel {
+  .preview-actions .btn-outline {
     flex: 1;
-    padding: 0.75rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .btn-cancel:hover {
-    border-color: var(--color-gold);
-    color: var(--color-ink);
   }
 
   .btn-confirm {
     flex: 2;
-    padding: 0.75rem 1.25rem;
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--color-cream);
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest-light),
-      var(--color-forest),
-      var(--color-forest-dark)
-    );
-    border: 1px solid var(--color-forest-dark);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-gentle);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.15),
-      0 2px 4px rgba(44, 74, 57, 0.3);
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
   }
 
-  .btn-confirm:hover {
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest),
-      var(--color-forest-dark),
-      #152218
-    );
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.1),
-      0 4px 8px rgba(44, 74, 57, 0.4);
-    transform: translateY(-1px);
-  }
-
-  .btn-confirm:active {
-    transform: translateY(0);
-    box-shadow:
-      inset 0 2px 4px rgba(0, 0, 0, 0.2),
-      0 1px 2px rgba(44, 74, 57, 0.3);
-  }
-
-  /* Tabs and form styles */
+  /* Tabs */
   .tabs {
     display: flex;
-    gap: 0.375rem;
-    margin-bottom: 1.25rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--color-gold-pale);
+    margin-bottom: var(--s-5);
   }
 
   .tabs button {
     flex: 1;
-    padding: 0.625rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .tabs button:hover {
-    border-color: var(--color-gold);
-    color: var(--color-ink);
-  }
-
-  .tabs button.active {
-    color: var(--color-ink);
-    background: linear-gradient(
-      to bottom,
-      var(--color-gold-pale),
-      var(--color-gold-light) 50%,
-      var(--color-gold-pale)
-    );
-    border-color: var(--color-gold);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.4),
-      0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
   form {
     display: flex;
     flex-direction: column;
-    gap: 0.875rem;
-  }
-
-  input {
-    padding: 0.625rem 0.875rem;
-    font-family: var(--font-body);
-    font-size: 1rem;
-    color: var(--color-ink);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-quick);
-    box-shadow: var(--shadow-inset);
-  }
-
-  input::placeholder {
-    color: var(--color-ink-light);
-    font-style: italic;
-  }
-
-  input:focus {
-    outline: none;
-    border-color: var(--color-gold);
-    box-shadow: var(--shadow-inset), 0 0 0 3px rgba(184, 134, 11, 0.15);
-  }
-
-  button[type='submit'] {
-    padding: 0.75rem 1.25rem;
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--color-cream);
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest-light),
-      var(--color-forest),
-      var(--color-forest-dark)
-    );
-    border: 1px solid var(--color-forest-dark);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-gentle);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.15),
-      0 2px 4px rgba(44, 74, 57, 0.3);
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-  }
-
-  button[type='submit']:hover:not(:disabled) {
-    background: linear-gradient(
-      to bottom,
-      var(--color-forest),
-      var(--color-forest-dark),
-      #152218
-    );
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.1),
-      0 4px 8px rgba(44, 74, 57, 0.4);
-    transform: translateY(-1px);
-  }
-
-  button[type='submit']:active:not(:disabled) {
-    transform: translateY(0);
-    box-shadow:
-      inset 0 2px 4px rgba(0, 0, 0, 0.2),
-      0 1px 2px rgba(44, 74, 57, 0.3);
-  }
-
-  button[type='submit']:focus {
-    outline: 2px solid var(--color-gold);
-    outline-offset: 2px;
-  }
-
-  button[type='submit']:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+    gap: var(--s-3);
   }
 
   .error {
-    margin: 0.625rem 0 0;
-    font-family: var(--font-body);
+    margin: var(--s-3) 0 0;
     font-size: 0.875rem;
-    font-style: italic;
-    color: var(--color-burgundy-dark);
+    color: var(--st-giftable-fg);
   }
 
   .isbn-row {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--s-2);
   }
 
-  .isbn-row input {
+  .isbn-row .input {
     flex: 1;
   }
 
   .scan-btn {
+    flex-shrink: 0;
     width: 44px;
     height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
+    color: var(--ink-muted);
+    background: var(--surface);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--r-md);
     cursor: pointer;
-    transition: all var(--transition-quick);
+    transition: color var(--dur-1) var(--ease-soft), border-color var(--dur-1) var(--ease-soft), background var(--dur-2) var(--ease-out);
   }
 
   .scan-btn:hover {
-    border-color: var(--color-gold);
-    background: var(--color-gold-pale);
-  }
-
-  .scan-btn:focus {
-    outline: 2px solid var(--color-gold);
-    outline-offset: 2px;
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-tint);
   }
 
   .duplicate-warning {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: rgba(139, 35, 50, 0.08);
-    border: 1px solid var(--color-burgundy);
-    border-radius: var(--radius-sm);
+    margin-top: var(--s-4);
+    padding: var(--s-4);
+    background: var(--accent-tint);
+    border: 1px solid var(--accent);
+    border-radius: var(--r-md);
   }
 
   .duplicate-warning p {
-    margin: 0 0 0.75rem;
-    font-family: var(--font-body);
+    margin: 0 0 var(--s-3);
     font-size: 0.9rem;
-    color: var(--color-burgundy-dark);
+    color: var(--ink);
   }
 
   .duplicate-warning strong {
@@ -719,44 +501,10 @@
 
   .duplicate-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--s-2);
   }
 
-  .btn-view {
+  .duplicate-actions .btn {
     flex: 1;
-    padding: 0.5rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--color-forest);
-    background: var(--color-paper);
-    border: 1px solid var(--color-forest);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .btn-view:hover {
-    background: var(--color-forest);
-    color: var(--color-cream);
-  }
-
-  .btn-add-anyway {
-    flex: 1;
-    padding: 0.5rem 1rem;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--color-ink-faded);
-    background: var(--color-paper);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-quick);
-  }
-
-  .btn-add-anyway:hover {
-    border-color: var(--color-gold);
-    color: var(--color-ink);
   }
 </style>
