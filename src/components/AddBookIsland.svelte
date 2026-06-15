@@ -448,7 +448,7 @@
   .error {
     margin: var(--s-3) 0 0;
     font-size: 0.875rem;
-    color: var(--st-giftable-fg);
+    color: var(--danger);
   }
 
   .isbn-row {

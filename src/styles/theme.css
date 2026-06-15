@@ -2,7 +2,8 @@
    oklch tokens · light/dark parity · Newsreader display + system UI · spring motion
    See docs/superpowers/specs/2026-06-14-apple-redesign-design.md */
 
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap');
+/* Newsreader is loaded via <link rel="preconnect"> + <link rel="stylesheet"> in the
+   layout <head>s (not @import) so the webfont request isn't chained behind this CSS. */
 
 /* ─── Tokens: light (default) ─────────────────────────────── */
 :root {
@@ -15,7 +16,7 @@
   /* Ink */
   --ink: oklch(0.26 0.02 270);
   --ink-muted: oklch(0.52 0.015 270);
-  --ink-faint: oklch(0.64 0.01 270);
+  --ink-faint: oklch(0.56 0.01 270);
 
   /* Lines */
   --hairline: oklch(0.91 0.005 85);
@@ -35,7 +36,7 @@
   --danger-on: oklch(0.99 0 0);
 
   /* Positive */
-  --success: oklch(0.58 0.13 150);
+  --success: oklch(0.53 0.13 150);
   --success-tint: oklch(0.95 0.04 150);
   --success-on: oklch(0.99 0 0);
 
@@ -44,9 +45,9 @@
   --st-visible-fg: oklch(0.52 0.10 270);    --st-visible-bg: oklch(0.95 0.03 270);
   --st-borrowable-fg: oklch(0.52 0.10 220); --st-borrowable-bg: oklch(0.95 0.03 220);
   --st-discussable-fg: oklch(0.52 0.10 300);--st-discussable-bg: oklch(0.95 0.03 300);
-  --st-giftable-fg: oklch(0.55 0.10 350);   --st-giftable-bg: oklch(0.95 0.03 350);
+  --st-giftable-fg: oklch(0.52 0.11 350);   --st-giftable-bg: oklch(0.95 0.03 350);
   --st-class-fg: oklch(0.52 0.10 250);      --st-class-bg: oklch(0.95 0.03 250);
-  --st-seeking-fg: oklch(0.54 0.10 70);     --st-seeking-bg: oklch(0.95 0.035 70);
+  --st-seeking-fg: oklch(0.50 0.11 70);     --st-seeking-bg: oklch(0.95 0.035 70);
 
   /* Typography */
   --font-display: 'Newsreader', ui-serif, Georgia, 'Times New Roman', serif;
@@ -67,6 +68,7 @@
   --shadow-3: 0 4px 12px oklch(0.26 0.02 270 / 0.10), 0 18px 44px oklch(0.26 0.02 270 / 0.14);
   --shadow-4: 0 8px 20px oklch(0.26 0.02 270 / 0.14), 0 32px 64px oklch(0.26 0.02 270 / 0.20);
   --glass-bg: oklch(1 0.002 85 / 0.72);
+  --drop-shadow-color: oklch(0.26 0.02 270 / 0.28);
 
   /* Radii */
   --r-sm: 8px;
@@ -95,7 +97,7 @@
 
   --ink: oklch(0.96 0.006 85);
   --ink-muted: oklch(0.72 0.01 270);
-  --ink-faint: oklch(0.58 0.01 270);
+  --ink-faint: oklch(0.64 0.01 270);
 
   --hairline: oklch(0.30 0.012 270);
   --hairline-strong: oklch(0.36 0.014 270);
@@ -128,6 +130,7 @@
   --shadow-3: 0 4px 12px oklch(0 0 0 / 0.40), 0 18px 44px oklch(0 0 0 / 0.50);
   --shadow-4: 0 8px 20px oklch(0 0 0 / 0.46), 0 32px 64px oklch(0 0 0 / 0.60);
   --glass-bg: oklch(0.225 0.014 270 / 0.72);
+  --drop-shadow-color: oklch(0 0 0 / 0.55);
 
   color-scheme: dark;
 }
@@ -141,7 +144,7 @@
 
     --ink: oklch(0.96 0.006 85);
     --ink-muted: oklch(0.72 0.01 270);
-    --ink-faint: oklch(0.58 0.01 270);
+    --ink-faint: oklch(0.64 0.01 270);
 
     --hairline: oklch(0.30 0.012 270);
     --hairline-strong: oklch(0.36 0.014 270);
@@ -302,7 +305,7 @@ main {
   transition: border-color var(--dur-1) var(--ease-soft), box-shadow var(--dur-1) var(--ease-soft);
 }
 .textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
-.input::placeholder, .textarea::placeholder { color: var(--ink-faint); }
+.input::placeholder, .textarea::placeholder { color: var(--ink-muted); }
 .input:focus-visible, .select:focus-visible, .textarea:focus-visible {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--focus-ring);

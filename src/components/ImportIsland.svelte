@@ -8,7 +8,6 @@
   let parsedBooks: ParsedBook[] = $state([]);
   let selectedIds: Set<number> = $state(new Set());
   let parseErrors: Array<{ row: number; message: string }> = $state([]);
-  let importProgress = $state(0);
   let importResult: { imported: number; skipped: number; errors: string[] } | null = $state(null);
   let error = $state('');
 
@@ -62,7 +61,6 @@
     }
 
     step = 'importing';
-    importProgress = 0;
 
     try {
       const res = await fetch('/api/books/import', {
@@ -72,7 +70,7 @@
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Import failed');
       }
 
@@ -90,7 +88,6 @@
     parsedBooks = [];
     selectedIds = new Set();
     parseErrors = [];
-    importProgress = 0;
     importResult = null;
     error = '';
   }
@@ -350,7 +347,7 @@
   .error {
     margin: var(--s-3) 0 0;
     font-size: 0.875rem;
-    color: var(--st-giftable-fg);
+    color: var(--danger);
   }
 
   .importing-section {
@@ -406,8 +403,8 @@
     padding: var(--s-3);
     text-align: left;
     font-size: 0.85rem;
-    color: var(--st-giftable-fg);
-    background: var(--st-giftable-bg);
+    color: var(--danger);
+    background: var(--danger-tint);
     border-radius: var(--r-sm);
   }
 

@@ -63,7 +63,7 @@
       A shelf that says who you are. Matches that actually make sense. A profile that's more than a bio.
     </p>
 
-    <div class="preview-tabs segmented" role="tablist">
+    <div class="preview-tabs segmented">
       <button
         class="tab"
         class:active={activeTab === 'shelf'}

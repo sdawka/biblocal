@@ -1,27 +1,18 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    connectionRequests,
     incomingRequests,
     loadConnections,
     respondToRequest,
-    connectionsLoading,
   } from '../stores/connections';
   import type { ConnectionRequest } from '../lib/types';
 
   let incoming = $state<ConnectionRequest[]>([]);
-  let loading = $state(false);
   let responding = $state<string | null>(null);
 
   $effect(() =>
     incomingRequests.subscribe((r) => {
       incoming = r;
-    })
-  );
-
-  $effect(() =>
-    connectionsLoading.subscribe((l) => {
-      loading = l;
     })
   );
 
@@ -53,6 +44,7 @@
               class="btn btn-filled btn-sm"
               onclick={() => handleRespond(request.id, 'accepted')}
               disabled={responding === request.id}
+              aria-label={`Accept connection request from ${request.fromUser?.name || 'Someone'}`}
             >
               {responding === request.id ? '…' : 'Accept'}
             </button>
@@ -60,6 +52,7 @@
               class="btn btn-sm btn-decline"
               onclick={() => handleRespond(request.id, 'declined')}
               disabled={responding === request.id}
+              aria-label={`Decline connection request from ${request.fromUser?.name || 'Someone'}`}
             >
               Decline
             </button>
