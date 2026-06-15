@@ -29,3 +29,6 @@ pnpm-debug.log*
 
 # Local agent/session state
 .claude/
+
+# Brainstorm/superpowers session scratch
+.superpowers/

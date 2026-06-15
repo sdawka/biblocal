@@ -1,8 +1,0 @@
-{"type":"server-started","port":64135,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:64135","screen_dir":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/61022-1778433294/content","state_dir":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/61022-1778433294/state"}
-{"type":"screen-added","file":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/61022-1778433294/content/empty-shelf-layout.html"}
-{"source":"user-event","type":"click","text":"📚 Build Your Living Bookshelf\n          Share what you'll lend, discuss, or give away\n          Add Your First Book\n        \n        \n          Will lend\n          Looking for\n          🔒 Private\n        \n      \n    \n    \n      C. Hero Card\n      Bold hero banner with CTA, shelf categories as empty slots below. Profile status inline. More dramatic first impression.","choice":"hero-card","id":null,"timestamp":1778433412356}
-{"type":"screen-added","file":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/61022-1778433294/content/empty-shelf-hybrid.html"}
-{"type":"screen-added","file":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/61022-1778433294/content/empty-shelf-styled.html"}
-{"type":"screen-added","file":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/61022-1778433294/content/final-flow.html"}
-{"type":"screen-added","file":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/61022-1778433294/content/waiting.html"}
-{"type":"server-stopped","reason":"idle timeout"}

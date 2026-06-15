@@ -1,5 +1,0 @@
-{"type":"server-started","port":61013,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:61013","screen_dir":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/90474-1778435973/content","state_dir":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/90474-1778435973/state"}
-{"type":"screen-added","file":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/90474-1778435973/content/ghost-shelf-options.html"}
-{"source":"user-event","type":"click","text":"Ghosted Book Spines\n      Faded colored book shapes suggesting real books, decreasing opacity. Warm, inviting feel.","choice":"b","id":null,"timestamp":1778436135763}
-{"type":"screen-added","file":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/90474-1778435973/content/scanner-overlay.html"}
-{"type":"screen-added","file":"/Users/sdawka/Code/biblocal/.superpowers/brainstorm/90474-1778435973/content/waiting.html"}
