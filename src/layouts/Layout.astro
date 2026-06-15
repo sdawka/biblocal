@@ -1,7 +1,4 @@
 ---
-// victorian.css stays imported beneath theme.css during the redesign migration so
-// not-yet-migrated pages keep their styling. Removed once every page is migrated.
-import '../styles/victorian.css';
 import '../styles/theme.css';
 import { SignOutButton } from '@clerk/astro/components';
 
@@ -107,14 +104,6 @@ const currentPath = Astro.url.pathname;
 </html>
 
 <style>
-  /* Transitional: neutralize legacy victorian global overlays (paper grain + vignette)
-     so the new clean canvas shows through. Removed with victorian.css at end of migration. */
-  :global(body)::before,
-  :global(body)::after {
-    content: none !important;
-    background: none !important;
-  }
-
   nav {
     display: flex;
     justify-content: space-between;
