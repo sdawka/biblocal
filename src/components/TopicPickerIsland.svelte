@@ -128,45 +128,10 @@
     gap: var(--s-2);
   }
 
-  /* Accent-tint selectable chip */
+  /* Visuals come from the shared .chip in theme.css; only the topic-specific
+     capitalization is overridden here. */
   .chip {
-    appearance: none;
-    padding: 0.45rem 0.875rem;
-    min-height: 38px;
-    font-family: var(--font-ui);
-    font-size: 0.875rem;
-    font-weight: 540;
-    color: var(--ink-muted);
-    background: var(--surface-sunken);
-    border: 1px solid var(--hairline);
-    border-radius: var(--r-full);
-    cursor: pointer;
     text-transform: capitalize;
-    transition: color var(--dur-1) var(--ease-soft),
-                background var(--dur-2) var(--ease-out),
-                border-color var(--dur-2) var(--ease-out),
-                transform var(--dur-1) var(--ease-spring);
-  }
-
-  .chip:hover:not(:disabled):not(.selected) {
-    color: var(--ink);
-    border-color: var(--hairline-strong);
-  }
-
-  .chip:active:not(:disabled) {
-    transform: scale(0.96);
-  }
-
-  .chip.selected {
-    color: var(--accent);
-    background: var(--accent-tint);
-    border-color: transparent;
-    box-shadow: inset 0 0 0 1px var(--accent);
-  }
-
-  .chip:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
   }
 
   .freeform-input {
