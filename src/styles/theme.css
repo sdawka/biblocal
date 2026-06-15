@@ -28,6 +28,12 @@
   --accent-on: oklch(0.99 0 0);
   --focus-ring: oklch(0.55 0.16 270 / 0.45);
 
+  /* Destructive */
+  --danger: oklch(0.55 0.18 25);
+  --danger-hover: oklch(0.50 0.19 25);
+  --danger-tint: oklch(0.95 0.03 25);
+  --danger-on: oklch(0.99 0 0);
+
   /* Status family (derived: low-chroma indigo-adjacent siblings) */
   --st-private-fg: oklch(0.50 0.012 270);   --st-private-bg: oklch(0.95 0.004 270);
   --st-visible-fg: oklch(0.52 0.10 270);    --st-visible-bg: oklch(0.95 0.03 270);
@@ -95,6 +101,11 @@
   --accent-on: oklch(0.16 0.01 270);
   --focus-ring: oklch(0.68 0.15 270 / 0.5);
 
+  --danger: oklch(0.68 0.17 25);
+  --danger-hover: oklch(0.74 0.17 25);
+  --danger-tint: oklch(0.30 0.06 25);
+  --danger-on: oklch(0.16 0.01 270);
+
   --st-private-fg: oklch(0.70 0.015 270);   --st-private-bg: oklch(0.28 0.01 270);
   --st-visible-fg: oklch(0.74 0.10 270);    --st-visible-bg: oklch(0.30 0.05 270);
   --st-borrowable-fg: oklch(0.74 0.10 220); --st-borrowable-bg: oklch(0.30 0.05 220);
@@ -131,6 +142,11 @@
     --accent-tint: oklch(0.30 0.05 270);
     --accent-on: oklch(0.16 0.01 270);
     --focus-ring: oklch(0.68 0.15 270 / 0.5);
+
+    --danger: oklch(0.68 0.17 25);
+    --danger-hover: oklch(0.74 0.17 25);
+    --danger-tint: oklch(0.30 0.06 25);
+    --danger-on: oklch(0.16 0.01 270);
 
     --st-private-fg: oklch(0.70 0.015 270);   --st-private-bg: oklch(0.28 0.01 270);
     --st-visible-fg: oklch(0.74 0.10 270);    --st-visible-bg: oklch(0.30 0.05 270);
