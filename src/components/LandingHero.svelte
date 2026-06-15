@@ -68,14 +68,14 @@
     {/each}
   </div>
 
-  <div class="hero-content">
+  <div class="hero-content glass">
     <p class="eyebrow">The local network for readers</p>
     <h1>You are what you read.<br/>So are they.</h1>
     <p class="subhead">
       Share your shelf. Find readers nearby with shared taste.<br/>
       Lend books, borrow books, talk books.
     </p>
-    <button class="cta btn-victorian" onclick={scrollToSignIn}>
+    <button class="cta btn btn-filled btn-lg" onclick={scrollToSignIn}>
       Start Here
     </button>
   </div>
@@ -102,101 +102,53 @@
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: var(--space-2xl) var(--space-xl);
+    padding: var(--s-10) var(--s-6);
     position: relative;
     overflow: hidden;
-    background: radial-gradient(
-      ellipse at 50% 40%,
-      rgba(184, 134, 11, 0.08) 0%,
-      rgba(184, 134, 11, 0.03) 50%,
-      transparent 80%
-    );
-  }
-
-  .hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
     background:
-      radial-gradient(
-        circle at 50% 100%,
-        rgba(114, 47, 55, 0.06) 0%,
-        transparent 40%
-      ),
-      radial-gradient(
-        circle at 15% 25%,
-        rgba(184, 134, 11, 0.04) 0%,
-        transparent 25%
-      ),
-      radial-gradient(
-        circle at 85% 25%,
-        rgba(184, 134, 11, 0.04) 0%,
-        transparent 25%
-      );
-    pointer-events: none;
+      radial-gradient(ellipse at 50% 38%, var(--accent-tint) 0%, transparent 60%),
+      var(--canvas);
   }
 
   .hero-content {
     position: relative;
     z-index: 10;
     max-width: 720px;
-    padding: var(--space-2xl) var(--space-2xl);
-    background: radial-gradient(
-      ellipse at center,
-      rgba(253, 251, 247, 0.9) 0%,
-      rgba(253, 251, 247, 0.5) 60%,
-      transparent 100%
-    );
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    padding: var(--s-8) var(--s-7);
+    border-radius: var(--r-xl);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--shadow-2);
   }
 
   .eyebrow {
-    font-family: var(--font-display);
-    font-size: clamp(0.75rem, 1.5vw, 0.875rem);
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--color-burgundy);
-    margin: 0 0 var(--space-lg);
-    animation: fadeSlideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+    margin: 0 0 var(--s-4);
+    animation: heroRise 0.6s var(--ease-out) both;
   }
 
   h1 {
-    font-family: var(--font-display);
     font-size: clamp(2.25rem, 5.5vw, 3.5rem);
-    font-weight: 400;
-    font-style: italic;
-    color: var(--color-ink);
-    line-height: 1.2;
-    margin: 0 0 var(--space-xl);
-    animation: fadeSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0 0 var(--s-5);
+    animation: heroRise 0.8s var(--ease-out) 0.1s both;
   }
 
   .subhead {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: clamp(1.05rem, 2vw, 1.2rem);
-    color: var(--color-ink-faded);
-    line-height: 1.8;
-    margin: 0 0 var(--space-2xl);
-    animation: fadeSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.25s both;
+    color: var(--ink-muted);
+    line-height: 1.65;
+    margin: 0 0 var(--s-7);
+    animation: heroRise 0.8s var(--ease-out) 0.25s both;
   }
 
   .cta {
-    font-size: 1.05rem;
-    padding: 0.875rem 2rem;
-    animation: fadeSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s both;
+    animation: heroRise 0.8s var(--ease-out) 0.4s both;
   }
 
-  @keyframes fadeSlideIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  @keyframes heroRise {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .floating-books {
@@ -212,8 +164,8 @@
     top: var(--y);
     opacity: 0;
     transform: translateX(0) rotate(0deg) scale(0.5);
-    filter: drop-shadow(0 12px 24px rgba(74, 44, 42, 0.35));
-    animation: floatInward 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    filter: drop-shadow(0 14px 28px oklch(0.26 0.02 270 / 0.30));
+    animation: floatInward 2.5s var(--ease-out) forwards;
     animation-delay: var(--delay);
     animation-play-state: paused;
   }
@@ -234,7 +186,7 @@
       transform: rotate(1deg) scale(1);
     }
     100% {
-      opacity: 0.8;
+      opacity: 0.85;
       left: var(--end-x);
       transform: rotate(var(--final-rotate, 2deg)) scale(1);
     }
@@ -247,7 +199,7 @@
 
   .visible .floating-book {
     animation:
-      floatInward 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+      floatInward 2.5s var(--ease-out) forwards,
       gentleSway var(--sway-duration, 5s) ease-in-out calc(var(--delay) + 2.5s) infinite;
   }
 
@@ -267,10 +219,8 @@
 
   .floating-book img {
     height: auto;
-    border-radius: 3px;
-    box-shadow:
-      0 2px 8px rgba(0, 0, 0, 0.15),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-sm);
+    box-shadow: var(--shadow-2);
   }
 
   .cover-placeholder {
@@ -279,18 +229,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(to bottom, var(--color-mahogany-light), var(--color-mahogany));
-    border-radius: 3px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    background: var(--accent-tint);
+    border-radius: var(--r-sm);
+    box-shadow: var(--shadow-2);
   }
 
   .cover-placeholder span {
     font-family: var(--font-display);
     font-size: 2rem;
-    font-weight: 600;
-    font-style: italic;
-    color: var(--color-gold);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    font-weight: 500;
+    color: var(--accent);
   }
 
   .floating-book.large .cover-placeholder { width: 100px; height: 150px; }
@@ -300,19 +248,18 @@
 
   .scroll-hint {
     position: absolute;
-    bottom: var(--space-2xl);
+    bottom: var(--s-8);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-sm);
-    color: var(--color-ink-light);
-    font-family: var(--font-body);
+    gap: var(--s-2);
+    color: var(--ink-faint);
+    font-family: var(--font-ui);
     font-size: 0.85rem;
-    font-style: italic;
     opacity: 0;
-    animation: fadeIn 1s ease 2s forwards;
+    animation: heroFadeIn 1s ease 2s forwards;
   }
 
   .scroll-hint svg {
@@ -324,7 +271,7 @@
     50% { transform: translateY(6px); }
   }
 
-  @keyframes fadeIn {
+  @keyframes heroFadeIn {
     to { opacity: 1; }
   }
 
@@ -339,11 +286,11 @@
   /* Mobile */
   @media (max-width: 600px) {
     .hero {
-      padding: var(--space-xl) var(--space-lg);
+      padding: var(--s-8) var(--s-5);
     }
 
     .hero-content {
-      padding: var(--space-xl) var(--space-lg);
+      padding: var(--s-7) var(--s-5);
     }
 
     .floating-book {
@@ -355,7 +302,7 @@
     }
 
     .scroll-hint {
-      bottom: var(--space-lg);
+      bottom: var(--s-5);
     }
   }
 
@@ -367,17 +314,17 @@
     .mobile-books {
       display: flex;
       justify-content: center;
-      gap: var(--space-xl);
-      margin-top: var(--space-xl);
+      gap: var(--s-6);
+      margin-top: var(--s-6);
       opacity: 0;
-      animation: fadeIn 0.8s ease 0.3s forwards;
+      animation: heroFadeIn 0.8s ease 0.3s forwards;
     }
 
     .mobile-book {
       width: 80px;
       height: auto;
-      border-radius: var(--radius-sm);
-      box-shadow: 0 6px 16px rgba(74, 44, 42, 0.25);
+      border-radius: var(--r-sm);
+      box-shadow: var(--shadow-2);
     }
 
     .mobile-book.left {

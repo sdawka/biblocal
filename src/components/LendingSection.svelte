@@ -42,7 +42,7 @@
 
     <div class="scenarios-grid">
       {#each scenarios as scenario, i}
-        <div class="scenario-card" style="--delay: {0.1 + i * 0.15}s">
+        <div class="scenario-card card" style="--delay: {0.1 + i * 0.15}s">
           <span class="scenario-icon">{scenario.icon}</span>
           <h3>{scenario.title}</h3>
           <p>{scenario.description}</p>
@@ -58,12 +58,8 @@
 
 <style>
   .lending-section {
-    padding: var(--space-2xl);
-    background: linear-gradient(
-      to bottom,
-      var(--color-aged-paper) 0%,
-      var(--color-parchment) 100%
-    );
+    padding: var(--s-10) var(--s-6);
+    background: var(--canvas);
   }
 
   .section-content {
@@ -73,14 +69,11 @@
   }
 
   .section-title {
-    font-family: var(--font-display);
     font-size: clamp(1.8rem, 4vw, 2.5rem);
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-md);
+    margin: 0 0 var(--s-4);
     opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(18px);
+    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
   }
 
   .visible .section-title {
@@ -89,15 +82,15 @@
   }
 
   .section-desc {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.15rem;
-    color: var(--color-ink-faded);
+    color: var(--ink-muted);
     max-width: 650px;
-    margin: 0 auto var(--space-2xl);
-    line-height: 1.7;
+    margin: 0 auto var(--s-10);
+    line-height: 1.6;
     opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+    transform: translateY(18px);
+    transition: opacity var(--dur-3) var(--ease-out) 80ms, transform var(--dur-3) var(--ease-out) 80ms;
   }
 
   .visible .section-desc {
@@ -108,20 +101,19 @@
   .scenarios-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--space-lg);
-    margin-bottom: var(--space-xl);
+    gap: var(--s-5);
+    margin-bottom: var(--s-8);
   }
 
   .scenario-card {
-    background: var(--color-cream);
-    border: 1px solid var(--color-gold-pale);
-    border-radius: var(--radius-md);
-    padding: var(--space-xl) var(--space-lg);
+    padding: var(--s-7) var(--s-5);
     text-align: center;
-    box-shadow: var(--shadow-card);
     opacity: 0;
-    transform: translateY(25px);
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(24px);
+    transition: opacity var(--dur-3) var(--ease-out),
+                transform var(--dur-3) var(--ease-out),
+                box-shadow var(--dur-2) var(--ease-out),
+                border-color var(--dur-2) var(--ease-out);
     transition-delay: var(--delay);
   }
 
@@ -132,28 +124,28 @@
 
   .scenario-card:hover {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-lifted);
-    border-color: var(--color-gold);
+    box-shadow: var(--shadow-2);
+    border-color: var(--hairline-strong);
   }
 
   .scenario-icon {
     font-size: 2.5rem;
     display: block;
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--s-4);
   }
 
   .scenario-card h3 {
     font-family: var(--font-display);
     font-size: 1.15rem;
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-sm);
+    font-weight: 500;
+    color: var(--ink);
+    margin: 0 0 var(--s-2);
   }
 
   .scenario-card p {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.95rem;
-    color: var(--color-ink-faded);
+    color: var(--ink-muted);
     margin: 0;
     line-height: 1.6;
   }
@@ -161,7 +153,7 @@
   .section-note {
     margin: 0;
     opacity: 0;
-    transition: opacity 0.5s ease 0.6s;
+    transition: opacity var(--dur-3) var(--ease-soft) 600ms;
   }
 
   .visible .section-note {
@@ -169,9 +161,10 @@
   }
 
   .marginalia {
-    font-family: var(--font-handwritten);
+    font-family: var(--font-display);
+    font-style: italic;
     font-size: 1.1rem;
-    color: var(--color-ink-light);
+    color: var(--ink-faint);
   }
 
   @media (max-width: 600px) {

@@ -20,7 +20,7 @@
 </script>
 
 <div class="mid-cta" bind:this={sectionElement} class:visible>
-  <button class="cta-link" onclick={scrollToSignIn}>
+  <button class="cta-link btn btn-tinted btn-lg" onclick={scrollToSignIn}>
     Ready to find your people? <span class="arrow">→</span>
   </button>
 </div>
@@ -28,20 +28,17 @@
 <style>
   .mid-cta {
     text-align: center;
-    padding: var(--space-xl) var(--space-lg);
-    background: var(--color-parchment);
+    padding: var(--s-8) var(--s-5);
+    background: var(--surface-sunken);
   }
 
   .cta-link {
-    font-family: var(--font-handwritten);
-    font-size: 1.2rem;
-    color: var(--color-ink-faded);
-    background: none;
-    border: none;
-    cursor: pointer;
     opacity: 0;
     transform: translateY(10px);
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity var(--dur-3) var(--ease-out),
+                transform var(--dur-3) var(--ease-out),
+                background var(--dur-2) var(--ease-soft),
+                box-shadow var(--dur-2) var(--ease-soft);
   }
 
   .visible .cta-link {
@@ -49,13 +46,9 @@
     transform: translateY(0);
   }
 
-  .cta-link:hover {
-    color: var(--color-ink);
-  }
-
   .arrow {
     display: inline-block;
-    transition: transform 0.3s ease;
+    transition: transform var(--dur-2) var(--ease-spring);
   }
 
   .cta-link:hover .arrow {

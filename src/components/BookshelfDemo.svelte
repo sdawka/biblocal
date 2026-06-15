@@ -43,7 +43,7 @@
     {
       title: "The Dispossessed",
       author: "Ursula K. Le Guin",
-      status: "seeking",
+      status: "seeking-home",
       statusLabel: "Looking for this",
       cover: "/covers/0061054887.jpg",
       note: "The ambiguous utopia awaits"
@@ -65,14 +65,14 @@
 
 <section class="bookshelf-section" bind:this={sectionElement} class:visible>
   <div class="section-content">
+    <p class="eyebrow">Your shelf</p>
     <h2 class="section-title">Your shelf tells people who you are.</h2>
     <p class="section-desc">
-      Every shelf is a branch of the neighborhood library. Add your books, mark what you'll share —<br/>
+      Every shelf is a branch of the neighborhood library. Add your books, mark what you'll share —
       that's how matches find you.
     </p>
 
     <div class="shelf-container">
-      <div class="shelf-back"></div>
       <div class="books-row">
         {#each demoBooks as book, i}
           <div
@@ -94,15 +94,14 @@
                   onerror={() => handleImageError(i)}
                 />
               {/if}
-              <span class="status-badge {book.status}">{book.statusLabel}</span>
             </div>
-            <div class="book-page">
+            <span class="pill" data-status={book.status}>{book.statusLabel}</span>
+            <div class="book-note">
               <span class="marginalia">{book.note}</span>
             </div>
           </div>
         {/each}
       </div>
-      <div class="shelf-front"></div>
     </div>
 
     <p class="shelf-caption">Hover to see the marginalia</p>
@@ -115,12 +114,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-2xl) var(--space-2xl) calc(var(--space-2xl) * 1.2);
-    background: linear-gradient(
-      to bottom,
-      var(--color-parchment) 0%,
-      var(--color-aged-paper) 100%
-    );
+    padding: var(--s-10) var(--s-6) var(--s-12);
+    background: var(--canvas);
   }
 
   .section-content {
@@ -128,31 +123,37 @@
     max-width: 1000px;
   }
 
-  .section-title {
-    font-family: var(--font-display);
-    font-size: clamp(1.8rem, 4vw, 2.5rem);
-    font-weight: 600;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-md);
+  .eyebrow {
+    margin: 0 0 var(--s-3);
     opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(14px);
+    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
   }
 
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    margin: 0 0 var(--s-4);
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
+  }
+
+  .visible .eyebrow,
   .visible .section-title {
     opacity: 1;
     transform: translateY(0);
   }
 
   .section-desc {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1.15rem;
-    color: var(--color-ink-faded);
-    margin: 0 0 var(--space-2xl);
-    font-style: italic;
+    color: var(--ink-muted);
+    max-width: 640px;
+    margin: 0 auto var(--s-10);
+    line-height: 1.6;
     opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+    transform: translateY(18px);
+    transition: opacity var(--dur-3) var(--ease-out) 80ms, transform var(--dur-3) var(--ease-out) 80ms;
   }
 
   .visible .section-desc {
@@ -162,78 +163,30 @@
 
   .shelf-container {
     position: relative;
-    padding: var(--space-xl) var(--space-lg) var(--space-lg);
-    margin-bottom: var(--space-lg);
-  }
-
-  .shelf-back {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to bottom,
-      var(--color-mahogany-deep) 0%,
-      var(--color-mahogany) 40%,
-      var(--color-mahogany-light) 100%
-    );
-    border-radius: var(--radius-md);
-    box-shadow:
-      inset 0 2px 10px rgba(0, 0, 0, 0.3),
-      0 4px 20px rgba(74, 44, 42, 0.25);
-  }
-
-  .shelf-back::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--wood-grain);
-    opacity: 0.5;
-    border-radius: var(--radius-md);
+    padding: var(--s-4) 0 var(--s-6);
+    margin-bottom: var(--s-5);
   }
 
   .books-row {
     display: flex;
     justify-content: center;
-    gap: var(--space-xl);
+    align-items: flex-start;
+    gap: var(--s-6);
     position: relative;
-    z-index: 2;
-    padding-bottom: var(--space-md);
-  }
-
-  .shelf-front {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 20px;
-    background: linear-gradient(
-      to bottom,
-      var(--color-mahogany-light),
-      var(--color-mahogany)
-    );
-    border-radius: 0 0 var(--radius-md) var(--radius-md);
-    box-shadow:
-      0 4px 8px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    z-index: 3;
-  }
-
-  .shelf-front::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--wood-grain-subtle);
-    border-radius: 0 0 var(--radius-md) var(--radius-md);
   }
 
   .book-spine {
-    width: 120px;
-    perspective: 800px;
+    width: 140px;
     opacity: 0;
-    transform: translateY(30px);
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(28px);
+    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
     transition-delay: var(--delay);
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-3);
   }
 
   .visible .book-spine {
@@ -247,126 +200,80 @@
 
   .book-front {
     position: relative;
-    transform-origin: left center;
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: var(--radius-sm);
+    border-radius: var(--r-sm);
     overflow: hidden;
-    box-shadow:
-      4px 4px 12px rgba(0, 0, 0, 0.25),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    box-shadow: var(--shadow-2);
+    transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) var(--ease-out);
+    width: 120px;
   }
 
   .book-spine:hover .book-front {
-    transform: rotateY(-25deg) translateX(10px);
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-3);
   }
 
   .book-front img {
-    width: 100%;
+    width: 120px;
     height: 180px;
     object-fit: cover;
     display: block;
   }
 
   .cover-placeholder {
-    width: 100%;
+    width: 120px;
     height: 180px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(to bottom, var(--color-mahogany-light), var(--color-mahogany));
+    background: var(--accent-tint);
   }
 
   .cover-placeholder span {
     font-family: var(--font-display);
     font-size: 2.5rem;
-    font-weight: 600;
-    font-style: italic;
-    color: var(--color-gold);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    font-weight: 500;
+    color: var(--accent);
   }
 
-  .status-badge {
+  .book-note {
     position: absolute;
-    bottom: 8px;
+    top: 100%;
     left: 50%;
-    transform: translateX(-50%);
-    padding: 0.2rem 0.5rem;
-    font-family: var(--font-display);
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    border-radius: 2px;
-    white-space: nowrap;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  }
-
-  .status-badge.borrowable {
-    background: var(--color-forest);
-    color: var(--color-cream);
-  }
-
-  .status-badge.discussable {
-    background: var(--color-gold);
-    color: var(--color-ink);
-  }
-
-  .status-badge.giftable {
-    background: var(--color-burgundy);
-    color: var(--color-cream);
-  }
-
-  .status-badge.seeking {
-    background: var(--color-brass);
-    color: var(--color-ink);
-  }
-
-  .status-badge.visible {
-    background: var(--color-ink-faded);
-    color: var(--color-cream);
-  }
-
-  .book-page {
-    position: absolute;
-    top: 10px;
-    left: 100%;
-    width: 90px;
-    height: 160px;
-    background: var(--color-aged-paper);
-    border-radius: 0 2px 2px 0;
-    padding: var(--space-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    transform: translate(-50%, -8px);
+    width: 160px;
+    margin-top: var(--s-2);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-3);
+    padding: var(--s-3);
     opacity: 0;
-    transform: translateX(-20px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.15s;
-    box-shadow: inset 2px 0 8px rgba(0, 0, 0, 0.1);
-    z-index: 5;
+    pointer-events: none;
+    transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring);
+    z-index: 20;
   }
 
-  .book-spine:hover .book-page {
+  .book-spine:hover .book-note {
     opacity: 1;
-    transform: translateX(-10px);
+    transform: translate(-50%, 0);
   }
 
   .marginalia {
-    font-family: var(--font-handwritten);
-    font-size: 1rem;
-    color: var(--color-ink-faded);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--ink-muted);
     text-align: center;
     line-height: 1.4;
-    transform: rotate(-2deg);
   }
 
   .shelf-caption {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 0.9rem;
-    color: var(--color-ink-light);
-    font-style: italic;
+    color: var(--ink-faint);
     margin: 0;
     opacity: 0;
-    transition: opacity 0.5s ease 0.8s;
+    transition: opacity var(--dur-3) var(--ease-soft) 600ms;
   }
 
   .visible .shelf-caption {
@@ -376,18 +283,25 @@
   @media (max-width: 768px) {
     .books-row {
       flex-wrap: wrap;
-      gap: var(--space-sm);
+      gap: var(--s-4);
     }
 
     .book-spine {
-      width: 90px;
+      width: 92px;
     }
 
-    .book-front img {
-      height: 140px;
+    .book-front,
+    .book-front img,
+    .cover-placeholder {
+      width: 92px;
     }
 
-    .book-page {
+    .book-front img,
+    .cover-placeholder {
+      height: 138px;
+    }
+
+    .book-note {
       display: none;
     }
 

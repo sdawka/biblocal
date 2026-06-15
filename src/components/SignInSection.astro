@@ -11,6 +11,7 @@ import { SignIn, Show } from '@clerk/astro/components';
     </div>
 
     <div class="signin-card">
+      <p class="eyebrow">Join biblocal</p>
       <h2 class="section-title">Ready when you are.</h2>
       <p class="section-desc">Add some books. See who's nearby. The rest tends to happen on its own.</p>
 
@@ -35,13 +36,8 @@ import { SignIn, Show } from '@clerk/astro/components';
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-2xl);
-    background: linear-gradient(
-      to bottom,
-      var(--color-parchment) 0%,
-      var(--color-aged-paper) 50%,
-      var(--color-parchment) 100%
-    );
+    padding: var(--s-10) var(--s-6);
+    background: var(--canvas);
     position: relative;
   }
 
@@ -49,7 +45,7 @@ import { SignIn, Show } from '@clerk/astro/components';
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-2xl);
+    gap: var(--s-10);
     max-width: 1000px;
     width: 100%;
   }
@@ -57,8 +53,8 @@ import { SignIn, Show } from '@clerk/astro/components';
   .faded-spines {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
-    opacity: 0.15;
+    gap: var(--s-3);
+    opacity: 0.5;
   }
 
   .faded-spines.left {
@@ -70,63 +66,50 @@ import { SignIn, Show } from '@clerk/astro/components';
   }
 
   .spine {
-    width: 30px;
+    width: 34px;
     height: 160px;
-    background: linear-gradient(
-      to right,
-      var(--color-mahogany-light),
-      var(--color-mahogany),
-      var(--color-mahogany-light)
-    );
-    border-radius: 2px;
-    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-sm);
+    box-shadow: var(--shadow-1);
   }
 
   .faded-spines .spine:nth-child(1) {
     height: 140px;
     transform: rotate(-2deg);
+    background: var(--accent-tint);
   }
 
   .faded-spines .spine:nth-child(2) {
     height: 180px;
-    background: linear-gradient(
-      to right,
-      var(--color-forest-light),
-      var(--color-forest),
-      var(--color-forest-light)
-    );
   }
 
   .faded-spines .spine:nth-child(3) {
     height: 150px;
     transform: rotate(1deg);
-    background: linear-gradient(
-      to right,
-      var(--color-burgundy-light),
-      var(--color-burgundy),
-      var(--color-burgundy-light)
-    );
+    background: var(--accent-tint);
   }
 
   .signin-card {
     text-align: center;
-    max-width: 400px;
+    max-width: 420px;
+  }
+
+  .eyebrow {
+    margin: 0 0 var(--s-3);
   }
 
   .section-title {
-    font-family: var(--font-display);
-    font-size: clamp(1.5rem, 3.5vw, 2rem);
-    font-weight: 600;
-    font-style: italic;
-    color: var(--color-ink);
-    margin: 0 0 var(--space-md);
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    margin: 0 0 var(--s-4);
   }
 
   .section-desc {
-    font-family: var(--font-body);
+    font-family: var(--font-ui);
     font-size: 1rem;
-    color: var(--color-ink-faded);
-    margin: 0 0 var(--space-xl);
+    color: var(--ink-muted);
+    line-height: 1.6;
+    margin: 0 0 var(--s-7);
   }
 
   .clerk-container {

@@ -1,5 +1,5 @@
 ---
-import '../styles/victorian.css';
+import '../styles/theme.css';
 
 interface Props {
   title: string;
@@ -16,6 +16,15 @@ const { title } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="description" content="Build your living bookshelf. Find people nearby with similar taste. Borrow, discuss, and discover locally." />
     <title>{title}</title>
+    <script is:inline>
+      // Pre-paint theme application — avoids dark-mode flash (FOUC).
+      try {
+        const saved = localStorage.getItem('biblocal-theme');
+        if (saved === 'light' || saved === 'dark') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body class="landing">
     <slot />
@@ -25,17 +34,6 @@ const { title } = Astro.props;
 <style>
   body.landing {
     overflow-x: hidden;
-  }
-
-  body.landing::before {
-    background:
-      repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(139, 123, 111, 0.015) 2px,
-        rgba(139, 123, 111, 0.015) 4px
-      );
   }
 </style>
 
