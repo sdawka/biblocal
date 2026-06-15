@@ -34,6 +34,11 @@
   --danger-tint: oklch(0.95 0.03 25);
   --danger-on: oklch(0.99 0 0);
 
+  /* Positive */
+  --success: oklch(0.58 0.13 150);
+  --success-tint: oklch(0.95 0.04 150);
+  --success-on: oklch(0.99 0 0);
+
   /* Status family (derived: low-chroma indigo-adjacent siblings) */
   --st-private-fg: oklch(0.50 0.012 270);   --st-private-bg: oklch(0.95 0.004 270);
   --st-visible-fg: oklch(0.52 0.10 270);    --st-visible-bg: oklch(0.95 0.03 270);
@@ -106,6 +111,10 @@
   --danger-tint: oklch(0.30 0.06 25);
   --danger-on: oklch(0.16 0.01 270);
 
+  --success: oklch(0.72 0.14 150);
+  --success-tint: oklch(0.30 0.06 150);
+  --success-on: oklch(0.16 0.01 270);
+
   --st-private-fg: oklch(0.70 0.015 270);   --st-private-bg: oklch(0.28 0.01 270);
   --st-visible-fg: oklch(0.74 0.10 270);    --st-visible-bg: oklch(0.30 0.05 270);
   --st-borrowable-fg: oklch(0.74 0.10 220); --st-borrowable-bg: oklch(0.30 0.05 220);
@@ -147,6 +156,10 @@
     --danger-hover: oklch(0.74 0.17 25);
     --danger-tint: oklch(0.30 0.06 25);
     --danger-on: oklch(0.16 0.01 270);
+
+    --success: oklch(0.72 0.14 150);
+    --success-tint: oklch(0.30 0.06 150);
+    --success-on: oklch(0.16 0.01 270);
 
     --st-private-fg: oklch(0.70 0.015 270);   --st-private-bg: oklch(0.28 0.01 270);
     --st-visible-fg: oklch(0.74 0.10 270);    --st-visible-bg: oklch(0.30 0.05 270);
@@ -340,6 +353,80 @@ main {
   background: var(--surface);
   color: var(--accent);
   box-shadow: var(--shadow-1);
+}
+
+/* ─── Chip (multi-select / selectable toggle) ─────────────── */
+.chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.875rem;
+  min-height: 38px;
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 540;
+  color: var(--ink-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  transition: color var(--dur-1) var(--ease-soft),
+              background var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out),
+              transform var(--dur-1) var(--ease-spring);
+}
+.chip:hover:not(:disabled):not(.selected):not(.active):not([aria-pressed="true"]) {
+  color: var(--ink);
+  border-color: var(--hairline-strong);
+}
+.chip:active:not(:disabled) { transform: scale(0.96); }
+.chip.selected,
+.chip.active,
+.chip[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.chip:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── Range slider ────────────────────────────────────────── */
+.range {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-full);
+  cursor: pointer;
+}
+.range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  box-shadow: var(--shadow-1);
+  transition: transform var(--dur-1) var(--ease-spring);
+}
+.range::-webkit-slider-thumb:active { transform: scale(1.15); }
+.range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  box-shadow: var(--shadow-1);
+}
+.range:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 /* ─── Status pill ─────────────────────────────────────────── */

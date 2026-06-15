@@ -62,14 +62,16 @@
   <div class="filter-groups card">
     <div class="filter-row">
       <span class="filter-label">I…</span>
-      <div class="segmented" role="group" aria-label="Filter by ownership">
+      <div class="chip-group" role="group" aria-label="Filter by ownership">
         <button
+          class="chip"
           aria-pressed={filters.ownership.includes('have')}
           onclick={() => toggleOwnershipFilter('have')}
         >
           have {#if ownershipCounts.have > 0}<span class="count">{ownershipCounts.have}</span>{/if}
         </button>
         <button
+          class="chip"
           aria-pressed={filters.ownership.includes('seeking')}
           onclick={() => toggleOwnershipFilter('seeking')}
         >
@@ -80,9 +82,10 @@
 
     <div class="filter-row">
       <span class="filter-label">will…</span>
-      <div class="segmented" role="group" aria-label="Filter by intent">
+      <div class="chip-group" role="group" aria-label="Filter by intent">
         {#each INTENT_OPTIONS as opt}
           <button
+            class="chip"
             aria-pressed={filters.intents.includes(opt.value)}
             onclick={() => toggleIntentFilter(opt.value)}
           >
@@ -94,8 +97,9 @@
 
     <div class="filter-row">
       <span class="filter-label" aria-hidden="true"></span>
-      <div class="segmented" role="group" aria-label="Filter by visibility">
+      <div class="chip-group" role="group" aria-label="Filter by visibility">
         <button
+          class="chip"
           aria-pressed={filters.visibility.includes('private')}
           onclick={() => toggleVisibilityFilter('private')}
         >
@@ -240,8 +244,10 @@
     min-width: 3rem;
   }
 
-  .segmented {
+  .chip-group {
+    display: flex;
     flex-wrap: wrap;
+    gap: var(--s-2);
   }
 
   .count {
@@ -259,7 +265,7 @@
     border-radius: var(--r-full);
   }
 
-  .segmented button[aria-pressed="true"] .count {
+  .chip[aria-pressed="true"] .count {
     background: var(--accent-tint);
     color: var(--accent);
   }

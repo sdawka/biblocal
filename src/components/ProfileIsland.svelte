@@ -413,45 +413,8 @@
   }
 
   /* Range slider */
-  .range {
-    width: 100%;
-    height: 6px;
-    margin-top: var(--s-2);
-    appearance: none;
-    background: var(--surface-sunken);
-    border: 1px solid var(--hairline);
-    border-radius: var(--r-full);
-    cursor: pointer;
-  }
-
-  .range::-webkit-slider-thumb {
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    background: var(--accent);
-    border: 2px solid var(--surface);
-    border-radius: var(--r-full);
-    cursor: pointer;
-    box-shadow: var(--shadow-1);
-    transition: transform var(--dur-1) var(--ease-spring);
-  }
-
-  .range::-webkit-slider-thumb:active { transform: scale(1.15); }
-
-  .range::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    background: var(--accent);
-    border: 2px solid var(--surface);
-    border-radius: var(--r-full);
-    cursor: pointer;
-    box-shadow: var(--shadow-1);
-  }
-
-  .range:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px var(--focus-ring);
-  }
+  /* Appearance comes from the shared .range in theme.css; only positioning here. */
+  .range { margin-top: var(--s-2); }
 
   .constellation-wrapper {
     margin-top: var(--s-6);
