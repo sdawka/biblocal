@@ -67,6 +67,17 @@ export const books = sqliteTable('books', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
+export const bookNotes = sqliteTable('book_notes', {
+  id: text('id').primaryKey(),
+  bookId: text('book_id').notNull().references(() => books.id),
+  userId: text('user_id').notNull().references(() => users.id),
+  text: text('text').notNull(),
+  // Per-note privacy, mirroring book visibility ('private' | 'visible')
+  visibility: text('visibility').notNull().default('private'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
 export const connectionRequests = sqliteTable('connection_requests', {
   id: text('id').primaryKey(),
   fromUserId: text('from_user_id').notNull().references(() => users.id),
@@ -82,5 +93,7 @@ export type AuthCode = typeof authCodes.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Book = typeof books.$inferSelect;
 export type NewBook = typeof books.$inferInsert;
+export type BookNote = typeof bookNotes.$inferSelect;
+export type NewBookNote = typeof bookNotes.$inferInsert;
 export type ConnectionRequest = typeof connectionRequests.$inferSelect;
 export type NewConnectionRequest = typeof connectionRequests.$inferInsert;

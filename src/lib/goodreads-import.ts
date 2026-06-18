@@ -152,7 +152,12 @@ export function parseGoodreadsCSV(csvContent: string): ImportResult {
   return { books, errors };
 }
 
-export function parsedBookToBook(parsed: ParsedBook): Omit<Book, 'id' | 'addedAt'> {
+// Imported Goodreads reviews/notes are kept as the legacy single-string `notes`,
+// written to the legacy books.notes column by the bulk-import endpoint. They are
+// distinct from the new structured BookNote[] used for manual note entry.
+export function parsedBookToBook(
+  parsed: ParsedBook
+): Omit<Book, 'id' | 'addedAt' | 'notes'> & { notes?: string } {
   return {
     title: parsed.title,
     author: parsed.author,

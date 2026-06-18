@@ -8,10 +8,23 @@
     onVisibilityChange?: (visibility: BookVisibility) => void;
     onOwnershipChange?: (ownership: BookOwnership) => void;
     onDelete?: (id: string) => void;
+    onAddNote?: (text: string, visibility: BookVisibility) => void;
+    onUpdateNote?: (noteId: string, updates: { text?: string; visibility?: BookVisibility }) => void;
+    onDeleteNote?: (noteId: string) => void;
     readonly?: boolean;
   }
 
-  let { book, onIntentsChange, onVisibilityChange, onOwnershipChange, onDelete, readonly = false }: Props = $props();
+  let {
+    book,
+    onIntentsChange,
+    onVisibilityChange,
+    onOwnershipChange,
+    onDelete,
+    onAddNote,
+    onUpdateNote,
+    onDeleteNote,
+    readonly = false,
+  }: Props = $props();
 
   let showDeleteConfirm = $state(false);
 
@@ -82,6 +95,24 @@
       : [...book.intents, intent];
     onIntentsChange?.(newIntents);
   }
+
+  // ─── Notes ──────────────────────────────────────────────────────────────
+  const notes = $derived(book.notes ?? []);
+  let notesOpen = $state(false);
+  let draftText = $state('');
+  let draftVisibility = $state<BookVisibility>('private');
+
+  function submitNote() {
+    const text = draftText.trim();
+    if (!text) return;
+    onAddNote?.(text, draftVisibility);
+    draftText = '';
+    draftVisibility = 'private';
+  }
+
+  function toggleNoteVisibility(noteId: string, current: BookVisibility) {
+    onUpdateNote?.(noteId, { visibility: current === 'visible' ? 'private' : 'visible' });
+  }
 </script>
 
 <article
@@ -141,6 +172,76 @@
           <path d="M13.5 4.5 6 12 2.5 8.5" />
         </svg>
       </span>
+    {/if}
+
+    {#if !readonly || notes.length > 0}
+      <div class="notes">
+        <button
+          class="notes-toggle"
+          aria-expanded={notesOpen}
+          onclick={() => (notesOpen = !notesOpen)}
+        >
+          <svg class="chevron" class:open={notesOpen} width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 2l4 3-4 3" />
+          </svg>
+          {#if notes.length > 0}
+            {notes.length} {notes.length === 1 ? 'note' : 'notes'}
+          {:else}
+            Add a note
+          {/if}
+        </button>
+
+        {#if notesOpen}
+          <div class="notes-body">
+            {#each notes as note (note.id)}
+              <div class="note">
+                <p class="note-text">{note.text}</p>
+                <div class="note-controls">
+                  {#if readonly}
+                    {#if note.visibility === 'visible'}
+                      <span class="pill pill-sm" data-status="visible">Public</span>
+                    {/if}
+                  {:else}
+                    <button
+                      class="pill pill-sm pill-button"
+                      data-status={note.visibility === 'visible' ? 'visible' : 'private'}
+                      onclick={() => toggleNoteVisibility(note.id, note.visibility)}
+                      aria-label="Toggle privacy for this note (currently {note.visibility === 'visible' ? 'public' : 'private'})"
+                    >
+                      {note.visibility === 'visible' ? 'Public' : 'Private'}
+                    </button>
+                    <button
+                      class="note-delete"
+                      onclick={() => onDeleteNote?.(note.id)}
+                      aria-label="Delete this note"
+                    >
+                      <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 2l6 6M8 2l-6 6" /></svg>
+                    </button>
+                  {/if}
+                </div>
+              </div>
+            {/each}
+
+            {#if !readonly}
+              <div class="note-add">
+                <textarea
+                  class="textarea note-input"
+                  bind:value={draftText}
+                  placeholder="What did you like about this book?"
+                  rows="2"
+                ></textarea>
+                <div class="note-add-actions">
+                  <div class="segmented segmented-sm" role="group" aria-label="Note privacy">
+                    <button type="button" aria-pressed={draftVisibility === 'private'} onclick={() => (draftVisibility = 'private')}>Private</button>
+                    <button type="button" aria-pressed={draftVisibility === 'visible'} onclick={() => (draftVisibility = 'visible')}>Public</button>
+                  </div>
+                  <button class="btn btn-filled btn-sm" onclick={submitNote} disabled={!draftText.trim()}>Add note</button>
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
     {/if}
   </div>
 
@@ -371,7 +472,117 @@
     min-width: 60px;
   }
 
+  .notes {
+    margin-top: var(--s-3);
+  }
+
+  .notes-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 590;
+    color: var(--ink-muted);
+    transition: color var(--dur-1) var(--ease-soft);
+  }
+
+  .notes-toggle:hover {
+    color: var(--accent);
+  }
+
+  .chevron {
+    transition: transform var(--dur-1) var(--ease-soft);
+  }
+
+  .chevron.open {
+    transform: rotate(90deg);
+  }
+
+  .notes-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    margin-top: var(--s-3);
+  }
+
+  .note {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+
+  .note-text {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--ink);
+    white-space: pre-wrap;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .note-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    flex-shrink: 0;
+  }
+
+  .pill-sm {
+    font-size: 0.6875rem;
+    padding: 0.15rem 0.5rem;
+    min-height: 0;
+  }
+
+  .note-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    color: var(--ink-muted);
+    background: none;
+    border: none;
+    border-radius: var(--r-full);
+    cursor: pointer;
+    transition: color var(--dur-1) var(--ease-soft);
+  }
+
+  .note-delete:hover {
+    color: var(--danger);
+  }
+
+  .note-add {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+
+  .note-input {
+    min-height: 56px;
+    font-size: 0.875rem;
+  }
+
+  .note-add-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+  }
+
+  .segmented-sm button {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .book-card { transition: none; }
+    .chevron { transition: none; }
   }
 </style>

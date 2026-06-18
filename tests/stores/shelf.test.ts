@@ -20,8 +20,11 @@ import {
   getShelfStats,
   getInferredTopics,
   findDuplicate,
+  addNote,
+  updateNote,
+  removeNote,
 } from '../../src/stores/shelf';
-import type { BookStatus } from '../../src/lib/types';
+import type { Book, BookStatus } from '../../src/lib/types';
 
 describe('Shelf Store', () => {
   beforeEach(() => {
@@ -81,11 +84,11 @@ describe('Shelf Store', () => {
         addedVia: 'manual',
       });
 
-      updateBook(book.id, { title: 'Updated Title', notes: 'Great read!' });
+      updateBook(book.id, { title: 'Updated Title', visibility: 'private' });
 
       const updated = shelf.get()[book.id];
       expect(updated.title).toBe('Updated Title');
-      expect(updated.notes).toBe('Great read!');
+      expect(updated.visibility).toBe('private');
       expect(updated.author).toBe('Author'); // unchanged
     });
 
@@ -262,6 +265,78 @@ describe('Shelf Store', () => {
 
       const result = findDuplicate('9781234567890', 'My Book', 'Some Author');
       expect(result).not.toBeNull();
+    });
+  });
+
+  describe('book notes', () => {
+    // Seed a book that already has notes, independent of addNote, so the
+    // update/remove tests don't depend on the addNote implementation.
+    function seedBookWithNote(): { bookId: string; noteId: string } {
+      const book: Book = {
+        id: 'book-1',
+        title: 'GEB',
+        author: 'Hofstadter',
+        visibility: 'visible',
+        ownership: 'have',
+        intents: [],
+        addedVia: 'manual',
+        addedAt: 1,
+        notes: [{ id: 'note-1', text: 'Loved the dialogues', visibility: 'private', createdAt: 1 }],
+      };
+      shelf.set({ [book.id]: book });
+      return { bookId: book.id, noteId: 'note-1' };
+    }
+
+    it('addNote appends a note to the book', () => {
+      const book = addBook({
+        title: 'Dune',
+        author: 'Herbert',
+        ownership: 'have',
+        intents: [],
+        addedVia: 'manual',
+      });
+
+      const note = addNote(book.id, 'The spice imagery stuck with me', 'visible');
+
+      expect(note).not.toBeNull();
+      const stored = shelf.get()[book.id];
+      expect(stored.notes).toHaveLength(1);
+      expect(stored.notes![0].text).toBe('The spice imagery stuck with me');
+      expect(stored.notes![0].visibility).toBe('visible');
+      expect(stored.notes![0].id).toBe(note!.id);
+    });
+
+    it('addNote defaults to private and syncs to server', () => {
+      const book = addBook({ title: 'X', author: 'Y', ownership: 'have', intents: [], addedVia: 'manual' });
+      const note = addNote(book.id, 'a private thought');
+
+      expect(note!.visibility).toBe('private');
+      expect(fetch).toHaveBeenCalledWith(
+        `/api/books/${book.id}/notes`,
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+
+    it('addNote returns null for a non-existent book', () => {
+      expect(addNote('nope', 'text')).toBeNull();
+    });
+
+    it('updateNote changes text and flips visibility', () => {
+      const { bookId, noteId } = seedBookWithNote();
+
+      updateNote(bookId, noteId, { text: 'Actually the MU puzzle', visibility: 'visible' });
+
+      const note = shelf.get()[bookId].notes![0];
+      expect(note.text).toBe('Actually the MU puzzle');
+      expect(note.visibility).toBe('visible');
+    });
+
+    it('removeNote removes the note', () => {
+      const { bookId, noteId } = seedBookWithNote();
+
+      removeNote(bookId, noteId);
+
+      expect(shelf.get()[bookId].notes).toHaveLength(0);
     });
   });
 });

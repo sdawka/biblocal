@@ -9,9 +9,13 @@ echo ""
 
 cd "$(dirname "$0")/.."
 
-# Run migrations on QA database
+# Run migrations on QA database.
+# Fail loudly: a failed migration must abort the deploy rather than ship code
+# against a schema that was never created. (Migration tracking is reconciled
+# with the actual schema, so a clean DB applies in order and an up-to-date one
+# is a no-op — neither should error.)
 echo "→ Running migrations on QA database..."
-npx wrangler d1 migrations apply biblocal-qa-db --env qa --remote || echo "  (migrations may already be applied)"
+npx wrangler d1 migrations apply biblocal-qa-db --env qa --remote
 
 # Seed data
 echo "→ Seeding QA data..."

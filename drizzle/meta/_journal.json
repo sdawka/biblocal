@@ -13,7 +13,35 @@
       "idx": 1,
       "version": "6",
       "when": 1778435516239,
-      "tag": "0001_hesitant_mongoose",
+      "tag": "0001_add_book_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1778435516240,
+      "tag": "0002_add_store_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1778435516241,
+      "tag": "0003_book_intents",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1778435516242,
+      "tag": "0004_geolocation_and_connections",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1778435516243,
+      "tag": "0005_book_notes",
       "breakpoints": true
     }
   ]

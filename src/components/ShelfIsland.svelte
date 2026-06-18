@@ -9,6 +9,9 @@
     toggleVisibilityFilter,
     clearAllFilters,
     removeBook,
+    addNote,
+    updateNote,
+    removeNote,
   } from '../stores/shelf';
   import BookCard from './BookCard.svelte';
   import type { BookIntent, BookOwnership, BookVisibility } from '../lib/types';
@@ -155,6 +158,9 @@
                   {book}
                   onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
                   onDelete={handleDeleteBook}
+                  onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
+                  onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
+                  onDeleteNote={(noteId) => removeNote(book.id, noteId)}
                 />
               </div>
             {/each}
@@ -187,6 +193,9 @@
                   {book}
                   onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
                   onDelete={handleDeleteBook}
+                  onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
+                  onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
+                  onDeleteNote={(noteId) => removeNote(book.id, noteId)}
                 />
               </div>
             {/each}
