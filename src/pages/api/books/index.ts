@@ -1,16 +1,52 @@
 import type { APIRoute } from 'astro';
 
 export const prerender = false;
-import { eq } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { getDb } from '../../../db/client';
-import { books } from '../../../db/schema';
+import { books, bookNotes } from '../../../db/schema';
+import type { Database } from '../../../db/client';
 import { getUserId } from '../../../lib/auth';
 
 type Env = { DB: D1Database };
 
 function generateId(): string {
   return crypto.randomUUID();
+}
+
+// Attach a `notes` array to each book. When `publicOnly` is true, only notes
+// marked visible are included (private notes never leave the server).
+async function withNotes<T extends { id: string }>(
+  db: Database,
+  rows: T[],
+  publicOnly: boolean
+): Promise<(T & { notes: unknown[] })[]> {
+  const ids = rows.map((b) => b.id);
+  if (ids.length === 0) return rows.map((b) => ({ ...b, notes: [] }));
+
+  const where = publicOnly
+    ? and(inArray(bookNotes.bookId, ids), eq(bookNotes.visibility, 'visible'))
+    : inArray(bookNotes.bookId, ids);
+
+  const notes = await db
+    .select({
+      id: bookNotes.id,
+      bookId: bookNotes.bookId,
+      text: bookNotes.text,
+      visibility: bookNotes.visibility,
+      createdAt: bookNotes.createdAt,
+    })
+    .from(bookNotes)
+    .where(where);
+
+  const byBook = new Map<string, unknown[]>();
+  for (const n of notes) {
+    const { bookId, ...note } = n;
+    if (!byBook.has(bookId)) byBook.set(bookId, []);
+    byBook.get(bookId)!.push(note);
+  }
+
+  return rows.map((b) => ({ ...b, notes: byBook.get(b.id) ?? [] }));
 }
 
 // GET /api/books - all books (public)
@@ -35,7 +71,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
         .from(books)
         .where(eq(books.userId, userId));
 
-      return new Response(JSON.stringify({ books: userBooks }), {
+      // Owner sees all their notes (private + visible)
+      const withUserNotes = await withNotes(db, userBooks, false);
+
+      return new Response(JSON.stringify({ books: withUserNotes }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -51,7 +90,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
       .where(eq(books.visibility, 'visible'))
       .limit(limit)
       .offset(offset);
-    return new Response(JSON.stringify({ books: allBooks, pagination: { limit, offset } }), {
+    // Public listing: only visible notes are exposed
+    const withPublicNotes = await withNotes(db, allBooks, true);
+    return new Response(JSON.stringify({ books: withPublicNotes, pagination: { limit, offset } }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

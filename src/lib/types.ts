@@ -12,6 +12,15 @@ export type BookStatus =
   | 'giftable'
   | 'class-resource';
 
+// A note someone attaches to a book they own (e.g. "what I liked about it").
+// Each note carries its own privacy, mirroring book visibility.
+export interface BookNote {
+  id: string;
+  text: string;
+  visibility: BookVisibility;
+  createdAt: number;
+}
+
 export type EntityType = 'person' | 'bookstore';
 
 export type LocationPrecision = 'exact' | 'approximate' | 'city';
@@ -29,7 +38,7 @@ export interface Book {
   intents: BookIntent[];
   // Legacy status - kept during migration period
   status?: BookStatus;
-  notes?: string;
+  notes?: BookNote[];
   coverUrl?: string;
   subjects?: string[];
   addedVia: 'scan' | 'manual' | 'goodreads';

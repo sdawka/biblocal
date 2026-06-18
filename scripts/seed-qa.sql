@@ -7,6 +7,7 @@
 -- Clear existing data (order matters due to foreign key constraints)
 DELETE FROM connection_requests;
 DELETE FROM sessions;
+DELETE FROM book_notes;
 DELETE FROM books;
 DELETE FROM users;
 
@@ -330,3 +331,19 @@ VALUES
    '262 Avenue du Mont-Royal E', 'Plateau Mont-Royal',
    '["philosophy", "poetry", "essays", "Quebecois literature", "francophone"]',
    unixepoch(), unixepoch());
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- BOOK NOTES — things people liked about their books (mixed private/public)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+INSERT INTO book_notes (id, book_id, user_id, text, visibility, created_at, updated_at)
+VALUES
+  ('note-geb-1', 'book-geb', 'qa-test-user',
+   'The dialogues between chapters are the best part — Achilles and the Tortoise live rent-free in my head.',
+   'visible', unixepoch(), unixepoch()),
+  ('note-geb-2', 'book-geb', 'qa-test-user',
+   'Reminder to myself: re-read the MU puzzle chapter, I never fully got it.',
+   'private', unixepoch(), unixepoch()),
+  ('note-dispossessed-1', 'book-dispossessed', 'qa-test-user',
+   'The ambiguous utopia framing changed how I think about political fiction.',
+   'visible', unixepoch(), unixepoch());

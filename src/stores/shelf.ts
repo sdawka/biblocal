@@ -1,5 +1,5 @@
 import { persistentAtom } from '@nanostores/persistent';
-import type { Book, BookStatus, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
+import type { Book, BookNote, BookStatus, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
 import { inferTopicsFromSubjects } from './topics';
 import { currentUserId } from './auth';
 
@@ -114,7 +114,6 @@ async function syncAddBook(book: Book): Promise<void> {
         intents: book.intents,
         addedVia: book.addedVia,
         subjects: book.subjects,
-        notes: book.notes,
       }),
     });
     if (!res.ok) {
@@ -150,6 +149,51 @@ async function syncRemoveBook(id: string): Promise<void> {
     }
   } catch (e) {
     console.error('Failed to sync book removal:', e);
+  }
+}
+
+async function syncAddNote(bookId: string, note: BookNote): Promise<void> {
+  if (!currentUserId.get()) return;
+  try {
+    const res = await fetch(`/api/books/${bookId}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // Send our client id so the server keeps the same identity for this note.
+      body: JSON.stringify({ id: note.id, text: note.text, visibility: note.visibility }),
+    });
+    if (!res.ok) {
+      console.error('Failed to sync note:', await res.text());
+    }
+  } catch (e) {
+    console.error('Failed to sync note:', e);
+  }
+}
+
+async function syncUpdateNote(bookId: string, noteId: string, updates: Partial<BookNote>): Promise<void> {
+  if (!currentUserId.get()) return;
+  try {
+    const res = await fetch(`/api/books/${bookId}/notes/${noteId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) {
+      console.error('Failed to sync note update:', await res.text());
+    }
+  } catch (e) {
+    console.error('Failed to sync note update:', e);
+  }
+}
+
+async function syncRemoveNote(bookId: string, noteId: string): Promise<void> {
+  if (!currentUserId.get()) return;
+  try {
+    const res = await fetch(`/api/books/${bookId}/notes/${noteId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      console.error('Failed to sync note removal:', await res.text());
+    }
+  } catch (e) {
+    console.error('Failed to sync note removal:', e);
   }
 }
 
@@ -212,6 +256,61 @@ export function removeBook(id: string) {
   syncRemoveBook(id);
 }
 
+// ─── Book notes ──────────────────────────────────────────────────────────────
+// Notes are stored on each book's `notes` array. Mutations follow the same
+// optimistic-local-then-sync pattern as updateBook: update the store immediately
+// so the UI is responsive, then fire the network request in the background.
+
+/**
+ * Add a note to a book. Returns the created note (or null if the book is gone).
+ *
+ * The note's id is generated client-side and handed to the server (syncAddNote
+ * sends it; the POST endpoint honors it), so a just-added note can be edited or
+ * deleted before any reload — its client and server ids already agree. (Contrast
+ * addBook, where the server ignores the client id until loadBooksFromServer.)
+ */
+export function addNote(bookId: string, text: string, visibility: BookVisibility = 'private'): BookNote | null {
+  const current = shelf.get();
+  const book = current[bookId];
+  if (!book) return null;
+
+  const note: BookNote = {
+    id: crypto.randomUUID(),
+    text,
+    visibility,
+    createdAt: Date.now(),
+  };
+  const notes = [...(book.notes ?? []), note];
+  shelf.set({ ...current, [bookId]: { ...book, notes } });
+  syncAddNote(bookId, note);
+  return note;
+}
+
+export function updateNote(bookId: string, noteId: string, updates: Partial<Pick<BookNote, 'text' | 'visibility'>>) {
+  const current = shelf.get();
+  const book = current[bookId];
+  if (!book || !book.notes) return;
+  const notes = book.notes.map((n) => (n.id === noteId ? { ...n, ...updates } : n));
+  shelf.set({ ...current, [bookId]: { ...book, notes } });
+  syncUpdateNote(bookId, noteId, updates);
+}
+
+export function removeNote(bookId: string, noteId: string) {
+  const current = shelf.get();
+  const book = current[bookId];
+  if (!book || !book.notes) return;
+  const notes = book.notes.filter((n) => n.id !== noteId);
+  shelf.set({ ...current, [bookId]: { ...book, notes } });
+  syncRemoveNote(bookId, noteId);
+}
+
+interface ServerNote {
+  id: string;
+  text: string;
+  visibility: string;
+  createdAt: string | number;
+}
+
 interface ServerBook {
   id: string;
   title: string;
@@ -225,7 +324,7 @@ interface ServerBook {
   intents: string | null;
   addedVia: string | null;
   subjects: string | null;
-  notes: string | null;
+  notes?: ServerNote[];
   createdAt: string;
 }
 
@@ -250,7 +349,12 @@ export async function loadBooksFromServer(): Promise<void> {
         status: b.status as BookStatus,
         coverUrl: b.coverUrl || undefined,
         subjects: b.subjects ? JSON.parse(b.subjects) : undefined,
-        notes: b.notes || undefined,
+        notes: (b.notes ?? []).map((n) => ({
+          id: n.id,
+          text: n.text,
+          visibility: n.visibility as BookVisibility,
+          createdAt: typeof n.createdAt === 'number' ? n.createdAt : new Date(n.createdAt).getTime(),
+        })),
         addedVia: (b.addedVia || 'manual') as 'scan' | 'manual' | 'goodreads',
         addedAt: new Date(b.createdAt).getTime(),
       };
