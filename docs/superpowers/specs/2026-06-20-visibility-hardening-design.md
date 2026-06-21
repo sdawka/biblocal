@@ -10,6 +10,11 @@ private data never leaks through any read path, the QA auth bypass cannot be tri
 in production, and the related UI (intent labels) reads correctly. Add regression tests
 that lock the security boundary in place.
 
+As part of refocusing the product on its core — **local book discovery and browsing** —
+also fully remove the `class-resource` intent and its `classChain` match facet (the
+"classroom sharing" feature). It is a niche dimension that dilutes the core lend/discuss/gift
+model; tearing it out simplifies the data model, the matching engine, and the UI.
+
 ## Background
 
 Visibility is enforced at the **query level** — read paths add `WHERE visibility = 'visible'`
@@ -80,29 +85,57 @@ contract is misleading.
 This route returns the full `seed-users.json` file unconditionally. Confirm it is not reachable
 in production; if it is, gate it behind the QA allowlist or remove it.
 
-### 6. Intent label UX — single source of truth + correct wording
+### 6. Remove the `class-resource` / `classChain` feature (full teardown)
+
+The classroom-sharing dimension is removed entirely. After this change the model has exactly
+three intents (`borrowable`, `discussable`, `giftable`) and four match facets (`shelfTwin`,
+`readingMentor`, `localSource`, `discussionMatch`).
+
+**Code removal:**
+
+- `src/lib/types.ts` — drop `'class-resource'` from `BookIntent` and `BookStatus`; drop
+  `classChain` from `MatchFacets`.
+- `src/lib/validation.ts` — drop `'class-resource'` from `VALID_INTENTS`.
+- `src/lib/matching.ts` — delete `calcClassChain`, `WEIGHTS.classChain`, and the `classChain`
+  terms in `calcTotalScore`, `hasAnyMatch`, and the `facets` object in `calculateMatches`.
+- `src/stores/profile.ts` — drop `'class-resource': 0` from the `intentCounts` map in
+  `deriveLendingPersonality`.
+- `src/components/MatchCardIsland.svelte` — drop `classChain` from `FACET_LABELS` and
+  `STORE_FACET_LABELS`.
+- `src/components/BookCard.svelte`, `AddBookIsland.svelte`, `ShelfIsland.svelte` — drop the
+  `class-resource` intent option (folded into the centralization below).
+- `src/pages/api/stores/[id]/books.ts` — drop `'class-resource'` from the inline `intents` union.
+- `src/styles/theme.css` — remove `.pill[data-status="class-resource"]` and the `--st-class-*`
+  custom properties (3 occurrences).
+
+**Data / seed cleanup:**
+
+- New drizzle migration: rewrite every `books.intents` JSON array to exclude `'class-resource'`,
+  collapsing to `[]` when it was the only entry. (SQLite `json_each` + `json_group_array`, or a
+  guarded string rewrite.) Leave the dead legacy `status` column untouched.
+- `src/data/seed-users.json` — change or drop the 2 books that use `class-resource`.
+- `scripts/scenarios/seed-power-user.sql` — update the 5 textbook rows (b36–b40) to a remaining
+  intent or remove them.
+- `qa/journeys/04-matches.sh` — remove `"class chain"` from the expected-facets list.
+
+**Do NOT modify** `drizzle/0003_book_intents.sql` — it is an applied historical migration.
+
+### 7. Intent label UX — single source of truth + correct wording
 
 **Problem:** intent labels are duplicated in three components (`BookCard`, `AddBookIsland`,
-`ShelfIsland`) and rendered after the prompt "I will…", producing "I will… **Class**" (a noun
-where the others are verbs) and the ambiguous "I will… Gift". `class-resource` is not an action
-verb, so the verb frame can never fit it.
-
-**Verified:** `class-resource` is a fully wired feature (intent selectors, `calcClassChain` match
-facet with weight 1, match-card labels "Class Chain"/"Class Resources", seed data). It is **kept**,
-not removed.
+`ShelfIsland`) and rendered after the prompt "I will…", producing "I will… **Gift**" (awkward).
+With `class-resource` gone, the three remaining intents all read cleanly as nouns.
 
 **Fix:**
 
 - Create `src/lib/intents.ts` as the single source of truth (pure utility, per `src/lib/` convention):
-  exports the intent label map and the prompt copy.
-- Reword the prompt from "I will…" to **"Open to:"** so noun phrases read correctly across all
-  four intents and both contexts (selector + standalone badge), removing the action/tag split.
-- Labels: Lending · Discussion · Gifting · **Course sharing**.
+  exports the intent label map and the prompt copy for the three remaining intents.
+- Reword the prompt from "I will…" to **"Open to:"** so the labels read correctly in both the
+  selector and standalone-badge contexts.
+- Labels: **Lending · Discussion · Gifting**.
 - Replace the three duplicated maps with imports from `src/lib/intents.ts`.
-- Match-card facet labels ("Class Chain", "Class Resources") are out of scope for this change
-  unless they read inconsistently after the relabel — note but do not expand scope.
 
-### 7. Regression tests (primary deliverable)
+### 8. Regression tests (primary deliverable)
 
 Follow existing `vitest` patterns in `tests/`. Server-boundary assertions:
 
@@ -116,19 +149,30 @@ Follow existing `vitest` patterns in `tests/`. Server-boundary assertions:
 - `qaBypassAllowed(env)` returns false for `ENVIRONMENT='production'` and unknown/missing values;
   true only for the allowed environment(s).
 
+**Class-resource teardown (#6):**
+
+- Update `tests/lib/matching.test.ts` — remove the `classChain facet` describe block and any
+  `facets.classChain` references; assert `MatchFacets` has exactly the four remaining facets.
+- Update `tests/api/books-public.test.ts:181` — drop `'class-resource'` from the valid-intents list.
+- Migration test: a book stored with `intents` containing `'class-resource'` is rewritten to exclude
+  it (and to `[]` when it was the sole entry).
+
 ## Out of scope
 
 - Rate limiting on public read endpoints.
-- Removing or redesigning the `class-resource` / classChain feature.
-- Match-card facet label redesign.
+- Match-card facet label redesign for the remaining four facets.
 
 ## Files touched (anticipated)
 
 - `src/pages/api/stores/[id].ts` — projection (#1)
-- `src/pages/api/stores/[id]/books.ts` — force visible (#2)
+- `src/pages/api/stores/[id]/books.ts` — force visible (#2) + drop intent from union (#6)
 - `src/middleware.ts`, `src/lib/auth.ts` (or new `qaBypassAllowed` helper) — QA guard (#3)
 - `wrangler.jsonc` — `ENVIRONMENT` var (#3)
 - `src/pages/api/books/[id]/notes/[noteId].ts` — book_id scoping (#4)
 - `src/pages/api/users.json.ts` — gate/remove (#5)
-- `src/lib/intents.ts` (new) + `BookCard.svelte`, `AddBookIsland.svelte`, `ShelfIsland.svelte` — labels (#6)
-- `tests/` — new regression specs (#7)
+- `src/lib/types.ts`, `src/lib/validation.ts`, `src/lib/matching.ts`, `src/stores/profile.ts`,
+  `src/components/MatchCardIsland.svelte`, `src/styles/theme.css` — class-resource teardown (#6)
+- new `drizzle/00NN_drop_class_resource.sql` — intents data migration (#6)
+- `src/data/seed-users.json`, `scripts/scenarios/seed-power-user.sql`, `qa/journeys/04-matches.sh` — seed/QA cleanup (#6)
+- `src/lib/intents.ts` (new) + `BookCard.svelte`, `AddBookIsland.svelte`, `ShelfIsland.svelte` — labels (#7)
+- `tests/` — new regression specs + class-resource test cleanup (#7, #6)
