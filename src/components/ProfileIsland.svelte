@@ -328,7 +328,7 @@
   <div class="profile-view">
     <header class="profile-header card rise rise-1">
       <div class="identity">
-        <h2 class="name serif">{profileData.name || 'Your Profile'}</h2>
+        <h2 class="name serif">{profileData.name || 'Add your name'}</h2>
         {#if profileData.city}
           <span class="location muted">{profileData.city} · {profileData.radiusKm} km radius</span>
         {/if}

@@ -79,7 +79,7 @@ const currentYear = new Date().getFullYear();
   .col-head {
     margin: 0 0 var(--s-1);
     font-family: var(--font-ui);
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     font-weight: 640;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -92,6 +92,8 @@ const currentYear = new Date().getFullYear();
     color: var(--ink-muted);
     text-decoration: none;
     width: fit-content;
+    /* A little more vertical tap area without disturbing layout. */
+    padding: 0.25rem 0;
     transition: color var(--dur-1) var(--ease-soft);
   }
   .col a:hover { color: var(--accent); }
