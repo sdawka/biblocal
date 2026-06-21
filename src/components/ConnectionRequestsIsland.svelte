@@ -9,6 +9,8 @@
 
   let incoming = $state<ConnectionRequest[]>([]);
   let responding = $state<string | null>(null);
+  // requestId -> error message for a failed accept/decline.
+  let respondErrors = $state<Record<string, string>>({});
 
   $effect(() =>
     incomingRequests.subscribe((r) => {
@@ -22,8 +24,17 @@
 
   async function handleRespond(requestId: string, status: 'accepted' | 'declined') {
     responding = requestId;
-    await respondToRequest(requestId, status);
+    // Clear any prior error for this request before retrying.
+    const { [requestId]: _cleared, ...rest } = respondErrors;
+    respondErrors = rest;
+    const result = await respondToRequest(requestId, status);
     responding = null;
+    if (!result.success) {
+      respondErrors = {
+        ...respondErrors,
+        [requestId]: result.error || 'Could not respond. Please try again.',
+      };
+    }
   }
 </script>
 
@@ -57,6 +68,9 @@
               Decline
             </button>
           </div>
+          {#if respondErrors[request.id]}
+            <p class="respond-error" role="alert">{respondErrors[request.id]}</p>
+          {/if}
         </div>
       {/each}
     </div>
@@ -134,5 +148,13 @@
   .btn:disabled {
     opacity: 0.55;
     cursor: not-allowed;
+  }
+
+  .respond-error {
+    flex-basis: 100%;
+    margin: var(--s-2) 0 0;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    color: var(--danger);
   }
 </style>

@@ -4,6 +4,7 @@ import AddBookIsland from '../components/AddBookIsland.svelte';
 import ImportIsland from '../components/ImportIsland.svelte';
 import ShelfContainer from '../components/ShelfContainer.svelte';
 import PromptIsland from '../components/PromptIsland.svelte';
+import SyncErrorToast from '../components/SyncErrorToast.svelte';
 import QaAuthInit from '../components/QaAuthInit.svelte';
 import { UserButton } from '@clerk/astro/components';
 import { env } from 'cloudflare:workers';
@@ -22,6 +23,8 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
         </div>
         {!isQaMode && <UserButton />}
       </div>
+
+      <SyncErrorToast client:load />
 
       <PromptIsland client:idle context="shelf" />
 

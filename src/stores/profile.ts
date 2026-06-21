@@ -2,6 +2,7 @@ import { persistentAtom } from '@nanostores/persistent';
 import type { UserProfile, UserTopics, BookIntent, LocationPrecision, ContactMethod, ContactVisibility } from '../lib/types';
 import { currentUserId } from './auth';
 import { shelf } from './shelf';
+import { reportSyncError } from './sync-status';
 import { getCityCoordinates, roundCoordinates } from '../lib/geo';
 
 function safeJsonDecode<T>(defaultValue: T) {
@@ -38,7 +39,12 @@ export const dismissedPrompts = persistentAtom<string[]>('biblocal:dismissed:v1'
   decode: safeJsonDecode([]),
 });
 
-async function syncProfile(updates: Partial<UserProfile>): Promise<void> {
+const PROFILE_SYNC_ERROR = 'Could not save your profile. Please try again.';
+
+// `prior` is the profile snapshot captured before the optimistic set, so a
+// failed sync can revert the local change instead of letting it persist only
+// locally (and silently vanish on the next server-backed reload).
+async function syncProfile(updates: Partial<UserProfile>, prior?: UserProfile): Promise<void> {
   if (!currentUserId.get()) return;
   const serverUpdates: Record<string, unknown> = {};
   if (updates.name !== undefined) serverUpdates.name = updates.name;
@@ -58,13 +64,20 @@ async function syncProfile(updates: Partial<UserProfile>): Promise<void> {
   if (updates.contactVisibility !== undefined) serverUpdates.contactVisibility = updates.contactVisibility;
   if (Object.keys(serverUpdates).length === 0) return;
   try {
-    await fetch('/api/profile', {
+    const res = await fetch('/api/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(serverUpdates),
     });
+    if (!res.ok) {
+      console.error('Failed to sync profile:', await res.text());
+      if (prior) profile.set(prior);
+      reportSyncError(PROFILE_SYNC_ERROR);
+    }
   } catch (e) {
     console.error('Failed to sync profile:', e);
+    if (prior) profile.set(prior);
+    reportSyncError(PROFILE_SYNC_ERROR);
   }
 }
 
@@ -87,7 +100,7 @@ export function isOnboarded(): boolean {
 export function updateProfile(updates: Partial<UserProfile>): void {
   const current = profile.get();
   profile.set({ ...current, ...updates });
-  syncProfile(updates);
+  syncProfile(updates, current);
 }
 
 export function updateTopics(topics: Partial<UserTopics>): void {
@@ -97,7 +110,7 @@ export function updateTopics(topics: Partial<UserTopics>): void {
     topics: { ...current.topics, ...topics },
   });
   if (topics.curated !== undefined || topics.freeform !== undefined) {
-    syncProfile({ topics: { ...current.topics, ...topics } });
+    syncProfile({ topics: { ...current.topics, ...topics } }, current);
   }
 }
 

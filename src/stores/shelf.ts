@@ -2,6 +2,9 @@ import { persistentAtom } from '@nanostores/persistent';
 import type { Book, BookNote, BookStatus, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
 import { inferTopicsFromSubjects } from './topics';
 import { currentUserId } from './auth';
+import { reportSyncError } from './sync-status';
+
+const SYNC_ERROR_MESSAGE = 'Could not save your change. Please try again.';
 
 function safeJsonDecode<T>(defaultValue: T) {
   return (str: string): T => {
@@ -97,7 +100,18 @@ export function hasActiveFilters(): boolean {
   return f.visibility.length > 0 || f.ownership.length > 0 || f.intents.length > 0;
 }
 
-async function syncAddBook(book: Book): Promise<void> {
+// Each sync helper takes the `prior` shelf snapshot captured *before* the
+// optimistic mutation. On a non-2xx response or a thrown error it restores that
+// snapshot and surfaces a user-facing message, so a failed sync no longer
+// silently drops (or only-locally persists) the change. A full-snapshot restore
+// is a deliberately simple model: concurrent in-flight mutations are uncommon
+// in this app, and reverting to the pre-mutation shelf is the safe default.
+function rollback(prior: Record<string, Book>): void {
+  shelf.set(prior);
+  reportSyncError(SYNC_ERROR_MESSAGE);
+}
+
+async function syncAddBook(book: Book, prior: Record<string, Book>): Promise<void> {
   if (!currentUserId.get()) return;
   try {
     const res = await fetch('/api/books', {
@@ -118,13 +132,15 @@ async function syncAddBook(book: Book): Promise<void> {
     });
     if (!res.ok) {
       console.error('Failed to sync book:', await res.text());
+      rollback(prior);
     }
   } catch (e) {
     console.error('Failed to sync book:', e);
+    rollback(prior);
   }
 }
 
-async function syncUpdateBook(id: string, updates: Partial<Book>): Promise<void> {
+async function syncUpdateBook(id: string, updates: Partial<Book>, prior: Record<string, Book>): Promise<void> {
   if (!currentUserId.get()) return;
   try {
     const res = await fetch(`/api/books/${id}`, {
@@ -134,25 +150,29 @@ async function syncUpdateBook(id: string, updates: Partial<Book>): Promise<void>
     });
     if (!res.ok) {
       console.error('Failed to sync book update:', await res.text());
+      rollback(prior);
     }
   } catch (e) {
     console.error('Failed to sync book update:', e);
+    rollback(prior);
   }
 }
 
-async function syncRemoveBook(id: string): Promise<void> {
+async function syncRemoveBook(id: string, prior: Record<string, Book>): Promise<void> {
   if (!currentUserId.get()) return;
   try {
     const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
     if (!res.ok) {
       console.error('Failed to sync book removal:', await res.text());
+      rollback(prior);
     }
   } catch (e) {
     console.error('Failed to sync book removal:', e);
+    rollback(prior);
   }
 }
 
-async function syncAddNote(bookId: string, note: BookNote): Promise<void> {
+async function syncAddNote(bookId: string, note: BookNote, prior: Record<string, Book>): Promise<void> {
   if (!currentUserId.get()) return;
   try {
     const res = await fetch(`/api/books/${bookId}/notes`, {
@@ -163,13 +183,15 @@ async function syncAddNote(bookId: string, note: BookNote): Promise<void> {
     });
     if (!res.ok) {
       console.error('Failed to sync note:', await res.text());
+      rollback(prior);
     }
   } catch (e) {
     console.error('Failed to sync note:', e);
+    rollback(prior);
   }
 }
 
-async function syncUpdateNote(bookId: string, noteId: string, updates: Partial<BookNote>): Promise<void> {
+async function syncUpdateNote(bookId: string, noteId: string, updates: Partial<BookNote>, prior: Record<string, Book>): Promise<void> {
   if (!currentUserId.get()) return;
   try {
     const res = await fetch(`/api/books/${bookId}/notes/${noteId}`, {
@@ -179,21 +201,25 @@ async function syncUpdateNote(bookId: string, noteId: string, updates: Partial<B
     });
     if (!res.ok) {
       console.error('Failed to sync note update:', await res.text());
+      rollback(prior);
     }
   } catch (e) {
     console.error('Failed to sync note update:', e);
+    rollback(prior);
   }
 }
 
-async function syncRemoveNote(bookId: string, noteId: string): Promise<void> {
+async function syncRemoveNote(bookId: string, noteId: string, prior: Record<string, Book>): Promise<void> {
   if (!currentUserId.get()) return;
   try {
     const res = await fetch(`/api/books/${bookId}/notes/${noteId}`, { method: 'DELETE' });
     if (!res.ok) {
       console.error('Failed to sync note removal:', await res.text());
+      rollback(prior);
     }
   } catch (e) {
     console.error('Failed to sync note removal:', e);
+    rollback(prior);
   }
 }
 
@@ -207,9 +233,9 @@ export function addBook(book: Omit<Book, 'id' | 'addedAt'> & { id?: string }): B
     id: book.id ?? crypto.randomUUID(),
     addedAt: Date.now(),
   };
-  const current = shelf.get();
-  shelf.set({ ...current, [fullBook.id]: fullBook });
-  syncAddBook(fullBook);
+  const prior = shelf.get();
+  shelf.set({ ...prior, [fullBook.id]: fullBook });
+  syncAddBook(fullBook, prior);
   return fullBook;
 }
 
@@ -218,7 +244,7 @@ export function updateBook(id: string, updates: Partial<Book>) {
   const book = current[id];
   if (book) {
     shelf.set({ ...current, [id]: { ...book, ...updates } });
-    syncUpdateBook(id, updates);
+    syncUpdateBook(id, updates, current);
   }
 }
 
@@ -250,10 +276,11 @@ export function toggleBookIntent(id: string, intent: BookIntent) {
 }
 
 export function removeBook(id: string) {
-  const current = { ...shelf.get() };
-  delete current[id];
-  shelf.set(current);
-  syncRemoveBook(id);
+  const prior = shelf.get();
+  const next = { ...prior };
+  delete next[id];
+  shelf.set(next);
+  syncRemoveBook(id, prior);
 }
 
 // ─── Book notes ──────────────────────────────────────────────────────────────
@@ -282,7 +309,7 @@ export function addNote(bookId: string, text: string, visibility: BookVisibility
   };
   const notes = [...(book.notes ?? []), note];
   shelf.set({ ...current, [bookId]: { ...book, notes } });
-  syncAddNote(bookId, note);
+  syncAddNote(bookId, note, current);
   return note;
 }
 
@@ -292,7 +319,7 @@ export function updateNote(bookId: string, noteId: string, updates: Partial<Pick
   if (!book || !book.notes) return;
   const notes = book.notes.map((n) => (n.id === noteId ? { ...n, ...updates } : n));
   shelf.set({ ...current, [bookId]: { ...book, notes } });
-  syncUpdateNote(bookId, noteId, updates);
+  syncUpdateNote(bookId, noteId, updates, current);
 }
 
 export function removeNote(bookId: string, noteId: string) {
@@ -301,7 +328,7 @@ export function removeNote(bookId: string, noteId: string) {
   if (!book || !book.notes) return;
   const notes = book.notes.filter((n) => n.id !== noteId);
   shelf.set({ ...current, [bookId]: { ...book, notes } });
-  syncRemoveNote(bookId, noteId);
+  syncRemoveNote(bookId, noteId, current);
 }
 
 interface ServerNote {
