@@ -5,13 +5,20 @@
   import 'leaflet/dist/leaflet.css';
   import { matches } from '../stores/matches';
   import { profile } from '../stores/profile';
-  import { loadSeedUsers } from '../stores/users';
+  import { loadSeedUsers, usersLoading, usersError } from '../stores/users';
   import type { Match } from '../lib/types';
   import { CITY_COORDINATES, formatDistance } from '../lib/geo';
   import MatchCardIsland from './MatchCardIsland.svelte';
 
   let matchList = $state<Match[]>([]);
+  let loadingUsers = $state(usersLoading.get());
+  let loadError = $state<string | null>(usersError.get());
   let expandedId = $state<string | null>(null);
+
+  // Track the seed-user fetch so the panel can tell loading/error apart from a
+  // genuinely empty match list.
+  $effect(() => usersLoading.subscribe((v) => { loadingUsers = v; }));
+  $effect(() => usersError.subscribe((v) => { loadError = v; }));
   let mapContainer: HTMLDivElement;
   let map: any;
   // markerId -> { marker, isStore, baseRadius }
@@ -242,7 +249,21 @@
       <h2 class="serif">Nearby <span class="count">{matchList.length}</span></h2>
     </div>
 
-    {#if matchList.length === 0}
+    {#if loadingUsers && matchList.length === 0}
+      <div class="panel-state" aria-live="polite">
+        <div class="skeleton-list">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+        <p class="state-note">Finding people near you…</p>
+      </div>
+    {:else if loadError && matchList.length === 0}
+      <div class="panel-state error" role="alert">
+        <p>Couldn't load nearby matches.</p>
+        <p class="state-note">{loadError}</p>
+      </div>
+    {:else if matchList.length === 0}
       <div class="empty">
         <p>Add some books to find matches!</p>
       </div>
@@ -373,6 +394,59 @@
     font-size: 1.5rem;
     margin-bottom: var(--s-2);
     opacity: 0.7;
+  }
+
+  /* Loading / error panel states (distinct from the empty state). */
+  .panel-state {
+    padding: var(--s-4) 0;
+    text-align: center;
+    font-family: var(--font-ui);
+    color: var(--ink-muted);
+  }
+  .panel-state.error p:first-child {
+    color: var(--ink);
+    font-weight: 590;
+  }
+  .state-note {
+    margin: var(--s-3) 0 0;
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+  }
+  .panel-state.error .state-note {
+    color: var(--danger);
+  }
+
+  .skeleton-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+  }
+  .skeleton-card {
+    height: 96px;
+    border-radius: var(--r-md);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    overflow: hidden;
+    position: relative;
+  }
+  .skeleton-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--hairline),
+      transparent
+    );
+    transform: translateX(-100%);
+    animation: shimmer 1.4s var(--ease-out) infinite;
+  }
+  @keyframes shimmer {
+    to { transform: translateX(100%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-card::after { animation: none; }
   }
 
   .cards-list {

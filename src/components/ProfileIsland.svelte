@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { profile, updateProfile, deriveLendingPersonality, updateLendingPersonality, requestGeolocation, setLocationFromCity, updateContactInfo } from '../stores/profile';
+  import { profile, updateProfile, updateTopics, deriveLendingPersonality, updateLendingPersonality, requestGeolocation, setLocationFromCity, updateContactInfo } from '../stores/profile';
   import { shelf, getInferredTopics } from '../stores/shelf';
   import type { UserProfile, ContactMethod, ContactVisibility } from '../lib/types';
   import TopicPickerIsland from './TopicPickerIsland.svelte';
@@ -53,14 +53,19 @@
     contactVisibility = p.contactVisibility ?? 'hidden';
   });
 
+  // Keep the store's inferred topics in sync with what the shelf currently
+  // implies. We depend on $shelf (the source) and the store's own inferred list
+  // — NOT profileData — so writing back doesn't bounce through the $profile →
+  // profileData copy effect above. updateTopics() deliberately does not sync
+  // inferred to the server (it's derived), so this stays local-only.
   $effect(() => {
+    const _ = $shelf; // re-run when the shelf changes (the only real dependency)
     const inferred = getInferredTopics();
-    if (
-      JSON.stringify(inferred) !== JSON.stringify(profileData.topics.inferred)
-    ) {
-      updateProfile({
-        topics: { ...profileData.topics, inferred },
-      });
+    // Non-reactive read: comparing against the store directly avoids tracking
+    // $profile as a dependency, so unrelated profile edits don't re-run this.
+    const currentInferred = profile.get().topics.inferred;
+    if (JSON.stringify(inferred) !== JSON.stringify(currentInferred)) {
+      updateTopics({ inferred });
     }
   });
 

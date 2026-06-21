@@ -2,6 +2,12 @@
   import type { Match, MatchFacet } from '../lib/types';
   import { formatDistance } from '../lib/geo';
   import { safeExternalUrl } from '../lib/url';
+  import {
+    connectionRequests,
+    getConnectionStatus,
+    sendConnectionRequest,
+  } from '../stores/connections';
+  import { connectButtonState } from '../lib/connection-ui';
 
   interface Props {
     match: Match;
@@ -10,6 +16,37 @@
   }
 
   let { match, expanded = false, onToggle }: Props = $props();
+
+  // Connection request state for this match's user.
+  let requesting = $state(false);
+  let requestError = $state<string | null>(null);
+
+  // Subscribe to the connections store so the button label tracks status changes
+  // (e.g. after the request succeeds and loadConnections() refreshes the list).
+  let connections = $state($connectionRequests);
+  $effect(() => connectionRequests.subscribe((c) => { connections = c; }));
+
+  // `connections` is referenced so this re-derives whenever the store updates.
+  let connectState = $derived(
+    (() => {
+      void connections;
+      return connectButtonState(getConnectionStatus(match.user.id), {
+        pending: requesting,
+      });
+    })()
+  );
+
+  async function handleConnect(e: MouseEvent) {
+    e.stopPropagation();
+    if (requesting || !connectState.actionable) return;
+    requesting = true;
+    requestError = null;
+    const result = await sendConnectionRequest(match.user.id);
+    requesting = false;
+    if (!result.success) {
+      requestError = result.error || 'Failed to send request';
+    }
+  }
 
   let distanceDisplay = $derived(
     match.distanceKm != null
@@ -64,57 +101,54 @@
   class="match-card card card-interactive"
   class:expanded
   class:store={isStore}
-  role="button"
-  tabindex="0"
-  aria-expanded={expanded}
-  onclick={onToggle}
-  onkeydown={(e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onToggle();
-    }
-  }}
 >
-  <header>
-    <div class="title-row">
-      {#if isStore}
-        <span class="store-badge" aria-hidden="true">🏪</span>
-      {/if}
-      <h3 class="serif">{match.user.name}</h3>
-    </div>
-    <span class="distance">
-      {#if isStore && match.user.neighborhood}
-        {match.user.neighborhood}
-      {:else}
-        {distanceDisplay}
-      {/if}
-    </span>
-  </header>
-
-  {#if isStore && specialties.length > 0}
-    <div class="specialties">
-      {#each specialties.slice(0, 4) as specialty}
-        <span class="specialty-tag">{specialty}</span>
-      {/each}
-      {#if specialties.length > 4}
-        <span class="specialty-tag more">+{specialties.length - 4}</span>
-      {/if}
-    </div>
-  {/if}
-
-  <div class="facets">
-    {#each activeFacets as { facet, meta }}
-      <span class="facet-badge" aria-label={meta.label}>
-        <span class="facet-icon" aria-hidden="true">{meta.icon}</span>
-        <span class="facet-count">{facet.count}</span>
-        <span
-          class="facet-meter"
-          aria-hidden="true"
-          style={`--fill:${maxFacetCount > 0 ? Math.max(0.18, facet.count / maxFacetCount) : 0}`}
-        ></span>
+  <button
+    type="button"
+    class="card-disclosure"
+    aria-expanded={expanded}
+    onclick={onToggle}
+  >
+    <header>
+      <div class="title-row">
+        {#if isStore}
+          <span class="store-badge" aria-hidden="true">🏪</span>
+        {/if}
+        <h3 class="serif">{match.user.name}</h3>
+      </div>
+      <span class="distance">
+        {#if isStore && match.user.neighborhood}
+          {match.user.neighborhood}
+        {:else}
+          {distanceDisplay}
+        {/if}
       </span>
-    {/each}
-  </div>
+    </header>
+
+    {#if isStore && specialties.length > 0}
+      <div class="specialties">
+        {#each specialties.slice(0, 4) as specialty}
+          <span class="specialty-tag">{specialty}</span>
+        {/each}
+        {#if specialties.length > 4}
+          <span class="specialty-tag more">+{specialties.length - 4}</span>
+        {/if}
+      </div>
+    {/if}
+
+    <div class="facets">
+      {#each activeFacets as { facet, meta }}
+        <span class="facet-badge" aria-label={meta.label}>
+          <span class="facet-icon" aria-hidden="true">{meta.icon}</span>
+          <span class="facet-count">{facet.count}</span>
+          <span
+            class="facet-meter"
+            aria-hidden="true"
+            style={`--fill:${maxFacetCount > 0 ? Math.max(0.18, facet.count / maxFacetCount) : 0}`}
+          ></span>
+        </span>
+      {/each}
+    </div>
+  </button>
 
   {#if expanded}
     <div class="details">
@@ -169,9 +203,17 @@
               {/if}
             </p>
           {:else}
-            <button class="btn btn-filled btn-connect" onclick={(e) => { e.stopPropagation(); }}>
-              Request to Connect
+            <button
+              class="btn btn-filled btn-connect"
+              onclick={handleConnect}
+              disabled={!connectState.actionable}
+              aria-busy={requesting}
+            >
+              {connectState.label}
             </button>
+            {#if requestError}
+              <p class="connect-error" role="alert">{requestError}</p>
+            {/if}
           {/if}
         </div>
       {/if}
@@ -188,6 +230,26 @@
   .match-card.expanded {
     box-shadow: var(--shadow-2);
     border-color: var(--hairline-strong);
+  }
+
+  /* Disclosure affordance: a real button that resets native chrome so the
+     collapsed card keeps its original look while staying keyboard-accessible. */
+  .card-disclosure {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
+    cursor: pointer;
+  }
+  .card-disclosure:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+    border-radius: var(--r-md);
   }
 
   /* Store accent rail */
@@ -402,6 +464,19 @@
 
   .btn-connect {
     width: 100%;
+  }
+
+  .btn-connect:disabled {
+    opacity: 0.65;
+    cursor: default;
+  }
+
+  .connect-error {
+    margin: var(--s-2) 0 0;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    color: var(--danger);
+    text-align: center;
   }
 
   .contact-info {
