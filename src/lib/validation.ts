@@ -5,7 +5,7 @@
 
 export const VALID_VISIBILITY = ['private', 'visible'] as const;
 export const VALID_OWNERSHIP = ['have', 'seeking'] as const;
-export const VALID_INTENTS = ['borrowable', 'discussable', 'giftable', 'class-resource'] as const;
+export const VALID_INTENTS = ['borrowable', 'discussable', 'giftable'] as const;
 export const VALID_CONTACT_VISIBILITY = ['hidden', 'on-request', 'public'] as const;
 
 export type Visibility = (typeof VALID_VISIBILITY)[number];

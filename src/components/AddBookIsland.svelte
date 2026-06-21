@@ -2,6 +2,7 @@
   import { addBook, findDuplicate } from '../stores/shelf';
   import { fetchByIsbn, isValidIsbn } from '../lib/openLibrary';
   import type { Book, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
+  import { INTENT_OPTIONS, INTENT_PROMPT } from '../lib/intents';
 
   let ScannerComponent: typeof import('./ScannerIsland.svelte').default | null = $state(null);
 
@@ -21,13 +22,6 @@
   let intents: BookIntent[] = $state([]);
   let previewBook: { title: string; author: string; coverUrl?: string; isbn?: string; subjects?: string[] } | null = $state(null);
   let duplicateBook: Book | null = $state(null);
-
-  const INTENT_OPTIONS: { value: BookIntent; label: string }[] = [
-    { value: 'borrowable', label: 'Lend' },
-    { value: 'discussable', label: 'Discuss' },
-    { value: 'giftable', label: 'Gift' },
-    { value: 'class-resource', label: 'Class' },
-  ];
 
   function toggleIntent(intent: BookIntent) {
     if (intents.includes(intent)) {
@@ -206,7 +200,7 @@
 
     {#if ownership === 'have'}
       <div class="pill-section">
-        <span class="label">I will…</span>
+        <span class="label">{INTENT_PROMPT}</span>
         <div class="segmented" role="group" aria-label="Intent">
           {#each INTENT_OPTIONS as opt}
             <button

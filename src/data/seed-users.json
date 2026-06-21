@@ -156,7 +156,7 @@
         "author": "Avinash Dixit",
         "visibility": "visible",
         "ownership": "have",
-        "intents": ["class-resource"],
+        "intents": ["borrowable"],
         "addedVia": "scan",
         "addedAt": 1714900000000
       },
@@ -167,7 +167,7 @@
         "author": "Douglas Hofstadter",
         "visibility": "visible",
         "ownership": "have",
-        "intents": ["class-resource"],
+        "intents": ["borrowable"],
         "addedVia": "scan",
         "addedAt": 1714900000000
       }

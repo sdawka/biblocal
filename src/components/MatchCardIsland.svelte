@@ -23,7 +23,6 @@
     readingMentor: { label: 'Reading Mentor', icon: '🎓' },
     localSource: { label: 'Can Borrow', icon: '🤝' },
     discussionMatch: { label: 'Discussion Match', icon: '💬' },
-    classChain: { label: 'Class Chain', icon: '🎒' },
   };
 
   const STORE_FACET_LABELS: Record<string, { label: string; icon: string }> = {
@@ -31,7 +30,6 @@
     readingMentor: { label: 'Has What You Seek', icon: '🔍' },
     localSource: { label: 'Available Here', icon: '🏪' },
     discussionMatch: { label: 'Your Interests', icon: '💬' },
-    classChain: { label: 'Class Resources', icon: '🎒' },
   };
 
   function getActiveFacets(): {

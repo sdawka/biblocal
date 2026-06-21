@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Spring } from 'svelte/motion';
   import type { Book, BookIntent, BookVisibility, BookOwnership } from '../lib/types';
+  import { INTENT_LABELS } from '../lib/intents';
 
   interface Props {
     book: Book;
@@ -81,13 +82,6 @@
   function cancelDelete() {
     showDeleteConfirm = false;
   }
-
-  const INTENT_LABELS: Record<BookIntent, string> = {
-    borrowable: 'Lend',
-    discussable: 'Discuss',
-    giftable: 'Gift',
-    'class-resource': 'Class',
-  };
 
   function toggleIntent(intent: BookIntent) {
     const newIntents = book.intents.includes(intent)

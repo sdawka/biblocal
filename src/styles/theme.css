@@ -46,7 +46,6 @@
   --st-borrowable-fg: oklch(0.52 0.10 220); --st-borrowable-bg: oklch(0.95 0.03 220);
   --st-discussable-fg: oklch(0.52 0.10 300);--st-discussable-bg: oklch(0.95 0.03 300);
   --st-giftable-fg: oklch(0.52 0.11 350);   --st-giftable-bg: oklch(0.95 0.03 350);
-  --st-class-fg: oklch(0.52 0.10 250);      --st-class-bg: oklch(0.95 0.03 250);
   --st-seeking-fg: oklch(0.50 0.11 70);     --st-seeking-bg: oklch(0.95 0.035 70);
 
   /* Typography */
@@ -122,7 +121,6 @@
   --st-borrowable-fg: oklch(0.74 0.10 220); --st-borrowable-bg: oklch(0.30 0.05 220);
   --st-discussable-fg: oklch(0.74 0.10 300);--st-discussable-bg: oklch(0.30 0.05 300);
   --st-giftable-fg: oklch(0.76 0.10 350);   --st-giftable-bg: oklch(0.31 0.05 350);
-  --st-class-fg: oklch(0.74 0.10 250);      --st-class-bg: oklch(0.30 0.05 250);
   --st-seeking-fg: oklch(0.78 0.10 70);     --st-seeking-bg: oklch(0.31 0.05 70);
 
   --shadow-1: 0 1px 2px oklch(0 0 0 / 0.30), 0 4px 12px oklch(0 0 0 / 0.34);
@@ -169,7 +167,6 @@
     --st-borrowable-fg: oklch(0.74 0.10 220); --st-borrowable-bg: oklch(0.30 0.05 220);
     --st-discussable-fg: oklch(0.74 0.10 300);--st-discussable-bg: oklch(0.30 0.05 300);
     --st-giftable-fg: oklch(0.76 0.10 350);   --st-giftable-bg: oklch(0.31 0.05 350);
-    --st-class-fg: oklch(0.74 0.10 250);      --st-class-bg: oklch(0.30 0.05 250);
     --st-seeking-fg: oklch(0.78 0.10 70);     --st-seeking-bg: oklch(0.31 0.05 70);
 
     --shadow-1: 0 1px 2px oklch(0 0 0 / 0.30), 0 4px 12px oklch(0 0 0 / 0.34);
@@ -452,7 +449,6 @@ main {
 .pill[data-status="borrowable"]   { color: var(--st-borrowable-fg);  background: var(--st-borrowable-bg); }
 .pill[data-status="discussable"]  { color: var(--st-discussable-fg); background: var(--st-discussable-bg); }
 .pill[data-status="giftable"]     { color: var(--st-giftable-fg);    background: var(--st-giftable-bg); }
-.pill[data-status="class-resource"]{ color: var(--st-class-fg);      background: var(--st-class-bg); }
 .pill[data-status="seeking-home"] { color: var(--st-seeking-fg);     background: var(--st-seeking-bg); }
 
 /* ─── Glass surface / sheet ───────────────────────────────── */

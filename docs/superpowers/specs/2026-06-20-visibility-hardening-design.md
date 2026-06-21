@@ -80,10 +80,13 @@ contract is misleading.
 
 **Fix:** add `book_id = :id` to the WHERE clause so the route honors its own path.
 
-### 5. Verify/gate `GET /api/users.json`
+### 5. Verify `GET /api/users.json`
 
-This route returns the full `seed-users.json` file unconditionally. Confirm it is not reachable
-in production; if it is, gate it behind the QA allowlist or remove it.
+**Resolved during implementation: leave public, no change.** This route returns the static
+`seed-users.json` fixture and is **load-bearing in production** — `MatchMapIsland` →
+`loadSeedUsers()` (`stores/users.ts`) → `matches.ts` builds the discovery map from it. The data
+is static demo content with no real-user PII and zero private books, so public exposure is correct.
+Gating it would break the core discovery map. No change made.
 
 ### 6. Remove the `class-resource` / `classChain` feature (full teardown)
 

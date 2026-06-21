@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/astro/server';
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
+import { qaBypassAllowed } from './lib/auth';
 
 const isPublicRoute = createRouteMatcher([
   '/',
@@ -27,7 +28,9 @@ const clerkAuthMiddleware = clerkMiddleware((auth, context) => {
 export const onRequest = defineMiddleware((context, next) => {
   const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 
-  if (isQaMode) {
+  // Honor the QA bypass only when it is explicitly requested AND the
+  // environment is on the allowlist (fail closed in production).
+  if (isQaMode && qaBypassAllowed(env as { ENVIRONMENT?: string })) {
     // QA mode: bypass Clerk entirely, inject fake user
     context.locals.qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
     return next();

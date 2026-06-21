@@ -184,7 +184,6 @@ export function deriveLendingPersonality(): string {
     borrowable: 0,
     discussable: 0,
     giftable: 0,
-    'class-resource': 0,
   };
 
   for (const book of ownedBooks) {

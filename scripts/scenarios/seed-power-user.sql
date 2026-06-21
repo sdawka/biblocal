@@ -111,12 +111,12 @@ VALUES
   ('b34', 'qa-test-user', 'Siddhartha', 'Hermann Hesse', '9780553208849', 'visible', 'have', '["giftable"]', '["fiction"]', 'manual', unixepoch(), unixepoch()),
   ('b35', 'qa-test-user', 'Tuesdays with Morrie', 'Mitch Albom', '9780767905923', 'visible', 'have', '["giftable"]', '["memoir"]', 'manual', unixepoch(), unixepoch()),
 
-  -- Class resource (5)
-  ('b36', 'qa-test-user', 'The Elements of Style', 'Strunk and White', '9780205309023', 'visible', 'have', '["class-resource"]', '["writing"]', 'manual', unixepoch(), unixepoch()),
-  ('b37', 'qa-test-user', 'Structure and Interpretation', 'Abelson Sussman', '9780262510875', 'visible', 'have', '["class-resource"]', '["programming"]', 'manual', unixepoch(), unixepoch()),
-  ('b38', 'qa-test-user', 'Introduction to Algorithms', 'Cormen et al', '9780262033848', 'visible', 'have', '["class-resource"]', '["programming"]', 'manual', unixepoch(), unixepoch()),
-  ('b39', 'qa-test-user', 'Design Patterns', 'Gang of Four', '9780201633610', 'visible', 'have', '["class-resource"]', '["programming"]', 'manual', unixepoch(), unixepoch()),
-  ('b40', 'qa-test-user', 'Clean Code', 'Robert C. Martin', '9780132350884', 'visible', 'have', '["class-resource"]', '["programming"]', 'manual', unixepoch(), unixepoch()),
+  -- Borrowable textbooks (5)
+  ('b36', 'qa-test-user', 'The Elements of Style', 'Strunk and White', '9780205309023', 'visible', 'have', '["borrowable"]', '["writing"]', 'manual', unixepoch(), unixepoch()),
+  ('b37', 'qa-test-user', 'Structure and Interpretation', 'Abelson Sussman', '9780262510875', 'visible', 'have', '["borrowable"]', '["programming"]', 'manual', unixepoch(), unixepoch()),
+  ('b38', 'qa-test-user', 'Introduction to Algorithms', 'Cormen et al', '9780262033848', 'visible', 'have', '["borrowable"]', '["programming"]', 'manual', unixepoch(), unixepoch()),
+  ('b39', 'qa-test-user', 'Design Patterns', 'Gang of Four', '9780201633610', 'visible', 'have', '["borrowable"]', '["programming"]', 'manual', unixepoch(), unixepoch()),
+  ('b40', 'qa-test-user', 'Clean Code', 'Robert C. Martin', '9780132350884', 'visible', 'have', '["borrowable"]', '["programming"]', 'manual', unixepoch(), unixepoch()),
 
   -- Seeking (5)
   ('b41', 'qa-test-user', 'Small Gods', 'Terry Pratchett', '9780062237378', 'visible', 'seeking', '[]', '["fantasy"]', 'manual', unixepoch(), unixepoch()),
