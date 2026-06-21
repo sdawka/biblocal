@@ -10,6 +10,7 @@ import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
 import { getUserId } from '../../lib/auth';
 import { safeExternalUrl } from '../../lib/url';
+import { safeJsonArray } from '../../lib/validation';
 
 interface CreateStoreBody {
   name: string;
@@ -72,7 +73,7 @@ export const GET: APIRoute = async ({ url }) => {
           address: s.address,
           website: s.website,
           phone: s.phone,
-          specialties: s.specialties ? JSON.parse(s.specialties) : [],
+          specialties: safeJsonArray(s.specialties),
         })),
         pagination: {
           page,

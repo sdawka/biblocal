@@ -4,7 +4,7 @@ export const prerender = false;
 import { eq, and } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { getDb } from '../../../db/client';
-import { books } from '../../../db/schema';
+import { books, bookNotes } from '../../../db/schema';
 import { getUserId } from '../../../lib/auth';
 import {
   validateEnum,
@@ -12,6 +12,7 @@ import {
   VALID_VISIBILITY,
   VALID_OWNERSHIP,
   VALID_INTENTS,
+  VALID_STATUS,
 } from '../../../lib/validation';
 
 type Env = { DB: D1Database };
@@ -71,15 +72,35 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
         );
       }
     }
+    if (updates.status !== undefined) {
+      const valid = validateEnum(updates.status, VALID_STATUS);
+      if (valid === null) {
+        return new Response(
+          JSON.stringify({ error: `Invalid status value. Must be one of: ${VALID_STATUS.join(', ')}` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
     if (updates.intents !== undefined) {
-      const intentsArray = Array.isArray(updates.intents) ? updates.intents : [];
-      const invalidIntents = intentsArray.filter((i: unknown) => validateEnum(i, VALID_INTENTS) === null);
+      if (!Array.isArray(updates.intents)) {
+        return new Response(
+          JSON.stringify({ error: 'intents must be an array' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      const invalidIntents = updates.intents.filter((i: unknown) => validateEnum(i, VALID_INTENTS) === null);
       if (invalidIntents.length > 0) {
         return new Response(
           JSON.stringify({ error: `Invalid intent values: ${invalidIntents.join(', ')}. Must be one of: ${VALID_INTENTS.join(', ')}` }),
           { status: 400, headers: { 'Content-Type': 'application/json' } }
         );
       }
+    }
+    if (updates.subjects !== undefined && !Array.isArray(updates.subjects)) {
+      return new Response(
+        JSON.stringify({ error: 'subjects must be an array' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     const allowedFields = ['title', 'author', 'isbn', 'coverUrl', 'status', 'visibility', 'ownership', 'notes'];
@@ -91,10 +112,10 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       }
     }
     if (updates.subjects !== undefined) {
-      filtered.subjects = Array.isArray(updates.subjects) ? JSON.stringify(updates.subjects) : updates.subjects;
+      filtered.subjects = JSON.stringify(updates.subjects);
     }
     if (updates.intents !== undefined) {
-      filtered.intents = Array.isArray(updates.intents) ? JSON.stringify(validateIntents(updates.intents)) : updates.intents;
+      filtered.intents = JSON.stringify(validateIntents(updates.intents));
     }
 
     await db.update(books).set(filtered).where(eq(books.id, bookId));
@@ -148,9 +169,11 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
       });
     }
 
-    await db
-      .delete(books)
-      .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+    // Delete the book and its notes atomically so no orphan notes are left.
+    await db.batch([
+      db.delete(bookNotes).where(eq(bookNotes.bookId, bookId)),
+      db.delete(books).where(and(eq(books.id, bookId), eq(books.userId, userId))),
+    ]);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

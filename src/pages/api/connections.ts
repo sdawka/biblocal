@@ -137,15 +137,31 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // Create the request
+    // Create the request. The existence check above can be raced by a
+    // concurrent request (double-click, or A and B in the same tick), so the
+    // insert is made resilient by the connection_requests_pair_unique index +
+    // onConflictDoNothing(). `returning()` is empty when the insert was a no-op
+    // due to that conflict, in which case the row already exists.
     const id = crypto.randomUUID();
-    await db.insert(connectionRequests).values({
-      id,
-      fromUserId: userId,
-      toUserId,
-      status: 'pending',
-      createdAt: new Date(),
-    });
+    const inserted = await db
+      .insert(connectionRequests)
+      .values({
+        id,
+        fromUserId: userId,
+        toUserId,
+        status: 'pending',
+        createdAt: new Date(),
+      })
+      .onConflictDoNothing()
+      .returning({ id: connectionRequests.id });
+
+    if (inserted.length === 0) {
+      // Lost the race: an identical (from, to) request already exists.
+      return new Response(JSON.stringify({ error: 'Connection request already exists' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     return new Response(JSON.stringify({ success: true, id }), {
       status: 201,

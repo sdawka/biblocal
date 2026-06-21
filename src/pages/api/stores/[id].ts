@@ -10,6 +10,7 @@ import { getDb } from '../../../db/client';
 import { users, books } from '../../../db/schema';
 import { getUserId } from '../../../lib/auth';
 import { safeExternalUrl } from '../../../lib/url';
+import { safeJsonArray } from '../../../lib/validation';
 
 export const GET: APIRoute = async ({ params, locals }) => {
   try {
@@ -58,7 +59,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
           address: store.address,
           website: store.website,
           phone: store.phone,
-          specialties: store.specialties ? JSON.parse(store.specialties) : [],
+          specialties: safeJsonArray(store.specialties),
         },
         books: storeBooks.map((b) => ({
           id: b.id,
@@ -68,8 +69,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
           coverUrl: b.coverUrl,
           visibility: b.visibility,
           ownership: b.ownership,
-          intents: b.intents ? JSON.parse(b.intents) : [],
-          subjects: b.subjects ? JSON.parse(b.subjects) : [],
+          intents: safeJsonArray(b.intents),
+          subjects: safeJsonArray(b.subjects),
         })),
         canEdit,
       }),
@@ -175,7 +176,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
           address: row.address,
           website: row.website,
           phone: row.phone,
-          specialties: row.specialties ? JSON.parse(row.specialties) : [],
+          specialties: safeJsonArray(row.specialties),
         },
       }),
       {

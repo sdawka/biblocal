@@ -7,6 +7,13 @@ import { getDb } from '../../../db/client';
 import { books, bookNotes } from '../../../db/schema';
 import type { Database } from '../../../db/client';
 import { getUserId } from '../../../lib/auth';
+import {
+  validateEnum,
+  validateIntents,
+  VALID_VISIBILITY,
+  VALID_OWNERSHIP,
+  VALID_STATUS,
+} from '../../../lib/validation';
 
 type Env = { DB: D1Database };
 
@@ -140,18 +147,71 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
+    // Validate enum fields: default when omitted, reject when present-but-invalid.
+    let visibility: string = 'visible';
+    if (body.visibility !== undefined) {
+      const valid = validateEnum(body.visibility, VALID_VISIBILITY);
+      if (valid === null) {
+        return new Response(
+          JSON.stringify({ error: `Invalid visibility value. Must be one of: ${VALID_VISIBILITY.join(', ')}` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      visibility = valid;
+    }
+
+    let ownership: string = 'have';
+    if (body.ownership !== undefined) {
+      const valid = validateEnum(body.ownership, VALID_OWNERSHIP);
+      if (valid === null) {
+        return new Response(
+          JSON.stringify({ error: `Invalid ownership value. Must be one of: ${VALID_OWNERSHIP.join(', ')}` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      ownership = valid;
+    }
+
+    let status: string = 'visible';
+    if (body.status !== undefined) {
+      const valid = validateEnum(body.status, VALID_STATUS);
+      if (valid === null) {
+        return new Response(
+          JSON.stringify({ error: `Invalid status value. Must be one of: ${VALID_STATUS.join(', ')}` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      status = valid;
+    }
+
+    // Server-side dedup: if this user already has a book with the same ISBN,
+    // return it instead of inserting a duplicate (idempotent re-adds).
+    if (body.isbn) {
+      const dupes = await db
+        .select()
+        .from(books)
+        .where(and(eq(books.userId, userId), eq(books.isbn, body.isbn)))
+        .limit(1);
+      if (dupes.length > 0) {
+        return new Response(JSON.stringify({ book: dupes[0] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     const now = new Date();
     const book = {
-      id: generateId(), // Always server-generated
+      id: body.id || generateId(), // Honor a client-supplied id for idempotency.
       userId: userId,
       title: body.title,
       author: body.author,
       isbn: body.isbn || null,
       coverUrl: body.coverUrl || null,
-      status: body.status || 'visible',
-      visibility: body.visibility || 'visible',
-      ownership: body.ownership || 'have',
-      intents: body.intents ? (Array.isArray(body.intents) ? JSON.stringify(body.intents) : body.intents) : '[]',
+      status,
+      visibility,
+      ownership,
+      intents: JSON.stringify(validateIntents(body.intents)),
       addedVia: body.addedVia || 'manual',
       subjects: body.subjects ? JSON.stringify(body.subjects) : null,
       notes: body.notes || null,

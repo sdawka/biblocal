@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -85,7 +85,11 @@ export const connectionRequests = sqliteTable('connection_requests', {
   status: text('status').notNull().default('pending'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   respondedAt: integer('responded_at', { mode: 'timestamp' }),
-});
+}, (t) => ({
+  // One request per ordered (from, to) pair — prevents duplicate rows from
+  // concurrent check-then-insert races. Matches migration 0007.
+  pairUnique: uniqueIndex('connection_requests_pair_unique').on(t.fromUserId, t.toUserId),
+}));
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

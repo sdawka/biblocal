@@ -8,6 +8,7 @@ import { users, books, connectionRequests } from '../../../db/schema';
 import { getUserId } from '../../../lib/auth';
 import { filterContactInfo } from '../../../lib/privacy';
 import { safeExternalUrl } from '../../../lib/url';
+import { safeJsonArray } from '../../../lib/validation';
 
 type Env = { DB: D1Database };
 
@@ -93,7 +94,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
         neighborhood: profileUser.neighborhood,
         address: profileUser.address,
         website: safeExternalUrl(profileUser.website),
-        specialties: profileUser.specialties ? JSON.parse(profileUser.specialties) : [],
+        specialties: safeJsonArray(profileUser.specialties),
       }),
       // Include contact info if allowed
       ...(contactInfo && {
@@ -102,8 +103,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
         phone: contactInfo.phone,
       }),
       // Include topics for matching
-      topicsCurated: profileUser.topicsCurated ? JSON.parse(profileUser.topicsCurated) : [],
-      topicsFreeform: profileUser.topicsFreeform ? JSON.parse(profileUser.topicsFreeform) : [],
+      topicsCurated: safeJsonArray(profileUser.topicsCurated),
+      topicsFreeform: safeJsonArray(profileUser.topicsFreeform),
     };
 
     return new Response(
@@ -117,8 +118,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
           coverUrl: b.coverUrl,
           visibility: b.visibility,
           ownership: b.ownership,
-          intents: b.intents ? JSON.parse(b.intents) : [],
-          subjects: b.subjects ? JSON.parse(b.subjects) : [],
+          intents: safeJsonArray(b.intents),
+          subjects: safeJsonArray(b.subjects),
         })),
         isOwnProfile,
         isConnected,
