@@ -193,7 +193,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
         .where(and(eq(books.userId, userId), eq(books.isbn, body.isbn)))
         .limit(1);
       if (dupes.length > 0) {
-        return new Response(JSON.stringify({ book: dupes[0] }), {
+        // Attach notes so the shape matches every other book response.
+        const [withDupeNotes] = await withNotes(db, dupes, false);
+        return new Response(JSON.stringify({ book: withDupeNotes }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         });

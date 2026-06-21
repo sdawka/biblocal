@@ -344,11 +344,12 @@ export async function loadBooksFromServer(): Promise<void> {
         // New three-dimension model with fallbacks
         visibility: (b.visibility || 'visible') as BookVisibility,
         ownership: (b.ownership || 'have') as BookOwnership,
-        intents: b.intents ? JSON.parse(b.intents) as BookIntent[] : [],
+        // Safe-decode JSON columns so one malformed row can't blank the whole shelf.
+        intents: b.intents ? safeJsonDecode<BookIntent[]>([])(b.intents) : [],
         // Legacy status kept for migration
         status: b.status as BookStatus,
         coverUrl: b.coverUrl || undefined,
-        subjects: b.subjects ? JSON.parse(b.subjects) : undefined,
+        subjects: b.subjects ? safeJsonDecode<string[]>([])(b.subjects) : undefined,
         notes: (b.notes ?? []).map((n) => ({
           id: n.id,
           text: n.text,

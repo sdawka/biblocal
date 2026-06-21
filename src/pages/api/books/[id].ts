@@ -170,8 +170,10 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     }
 
     // Delete the book and its notes atomically so no orphan notes are left.
+    // Ownership is already verified above; the notes delete is also scoped by
+    // userId for defense in depth.
     await db.batch([
-      db.delete(bookNotes).where(eq(bookNotes.bookId, bookId)),
+      db.delete(bookNotes).where(and(eq(bookNotes.bookId, bookId), eq(bookNotes.userId, userId))),
       db.delete(books).where(and(eq(books.id, bookId), eq(books.userId, userId))),
     ]);
 
