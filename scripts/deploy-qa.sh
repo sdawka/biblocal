@@ -32,6 +32,7 @@ npm run build
 echo "→ Patching wrangler config for QA..."
 jq '.name = "biblocal-qa" |
     .vars.QA_MODE = "true" |
+    .vars.ENVIRONMENT = "qa" |
     .vars.QA_USER_ID = "qa-test-user" |
     .d1_databases[0].database_name = "biblocal-qa-db" |
     .d1_databases[0].database_id = "44e7e517-033b-40ea-a540-ca66ee777ea1"' \

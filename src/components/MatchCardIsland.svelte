@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Match, MatchFacet } from '../lib/types';
   import { formatDistance } from '../lib/geo';
+  import { safeExternalUrl } from '../lib/url';
 
   interface Props {
     match: Match;
@@ -122,9 +123,9 @@
           {#if match.user.address}
             <p class="address">📍 {match.user.address}</p>
           {/if}
-          {#if match.user.website}
+          {#if safeExternalUrl(match.user.website)}
             <p class="website">
-              <a href={match.user.website} target="_blank" rel="noopener" onclick={(e) => e.stopPropagation()}>
+              <a href={safeExternalUrl(match.user.website)} target="_blank" rel="noopener noreferrer" onclick={(e) => e.stopPropagation()}>
                 Visit website →
               </a>
             </p>
