@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../../../db/client';
 import { users, books } from '../../../db/schema';
 import { getUserId } from '../../../lib/auth';
+import { safeExternalUrl } from '../../../lib/url';
 
 export const GET: APIRoute = async ({ params, locals }) => {
   try {
@@ -148,6 +149,9 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
         const value = body[field as keyof UpdateStoreBody];
         if (field === 'specialties' && Array.isArray(value)) {
           updates[field] = JSON.stringify(value);
+        } else if (field === 'website') {
+          // Never persist an unsafe URL scheme (javascript:/data:/etc).
+          updates[field] = typeof value === 'string' ? safeExternalUrl(value) : null;
         } else {
           updates[field] = value;
         }

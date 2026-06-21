@@ -9,6 +9,7 @@ type Env = { DB: D1Database };
 import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
 import { getUserId } from '../../lib/auth';
+import { safeExternalUrl } from '../../lib/url';
 
 interface CreateStoreBody {
   name: string;
@@ -63,7 +64,14 @@ export const GET: APIRoute = async ({ url }) => {
     return new Response(
       JSON.stringify({
         stores: stores.map((s) => ({
-          ...s,
+          id: s.id,
+          name: s.name,
+          city: s.city,
+          type: s.type,
+          neighborhood: s.neighborhood,
+          address: s.address,
+          website: s.website,
+          phone: s.phone,
           specialties: s.specialties ? JSON.parse(s.specialties) : [],
         })),
         pagination: {
@@ -118,7 +126,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       type: 'bookstore',
       neighborhood: body.neighborhood,
       address: body.address,
-      website: body.website || null,
+      website: body.website ? safeExternalUrl(body.website) : null,
       phone: body.phone || null,
       specialties: body.specialties ? JSON.stringify(body.specialties) : null,
       addedBy: userId,

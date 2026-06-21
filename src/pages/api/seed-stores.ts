@@ -3,11 +3,12 @@ import type { APIRoute } from 'astro';
 export const prerender = false;
 import { env } from 'cloudflare:workers';
 
-type Env = { DB: D1Database; SEED_KEY?: string };
+type Env = { DB: D1Database; ENVIRONMENT?: string };
 
 import { eq } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
+import { qaBypassAllowed } from '../../lib/auth';
 
 const MONTREAL_STORES = [
   {
@@ -72,13 +73,12 @@ const MONTREAL_STORES = [
   },
 ];
 
-export const POST: APIRoute = async ({ locals, request }) => {
-  const seedKey = request.headers.get('x-seed-key');
-  const expectedKey = (env as Env).SEED_KEY;
-
-  if (expectedKey && seedKey !== expectedKey) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
+export const POST: APIRoute = async () => {
+  // QA/dev seeding tooling only. Fail closed: outside the QA env (and local dev)
+  // this endpoint does not exist, so it can never write the prod users table.
+  if (!qaBypassAllowed(env as Env)) {
+    return new Response(JSON.stringify({ error: 'Not found' }), {
+      status: 404,
       headers: { 'Content-Type': 'application/json' },
     });
   }

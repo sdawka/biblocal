@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import BookCard from './BookCard.svelte';
+  import { safeExternalUrl } from '../lib/url';
 
   interface Props {
     storeId: string;
@@ -114,10 +115,11 @@
       {#if store.address}
         <p class="address muted">📍 {store.address}</p>
       {/if}
-      {#if store.website}
+      {#if safeExternalUrl(store.website)}
+        {@const websiteUrl = safeExternalUrl(store.website)}
         <p class="website">
-          <a href={store.website} target="_blank" rel="noopener">
-            {store.website.replace(/^https?:\/\//, '')} →
+          <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
+            {websiteUrl.replace(/^https?:\/\//, '')} →
           </a>
         </p>
       {/if}
