@@ -393,6 +393,12 @@
     opacity: 1;
   }
 
+  /* Touch devices have no hover; show the delete control so left-swipe
+     isn't the only (undiscoverable) delete path. */
+  @media (hover: none) {
+    .delete-btn { opacity: 1; }
+  }
+
   .delete-btn:hover {
     color: var(--accent-on);
     background: var(--accent);

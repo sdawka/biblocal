@@ -226,16 +226,21 @@ const currentPath = Astro.url.pathname;
       align-items: stretch;
       gap: 0;
       padding: 0;
-      background: var(--glass-bg);
+      /* Opaque surface so the menu is legible even where backdrop-filter
+         isn't composited (mobile Safari/Firefox/reduced-GPU). Blur stays
+         as a progressive enhancement layered on top. */
+      background: var(--surface);
       -webkit-backdrop-filter: blur(20px) saturate(1.8);
       backdrop-filter: blur(20px) saturate(1.8);
       border-bottom: 1px solid var(--hairline);
       max-height: 0;
       overflow: hidden;
       opacity: 0;
-      transition: max-height var(--dur-3) var(--ease-out), opacity var(--dur-2) var(--ease-soft), padding var(--dur-3) var(--ease-out);
+      /* Closed menu is hidden from keyboard/AT focus, not just visually faded. */
+      visibility: hidden;
+      transition: max-height var(--dur-3) var(--ease-out), opacity var(--dur-2) var(--ease-soft), padding var(--dur-3) var(--ease-out), visibility var(--dur-3) var(--ease-out);
     }
-    .links.open { max-height: 360px; opacity: 1; padding: 0.5rem; }
+    .links.open { max-height: 360px; opacity: 1; padding: 0.5rem; visibility: visible; }
     .links a, .logout-wrapper :global(button) {
       padding: 0.875rem 1rem;
       border-radius: var(--r-md);

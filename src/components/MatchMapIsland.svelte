@@ -516,6 +516,12 @@
     color: var(--ink) !important;
     border-bottom: 1px solid var(--hairline) !important;
   }
+  /* Larger tap targets for the +/- zoom controls on touch screens. */
+  :global(.leaflet-control-zoom a) {
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+  }
   :global(.leaflet-bar a:hover) {
     background: var(--surface-sunken) !important;
     color: var(--accent) !important;

@@ -285,7 +285,7 @@
     border: none;
     cursor: pointer;
     font-family: var(--font-ui);
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     font-weight: 640;
     letter-spacing: 0.12em;
     text-transform: uppercase;
