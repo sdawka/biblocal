@@ -19,6 +19,17 @@ describe('safeExternalUrl', () => {
     expect(safeExternalUrl('not a url')).toBeNull();
   });
 
+  it('rejects whitespace/case-obfuscated and protocol-relative schemes', () => {
+    // WHATWG new URL() strips tabs/newlines and lowercases the scheme,
+    // so these normalize to javascript:/data: and must be rejected.
+    expect(safeExternalUrl('\tjavascript:alert(1)')).toBeNull();
+    expect(safeExternalUrl('java\nscript:alert(1)')).toBeNull();
+    expect(safeExternalUrl('JAVASCRIPT:alert(1)')).toBeNull();
+    expect(safeExternalUrl('  javascript:alert(1)')).toBeNull();
+    // protocol-relative has no scheme and fails to parse without a base
+    expect(safeExternalUrl('//evil.com')).toBeNull();
+  });
+
   it('returns the URL for valid http/https', () => {
     expect(safeExternalUrl('http://x.com')).toBe('http://x.com');
     expect(safeExternalUrl('https://x.com/path?q=1')).toBe('https://x.com/path?q=1');

@@ -7,6 +7,7 @@ import { getDb } from '../../../db/client';
 import { users, books, connectionRequests } from '../../../db/schema';
 import { getUserId } from '../../../lib/auth';
 import { filterContactInfo } from '../../../lib/privacy';
+import { safeExternalUrl } from '../../../lib/url';
 
 type Env = { DB: D1Database };
 
@@ -91,7 +92,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
       ...(profileUser.type === 'bookstore' && {
         neighborhood: profileUser.neighborhood,
         address: profileUser.address,
-        website: profileUser.website,
+        website: safeExternalUrl(profileUser.website),
         specialties: profileUser.specialties ? JSON.parse(profileUser.specialties) : [],
       }),
       // Include contact info if allowed

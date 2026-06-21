@@ -162,11 +162,20 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
 
     const updated = await db.select().from(users).where(eq(users.id, storeId)).limit(1);
 
+    const row = updated[0];
     return new Response(
       JSON.stringify({
+        // Mirror the GET projection — never spread the raw user row.
         store: {
-          ...updated[0],
-          specialties: updated[0].specialties ? JSON.parse(updated[0].specialties) : [],
+          id: row.id,
+          name: row.name,
+          city: row.city,
+          type: row.type,
+          neighborhood: row.neighborhood,
+          address: row.address,
+          website: row.website,
+          phone: row.phone,
+          specialties: row.specialties ? JSON.parse(row.specialties) : [],
         },
       }),
       {
