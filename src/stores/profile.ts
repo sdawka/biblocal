@@ -82,6 +82,7 @@ async function syncProfile(updates: Partial<UserProfile>, prior?: UserProfile): 
 }
 
 export function initProfile(name: string, city: string): void {
+  const prior = profile.get();
   const newProfile = {
     ...DEFAULT_PROFILE,
     id: crypto.randomUUID(),
@@ -89,7 +90,7 @@ export function initProfile(name: string, city: string): void {
     city,
   };
   profile.set(newProfile);
-  syncProfile({ name, city });
+  syncProfile({ name, city }, prior);
 }
 
 export function isOnboarded(): boolean {

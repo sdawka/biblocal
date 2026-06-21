@@ -59,9 +59,11 @@
   // profileData copy effect above. updateTopics() deliberately does not sync
   // inferred to the server (it's derived), so this stays local-only.
   $effect(() => {
-    const _ = $shelf; // re-run when the shelf changes
+    const _ = $shelf; // re-run when the shelf changes (the only real dependency)
     const inferred = getInferredTopics();
-    const currentInferred = $profile.topics.inferred;
+    // Non-reactive read: comparing against the store directly avoids tracking
+    // $profile as a dependency, so unrelated profile edits don't re-run this.
+    const currentInferred = profile.get().topics.inferred;
     if (JSON.stringify(inferred) !== JSON.stringify(currentInferred)) {
       updateTopics({ inferred });
     }
