@@ -6,8 +6,17 @@ import { env } from 'cloudflare:workers';
 import { getDb } from '../../../db/client';
 import { books } from '../../../db/schema';
 import { getUserId } from '../../../lib/auth';
+import {
+  validateEnum,
+  validateIntents,
+  VALID_VISIBILITY,
+  VALID_OWNERSHIP,
+} from '../../../lib/validation';
 
 type Env = { DB: D1Database };
+
+// Cap a single import request so a huge payload can't exhaust the worker.
+const MAX_IMPORT_BATCH = 200;
 
 interface ImportBook {
   title: string;
@@ -59,6 +68,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
+    if (body.books.length > MAX_IMPORT_BATCH) {
+      return new Response(
+        JSON.stringify({ error: `Too many books in one import (max ${MAX_IMPORT_BATCH})` }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const isbnsToImport = body.books
       .map(b => b.isbn)
       .filter((isbn): isbn is string => !!isbn);
@@ -92,6 +108,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
         await new Promise(r => setTimeout(r, 100));
       }
 
+      // Normalize untrusted enum fields to safe defaults rather than storing junk.
+      const visibility = validateEnum(book.visibility, VALID_VISIBILITY) ?? 'visible';
+      const ownership = validateEnum(book.ownership, VALID_OWNERSHIP) ?? 'have';
+
       try {
         await db.insert(books).values({
           id: crypto.randomUUID(),
@@ -101,9 +121,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
           isbn: book.isbn || null,
           coverUrl,
           status: 'visible',
-          visibility: book.visibility,
-          ownership: book.ownership,
-          intents: JSON.stringify(book.intents),
+          visibility,
+          ownership,
+          intents: JSON.stringify(validateIntents(book.intents)),
           addedVia: 'goodreads',
           subjects: null,
           notes: book.notes || null,

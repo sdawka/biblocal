@@ -6,7 +6,26 @@ import { env } from 'cloudflare:workers';
 import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
 import { getUserId } from '../../lib/auth';
-import { validateEnum, VALID_CONTACT_VISIBILITY } from '../../lib/validation';
+import {
+  validateEnum,
+  VALID_CONTACT_VISIBILITY,
+  VALID_CONTACT_METHOD,
+  VALID_LOCATION_PRECISION,
+} from '../../lib/validation';
+
+const MAX_RADIUS_KM = 500;
+const MAX_NAME_LEN = 120;
+const MAX_CITY_LEN = 120;
+const MAX_CONTACT_VALUE_LEN = 200;
+const MAX_BORROW_STYLE_LEN = 500;
+const MAX_ARRAY_ITEMS = 50;
+
+function badRequest(error: string) {
+  return new Response(JSON.stringify({ error }), {
+    status: 400,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
 
 type Env = { DB: D1Database };
 
@@ -76,6 +95,71 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
           JSON.stringify({ error: `Invalid contactVisibility value. Must be one of: ${VALID_CONTACT_VISIBILITY.join(', ')}` }),
           { status: 400, headers: { 'Content-Type': 'application/json' } }
         );
+      }
+    }
+    if (updates.contactMethod !== undefined) {
+      const valid = validateEnum(updates.contactMethod, VALID_CONTACT_METHOD);
+      if (valid === null) {
+        return badRequest(`Invalid contactMethod value. Must be one of: ${VALID_CONTACT_METHOD.join(', ')}`);
+      }
+    }
+    if (updates.locationPrecision !== undefined) {
+      const valid = validateEnum(updates.locationPrecision, VALID_LOCATION_PRECISION);
+      if (valid === null) {
+        return badRequest(`Invalid locationPrecision value. Must be one of: ${VALID_LOCATION_PRECISION.join(', ')}`);
+      }
+    }
+
+    // Validate geolocation ranges.
+    if (updates.latitude !== undefined && updates.latitude !== null) {
+      const lat = updates.latitude;
+      if (typeof lat !== 'number' || !Number.isFinite(lat) || lat < -90 || lat > 90) {
+        return badRequest('latitude must be a number between -90 and 90');
+      }
+    }
+    if (updates.longitude !== undefined && updates.longitude !== null) {
+      const lng = updates.longitude;
+      if (typeof lng !== 'number' || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+        return badRequest('longitude must be a number between -180 and 180');
+      }
+    }
+    if (updates.radiusKm !== undefined && updates.radiusKm !== null) {
+      const r = updates.radiusKm;
+      if (typeof r !== 'number' || !Number.isInteger(r) || r <= 0 || r > MAX_RADIUS_KM) {
+        return badRequest(`radiusKm must be a positive integer no greater than ${MAX_RADIUS_KM}`);
+      }
+    }
+
+    // Cap string lengths.
+    const stringCaps: Record<string, number> = {
+      name: MAX_NAME_LEN,
+      city: MAX_CITY_LEN,
+      contactValue: MAX_CONTACT_VALUE_LEN,
+      borrowStyle: MAX_BORROW_STYLE_LEN,
+    };
+    for (const [field, max] of Object.entries(stringCaps)) {
+      const value = updates[field];
+      if (value !== undefined && value !== null) {
+        if (typeof value !== 'string') {
+          return badRequest(`${field} must be a string`);
+        }
+        if (value.length > max) {
+          return badRequest(`${field} must be at most ${max} characters`);
+        }
+      }
+    }
+
+    // Cap array sizes (covers both the legacy `topics` key and the persisted
+    // topicsCurated/topicsFreeform fields).
+    for (const field of ['currentObsessions', 'topics', 'topicsCurated', 'topicsFreeform']) {
+      const value = updates[field];
+      if (value !== undefined && value !== null) {
+        if (!Array.isArray(value)) {
+          return badRequest(`${field} must be an array`);
+        }
+        if (value.length > MAX_ARRAY_ITEMS) {
+          return badRequest(`${field} must have at most ${MAX_ARRAY_ITEMS} items`);
+        }
       }
     }
 

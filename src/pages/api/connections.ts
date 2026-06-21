@@ -100,15 +100,21 @@ export const POST: APIRoute = async ({ request, locals }) => {
       )
       .limit(1);
 
+    // A stale-declined request for the SAME ordered (from,to) pair must be
+    // reactivated in place — the unique index would reject a fresh insert.
+    let reactivateId: string | null = null;
     if (existing.length > 0) {
       const req = existing[0];
       if (req.status === 'declined') {
-        const dayAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-        if (req.respondedAt && req.respondedAt.getTime() > dayAgo) {
+        const cooldownStart = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        if (req.respondedAt && req.respondedAt.getTime() > cooldownStart) {
           return new Response(
             JSON.stringify({ error: 'Request was declined. Please wait before trying again.' }),
             { status: 400, headers: { 'Content-Type': 'application/json' } }
           );
+        }
+        if (req.fromUserId === userId && req.toUserId === toUserId) {
+          reactivateId = req.id;
         }
       } else {
         return new Response(JSON.stringify({ error: 'Connection request already exists' }), {
@@ -137,15 +143,44 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // Create the request
+    // Create the request. The existence check above can be raced by a
+    // concurrent request (double-click, or A and B in the same tick), so the
+    // insert is made resilient by the connection_requests_pair_unique index +
+    // onConflictDoNothing(). `returning()` is empty when the insert was a no-op
+    // due to that conflict, in which case the row already exists.
+    // Reactivate a stale-declined request in place rather than inserting a
+    // duplicate that would collide with the unique (from,to) index.
+    if (reactivateId) {
+      await db
+        .update(connectionRequests)
+        .set({ status: 'pending', createdAt: new Date(), respondedAt: null })
+        .where(eq(connectionRequests.id, reactivateId));
+      return new Response(JSON.stringify({ success: true, id: reactivateId }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const id = crypto.randomUUID();
-    await db.insert(connectionRequests).values({
-      id,
-      fromUserId: userId,
-      toUserId,
-      status: 'pending',
-      createdAt: new Date(),
-    });
+    const inserted = await db
+      .insert(connectionRequests)
+      .values({
+        id,
+        fromUserId: userId,
+        toUserId,
+        status: 'pending',
+        createdAt: new Date(),
+      })
+      .onConflictDoNothing()
+      .returning({ id: connectionRequests.id });
+
+    if (inserted.length === 0) {
+      // Lost the race: an identical (from, to) request already exists.
+      return new Response(JSON.stringify({ error: 'Connection request already exists' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     return new Response(JSON.stringify({ success: true, id }), {
       status: 201,
