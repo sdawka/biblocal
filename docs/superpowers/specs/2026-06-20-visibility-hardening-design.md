@@ -111,11 +111,12 @@ three intents (`borrowable`, `discussable`, `giftable`) and four match facets (`
 **Data / seed cleanup:**
 
 - New drizzle migration: rewrite every `books.intents` JSON array to exclude `'class-resource'`,
-  collapsing to `[]` when it was the only entry. (SQLite `json_each` + `json_group_array`, or a
-  guarded string rewrite.) Leave the dead legacy `status` column untouched.
-- `src/data/seed-users.json` — change or drop the 2 books that use `class-resource`.
-- `scripts/scenarios/seed-power-user.sql` — update the 5 textbook rows (b36–b40) to a remaining
-  intent or remove them.
+  collapsing to `[]` when it was the only entry. Non-destructive — the book and its visibility are
+  untouched; no logging/reporting. (SQLite `json_each` + `json_group_array`, or a guarded string
+  rewrite.) Leave the dead legacy `status` column untouched.
+- `src/data/seed-users.json` — reassign the 2 `class-resource` books to `borrowable` (keep the books).
+- `scripts/scenarios/seed-power-user.sql` — reassign the 5 textbook rows (b36–b40) to `borrowable`
+  (keep the books).
 - `qa/journeys/04-matches.sh` — remove `"class chain"` from the expected-facets list.
 
 **Do NOT modify** `drizzle/0003_book_intents.sql` — it is an applied historical migration.
