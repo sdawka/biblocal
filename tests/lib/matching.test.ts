@@ -195,40 +195,6 @@ describe('calculateMatches', () => {
     });
   });
 
-  describe('classChain facet', () => {
-    it('finds shared class resources', () => {
-      const myBooks = [
-        makeBook({ isbn: '123', intents: ['class-resource'], title: 'Textbook' }),
-      ];
-
-      const classmate = makeUser({
-        shelf: [
-          makeBook({ isbn: '123', intents: ['class-resource'], title: 'Textbook' }),
-        ],
-      });
-
-      const matches = calculateMatches(myBooks, [], [classmate]);
-
-      expect(matches[0].facets.classChain.count).toBe(1);
-    });
-
-    it('finds users who have my class resources', () => {
-      const myBooks = [
-        makeBook({ isbn: '123', intents: ['class-resource'], title: 'Textbook' }),
-      ];
-
-      const hasBook = makeUser({
-        shelf: [
-          makeBook({ isbn: '123', intents: [], title: 'Textbook' }),
-        ],
-      });
-
-      const matches = calculateMatches(myBooks, [], [hasBook]);
-
-      expect(matches[0].facets.classChain.count).toBe(1);
-    });
-  });
-
   describe('scoring', () => {
     it('weights shelfTwin highest (3x)', () => {
       const books = [makeBook({ isbn: '123' })];
@@ -436,7 +402,6 @@ describe('calculateMatches', () => {
         ...matches[0].facets.shelfTwin.items,
         ...matches[0].facets.readingMentor.items,
         ...matches[0].facets.localSource.items,
-        ...matches[0].facets.classChain.items,
       ];
 
       expect(allItems).not.toContain('Their Secret');

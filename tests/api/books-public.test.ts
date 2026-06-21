@@ -178,7 +178,7 @@ describe('Enum Validation', () => {
     });
 
     it('accepts all valid intent values', () => {
-      const allValid = ['borrowable', 'discussable', 'giftable', 'class-resource'];
+      const allValid = ['borrowable', 'discussable', 'giftable'];
       expect(validateIntents(allValid)).toEqual(allValid);
     });
   });

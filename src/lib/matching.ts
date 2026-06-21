@@ -12,7 +12,6 @@ const WEIGHTS = {
   readingMentor: 2,
   localSource: 2,
   discussionMatch: 1,
-  classChain: 1,
 };
 
 // Filter out private books to prevent privacy leaks in matching
@@ -91,37 +90,12 @@ function calcDiscussionMatch(
   };
 }
 
-function calcClassChain(myBooks: Book[], theirBooks: Book[]): MatchFacet {
-  const myClassIsbns = new Set(
-    myBooks
-      .filter((b) => hasIntent(b, 'class-resource'))
-      .map((b) => b.isbn)
-      .filter(Boolean)
-  );
-
-  const shared = theirBooks.filter(
-    (b) => b.isbn && hasIntent(b, 'class-resource') && myClassIsbns.has(b.isbn)
-  );
-  const theyHaveMyClass = theirBooks.filter(
-    (b) => b.isbn && myClassIsbns.has(b.isbn) && !hasIntent(b, 'class-resource')
-  );
-
-  const all = [...shared, ...theyHaveMyClass];
-  const unique = Array.from(new Map(all.map((b) => [b.isbn, b])).values());
-
-  return {
-    count: unique.length,
-    items: unique.map((b) => b.title),
-  };
-}
-
 function calcTotalScore(facets: MatchFacets): number {
   return (
     facets.shelfTwin.count * WEIGHTS.shelfTwin +
     facets.readingMentor.count * WEIGHTS.readingMentor +
     facets.localSource.count * WEIGHTS.localSource +
-    facets.discussionMatch.count * WEIGHTS.discussionMatch +
-    facets.classChain.count * WEIGHTS.classChain
+    facets.discussionMatch.count * WEIGHTS.discussionMatch
   );
 }
 
@@ -130,8 +104,7 @@ function hasAnyMatch(facets: MatchFacets): boolean {
     facets.shelfTwin.count > 0 ||
     facets.readingMentor.count > 0 ||
     facets.localSource.count > 0 ||
-    facets.discussionMatch.count > 0 ||
-    facets.classChain.count > 0
+    facets.discussionMatch.count > 0
   );
 }
 
@@ -173,7 +146,6 @@ export function calculateMatches(
       readingMentor: calcReadingMentor(myVisibleBooks, theirBooks),
       localSource: calcLocalSource(myVisibleBooks, theirBooks),
       discussionMatch: calcDiscussionMatch(myTopics, theirTopics),
-      classChain: calcClassChain(myVisibleBooks, theirBooks),
     };
 
     if (hasAnyMatch(facets)) {

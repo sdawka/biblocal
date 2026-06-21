@@ -1,7 +1,7 @@
 // New three-dimension model
 export type BookVisibility = 'private' | 'visible';
 export type BookOwnership = 'have' | 'seeking';
-export type BookIntent = 'borrowable' | 'discussable' | 'giftable' | 'class-resource';
+export type BookIntent = 'borrowable' | 'discussable' | 'giftable';
 
 // Legacy status type - kept for migration compatibility
 export type BookStatus =
@@ -9,8 +9,7 @@ export type BookStatus =
   | 'visible'
   | 'borrowable'
   | 'discussable'
-  | 'giftable'
-  | 'class-resource';
+  | 'giftable';
 
 // A note someone attaches to a book they own (e.g. "what I liked about it").
 // Each note carries its own privacy, mirroring book visibility.
@@ -93,7 +92,6 @@ export interface MatchFacets {
   readingMentor: MatchFacet;
   localSource: MatchFacet;
   discussionMatch: MatchFacet;
-  classChain: MatchFacet;
 }
 
 export interface Match {

@@ -20,7 +20,7 @@ interface AddBookBody {
   // New three-dimension model
   visibility?: 'private' | 'visible';
   ownership?: 'have' | 'seeking';
-  intents?: ('borrowable' | 'discussable' | 'giftable' | 'class-resource')[];
+  intents?: ('borrowable' | 'discussable' | 'giftable')[];
 }
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
@@ -85,8 +85,9 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       isbn: body.isbn || null,
       coverUrl: body.coverUrl || null,
       status: body.status || 'visible',
-      // New three-dimension model
-      visibility: body.visibility || 'visible',
+      // New three-dimension model.
+      // Store inventory is inherently public — force visible regardless of input.
+      visibility: 'visible',
       ownership: body.ownership || 'have',
       intents: body.intents ? JSON.stringify(body.intents) : '[]',
       addedVia: 'manual',

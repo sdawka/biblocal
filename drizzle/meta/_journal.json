@@ -43,6 +43,13 @@
       "when": 1778435516243,
       "tag": "0005_book_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1778435516244,
+      "tag": "0006_drop_class_resource",
+      "breakpoints": true
     }
   ]
 }

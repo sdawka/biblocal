@@ -48,11 +48,26 @@ export const GET: APIRoute = async ({ params, locals }) => {
     return new Response(
       JSON.stringify({
         store: {
-          ...store,
+          id: store.id,
+          name: store.name,
+          city: store.city,
+          type: store.type,
+          // Business-public contact fields surfaced by the store-detail UI.
+          neighborhood: store.neighborhood,
+          address: store.address,
+          website: store.website,
+          phone: store.phone,
           specialties: store.specialties ? JSON.parse(store.specialties) : [],
         },
         books: storeBooks.map((b) => ({
-          ...b,
+          id: b.id,
+          title: b.title,
+          author: b.author,
+          isbn: b.isbn,
+          coverUrl: b.coverUrl,
+          visibility: b.visibility,
+          ownership: b.ownership,
+          intents: b.intents ? JSON.parse(b.intents) : [],
           subjects: b.subjects ? JSON.parse(b.subjects) : [],
         })),
         canEdit,

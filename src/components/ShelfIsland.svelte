@@ -14,14 +14,8 @@
     removeNote,
   } from '../stores/shelf';
   import BookCard from './BookCard.svelte';
-  import type { BookIntent, BookOwnership, BookVisibility } from '../lib/types';
-
-  const INTENT_OPTIONS: { value: BookIntent; label: string }[] = [
-    { value: 'borrowable', label: 'Lend' },
-    { value: 'discussable', label: 'Discuss' },
-    { value: 'giftable', label: 'Gift' },
-    { value: 'class-resource', label: 'Class' },
-  ];
+  import type { BookIntent } from '../lib/types';
+  import { INTENT_OPTIONS, INTENT_PROMPT } from '../lib/intents';
 
   let filters = $derived($activeFilters);
   let allBooks = $derived(Object.values($shelf));
@@ -84,7 +78,7 @@
     </div>
 
     <div class="filter-row">
-      <span class="filter-label">will…</span>
+      <span class="filter-label">{INTENT_PROMPT}</span>
       <div class="chip-group" role="group" aria-label="Filter by intent">
         {#each INTENT_OPTIONS as opt}
           <button

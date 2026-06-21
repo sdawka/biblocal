@@ -8,6 +8,7 @@
 		"binding": "ASSETS"
 	},
 	"vars": {
+		"ENVIRONMENT": "production",
 		"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_aHVtYW5lLWxvbmdob3JuLTY2LmNsZXJrLmFjY291bnRzLmRldiQ"
 	},
 	"observability": {
@@ -25,6 +26,7 @@
 		"qa": {
 			"name": "biblocal-qa",
 			"vars": {
+				"ENVIRONMENT": "qa",
 				"QA_MODE": "true",
 				"QA_USER_ID": "qa-test-user",
 				"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_aHVtYW5lLWxvbmdob3JuLTY2LmNsZXJrLmFjY291bnRzLmRldiQ"

@@ -49,7 +49,7 @@ fi
 
 # Test 5: Match facets (if matches exist)
 info "Test: Match facet types"
-facets=("shelf twin" "reading mentor" "local source" "discussion" "class chain")
+facets=("shelf twin" "reading mentor" "local source" "discussion")
 found=0
 for facet in "${facets[@]}"; do
   if echo "$snapshot" | grep -qi "$facet"; then

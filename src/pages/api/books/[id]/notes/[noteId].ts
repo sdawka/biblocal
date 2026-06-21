@@ -24,14 +24,22 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     if (!userId) return json({ error: 'Not authenticated' }, 401);
 
     const db = getDb((env as Env).DB);
+    const bookId = params.id;
+    if (!bookId) return json({ error: 'Book ID required' }, 400);
     const noteId = params.noteId;
     if (!noteId) return json({ error: 'Note ID required' }, 400);
 
-    // Ownership is enforced via user_id on the note itself
+    // Ownership is enforced via user_id; the note must also belong to the book in the URL.
     const existing = await db
       .select()
       .from(bookNotes)
-      .where(and(eq(bookNotes.id, noteId), eq(bookNotes.userId, userId)))
+      .where(
+        and(
+          eq(bookNotes.id, noteId),
+          eq(bookNotes.userId, userId),
+          eq(bookNotes.bookId, bookId)
+        )
+      )
       .limit(1);
     if (existing.length === 0) return json({ error: 'Note not found' }, 404);
 
@@ -68,17 +76,33 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     if (!userId) return json({ error: 'Not authenticated' }, 401);
 
     const db = getDb((env as Env).DB);
+    const bookId = params.id;
+    if (!bookId) return json({ error: 'Book ID required' }, 400);
     const noteId = params.noteId;
     if (!noteId) return json({ error: 'Note ID required' }, 400);
 
     const existing = await db
       .select()
       .from(bookNotes)
-      .where(and(eq(bookNotes.id, noteId), eq(bookNotes.userId, userId)))
+      .where(
+        and(
+          eq(bookNotes.id, noteId),
+          eq(bookNotes.userId, userId),
+          eq(bookNotes.bookId, bookId)
+        )
+      )
       .limit(1);
     if (existing.length === 0) return json({ error: 'Note not found' }, 404);
 
-    await db.delete(bookNotes).where(and(eq(bookNotes.id, noteId), eq(bookNotes.userId, userId)));
+    await db
+      .delete(bookNotes)
+      .where(
+        and(
+          eq(bookNotes.id, noteId),
+          eq(bookNotes.userId, userId),
+          eq(bookNotes.bookId, bookId)
+        )
+      );
 
     return json({ success: true }, 200);
   } catch (e) {
