@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /shelf
+Disallow: /matches
+Disallow: /profile
+
+Sitemap: https://biblocal.com/sitemap-index.xml
