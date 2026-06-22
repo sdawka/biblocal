@@ -547,6 +547,11 @@ Placeholder body. Removed once real articles land.
 
 ```astro
 ---
+// Prerender at build time: the app is output:'server' (SSR), but blog pages
+// must be static HTML so crawlers get instant content AND @astrojs/sitemap
+// (which only includes prerendered routes) lists them.
+export const prerender = true;
+
 import { getCollection } from 'astro:content';
 import LandingLayout from '../../layouts/LandingLayout.astro';
 import Footer from '../../components/Footer.astro';
@@ -619,6 +624,10 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 ```astro
 ---
+// Prerendered (see /blog index for rationale). getStaticPaths requires this
+// in server output to emit one static page per article at build time.
+export const prerender = true;
+
 import { getCollection, render } from 'astro:content';
 import LandingLayout from '../../layouts/LandingLayout.astro';
 import Footer from '../../components/Footer.astro';
