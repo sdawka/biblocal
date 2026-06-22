@@ -1,11 +1,22 @@
 ---
 import '../styles/theme.css';
+import Seo from '../components/Seo.astro';
 
 interface Props {
   title: string;
+  seo?: {
+    description?: string;
+    ogImage?: string;
+    type?: 'website' | 'article';
+    jsonLd?: object[];
+  };
 }
 
-const { title } = Astro.props;
+const { title, seo } = Astro.props;
+const description =
+  seo?.description ??
+  'Build your living bookshelf. Find people nearby with similar taste. Borrow, discuss, and discover locally.';
+const path = Astro.url.pathname;
 ---
 
 <!doctype html>
@@ -14,14 +25,20 @@ const { title } = Astro.props;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="description" content="Build your living bookshelf. Find people nearby with similar taste. Borrow, discuss, and discover locally." />
+    <Seo
+      title={title}
+      description={description}
+      path={path}
+      ogImage={seo?.ogImage}
+      type={seo?.type}
+      jsonLd={seo?.jsonLd}
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap"
     />
-    <title>{title}</title>
     <script is:inline>
       // Pre-paint theme application — avoids dark-mode flash (FOUC).
       try {
