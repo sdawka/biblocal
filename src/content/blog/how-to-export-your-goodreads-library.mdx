@@ -1,0 +1,85 @@
+---
+title: "How to Export Your Goodreads Library (CSV Guide)"
+description: "A step-by-step guide to downloading your Goodreads library as a CSV, then doing something useful with it."
+pubDate: 2026-06-22
+category: "guide"
+keywords: ["goodreads export", "goodreads csv", "export goodreads library", "goodreads import export", "goodreads library download", "migrate goodreads", "goodreads data"]
+---
+
+Your reading history should not be locked inside one platform. Whether you're switching services, running a personal reading analysis, or building a neighborhood lending network, knowing how to export your Goodreads library is the first practical step. The process takes under five minutes. It is not glamorous, but neither is finding the fire exit, and both are worth doing.
+
+## How to Export Your Goodreads Library (Desktop Only)
+
+The export tool is only available on desktop. The Goodreads mobile app does not include an export option, so you'll need to open a browser on a laptop or desktop computer before starting. Yes, this is annoying. No, there is not a secret mobile button hiding under the rug.
+
+### Step-by-step export
+
+1. Log in at [goodreads.com](https://www.goodreads.com) in a desktop browser.
+2. Click **My Books** in the top navigation bar.
+3. In the left sidebar, look under the **Tools** section and click **Import and export**.
+4. Under the **Export** heading, click the **Export Library** button.
+5. Wait for the file to generate. Small libraries finish in seconds; if you have 1,000+ books it may take a few minutes.
+6. When a link appears below the button, formatted as "Your export from [date] – [time]," click it to download `goodreads_library_export.csv`.
+
+That's all. You now have a portable copy of your reading history, which is a small but satisfying act of digital self-respect.
+
+## What's Inside the CSV
+
+The exported file is a standard comma-separated spreadsheet you can open in Excel, Google Sheets, or any text editor. Each row is one book. The columns you'll use most are:
+
+- **Title**, **Author**, **ISBN13**
+- **My Rating**, **Average Rating**
+- **Publisher**, **Year Published**
+- **Date Read**, **Date Added**
+- **Bookshelves** — reflects your custom shelf names
+- **My Review**, **Private Notes**
+
+One thing worth knowing: you can only export your entire library at once. There's no option to export a single shelf. If you only want a subset, you'll need to filter the CSV yourself after downloading.
+
+Private notes are included in the export but remain visible only to you. They should not be shared if you import into another service unless that service explicitly surfaces them, but it is still worth treating the file like it contains private thoughts, because it probably does.
+
+## Common Gotchas
+
+**The download link doesn't appear immediately.** Goodreads generates the file asynchronously. Do not click Export Library a second time; just wait on the page until the link appears below the button.
+
+**Mobile users hit a dead end.** If you're on a phone or tablet, the Import and export option is not available. Switch to a desktop browser before trying.
+
+**Large libraries may time out.** If you have several thousand books and the export stalls, try again during off-peak hours. It usually succeeds on a second attempt.
+
+**Private notes travel with the file.** If you're opening the CSV somewhere else or sharing it, remember that the private notes column may be populated. Redact if needed.
+
+## Why People Export
+
+The most common reason is migration. Goodreads is owned by Amazon, and many readers have moved, or are moving, to independent alternatives like StoryGraph, BookWyrm, Hardcover, or [biblocal](/how-it-works). The CSV is the universal passport: every serious reading tracker accepts it.
+
+Beyond migration, the export is useful for:
+
+- **Backup.** An offline copy of your reading history that does not depend on any company's continued existence.
+- **Spreadsheet analysis.** Pages read per year, rating distributions, how many books you've finished vs. abandoned, genre breakdowns. The raw data supports any question you can form in a pivot table, which is more questions than most of us should be left alone with.
+- **Bulk imports elsewhere.** Once you have the file, you can reuse it across multiple platforms without re-exporting.
+
+See also: [biblocal vs. Goodreads](/blog/biblocal-vs-goodreads) and [biblocal vs. StoryGraph](/blog/biblocal-vs-storygraph) for a fuller comparison of your options.
+
+## What to Do With the File Next
+
+### Import into StoryGraph, BookWyrm, or Hardcover
+
+All three accept a Goodreads CSV directly from their settings or import pages. The column mapping is handled automatically; ratings and shelves carry over.
+
+### Import into biblocal
+
+biblocal uses the same CSV to do something different: it turns a reading log into a neighborhood lending network. The import control lives directly on your shelf page. Upload the file and your books are organized by the statuses that matter for local sharing:
+
+- **borrowable** — books you're willing to lend
+- **discussable** — books you'd enjoy talking about
+- **giftable** — books you're ready to pass on
+- **seeking-home** — books you're actively looking for
+- **visible** / **private** — control who sees what
+
+Instead of a global social feed, biblocal connects you with people nearby who read similarly: potential shelf twins, local sources for books you're hunting, or neighbors who want to discuss the same titles. It is free, community-owned, open source, and does not touch Amazon's infrastructure.
+
+If you've been wanting to [start a neighborhood book-lending circle](/blog/how-to-start-neighborhood-book-lending-circle), importing your Goodreads CSV is the fastest way to go from zero to a populated shelf in under a minute.
+
+---
+
+The CSV export is not just an escape hatch. It is a reminder that your reading history belongs to you. Download it, back it up, and use it wherever it is most useful.
