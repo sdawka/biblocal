@@ -7,27 +7,27 @@
 
 /* ─── Tokens: light (default) ─────────────────────────────── */
 :root {
-  /* Surfaces */
-  --canvas: oklch(0.985 0.004 85);
-  --surface: oklch(1 0.002 85);
-  --surface-sunken: oklch(0.965 0.005 85);
-  --surface-raised: oklch(1 0.002 85);
+  /* Surfaces — warm cream paper */
+  --canvas: oklch(0.975 0.012 82);
+  --surface: oklch(0.992 0.006 82);
+  --surface-sunken: oklch(0.95 0.016 80);
+  --surface-raised: oklch(0.992 0.006 82);
 
-  /* Ink */
-  --ink: oklch(0.26 0.02 270);
-  --ink-muted: oklch(0.52 0.015 270);
-  --ink-faint: oklch(0.56 0.01 270);
+  /* Ink — warm espresso */
+  --ink: oklch(0.28 0.02 60);
+  --ink-muted: oklch(0.50 0.022 58);
+  --ink-faint: oklch(0.58 0.018 60);
 
   /* Lines */
-  --hairline: oklch(0.91 0.005 85);
-  --hairline-strong: oklch(0.85 0.006 85);
+  --hairline: oklch(0.90 0.014 80);
+  --hairline-strong: oklch(0.84 0.02 80);
 
-  /* Accent (indigo) */
-  --accent: oklch(0.55 0.16 270);
-  --accent-hover: oklch(0.50 0.17 270);
-  --accent-tint: oklch(0.95 0.03 270);
+  /* Accent (honey) */
+  --accent: oklch(0.53 0.115 68);
+  --accent-hover: oklch(0.47 0.12 66);
+  --accent-tint: oklch(0.93 0.045 80);
   --accent-on: oklch(0.99 0 0);
-  --focus-ring: oklch(0.55 0.16 270 / 0.45);
+  --focus-ring: oklch(0.53 0.115 68 / 0.45);
 
   /* Destructive */
   --danger: oklch(0.55 0.18 25);
@@ -62,12 +62,12 @@
   --dur-4: 600ms;
 
   /* Elevation */
-  --shadow-1: 0 1px 2px oklch(0.26 0.02 270 / 0.05), 0 4px 12px oklch(0.26 0.02 270 / 0.05);
-  --shadow-2: 0 2px 6px oklch(0.26 0.02 270 / 0.08), 0 12px 28px oklch(0.26 0.02 270 / 0.10);
-  --shadow-3: 0 4px 12px oklch(0.26 0.02 270 / 0.10), 0 18px 44px oklch(0.26 0.02 270 / 0.14);
-  --shadow-4: 0 8px 20px oklch(0.26 0.02 270 / 0.14), 0 32px 64px oklch(0.26 0.02 270 / 0.20);
-  --glass-bg: oklch(1 0.002 85 / 0.72);
-  --drop-shadow-color: oklch(0.26 0.02 270 / 0.28);
+  --shadow-1: 0 1px 2px oklch(0.28 0.025 55 / 0.05), 0 4px 12px oklch(0.28 0.025 55 / 0.05);
+  --shadow-2: 0 2px 6px oklch(0.28 0.025 55 / 0.08), 0 12px 28px oklch(0.28 0.025 55 / 0.10);
+  --shadow-3: 0 4px 12px oklch(0.28 0.025 55 / 0.10), 0 18px 44px oklch(0.28 0.025 55 / 0.14);
+  --shadow-4: 0 8px 20px oklch(0.28 0.025 55 / 0.14), 0 32px 64px oklch(0.28 0.025 55 / 0.20);
+  --glass-bg: oklch(0.992 0.006 82 / 0.72);
+  --drop-shadow-color: oklch(0.28 0.025 55 / 0.28);
 
   /* Radii */
   --r-sm: 8px;
@@ -89,23 +89,23 @@
 /* ─── Tokens: dark ────────────────────────────────────────── */
 /* Shared dark values applied both for explicit toggle and OS-follow. */
 :root[data-theme="dark"] {
-  --canvas: oklch(0.18 0.012 270);
-  --surface: oklch(0.225 0.014 270);
-  --surface-sunken: oklch(0.205 0.012 270);
-  --surface-raised: oklch(0.26 0.016 270);
+  --canvas: oklch(0.20 0.014 60);
+  --surface: oklch(0.245 0.016 60);
+  --surface-sunken: oklch(0.225 0.014 60);
+  --surface-raised: oklch(0.285 0.018 60);
 
-  --ink: oklch(0.96 0.006 85);
-  --ink-muted: oklch(0.72 0.01 270);
-  --ink-faint: oklch(0.64 0.01 270);
+  --ink: oklch(0.95 0.012 82);
+  --ink-muted: oklch(0.72 0.015 70);
+  --ink-faint: oklch(0.62 0.014 65);
 
-  --hairline: oklch(0.30 0.012 270);
-  --hairline-strong: oklch(0.36 0.014 270);
+  --hairline: oklch(0.32 0.014 60);
+  --hairline-strong: oklch(0.38 0.016 60);
 
-  --accent: oklch(0.68 0.15 270);
-  --accent-hover: oklch(0.74 0.15 270);
-  --accent-tint: oklch(0.30 0.05 270);
-  --accent-on: oklch(0.16 0.01 270);
-  --focus-ring: oklch(0.68 0.15 270 / 0.5);
+  --accent: oklch(0.76 0.125 74);
+  --accent-hover: oklch(0.82 0.115 76);
+  --accent-tint: oklch(0.34 0.06 65);
+  --accent-on: oklch(0.20 0.02 60);
+  --focus-ring: oklch(0.76 0.125 74 / 0.5);
 
   --danger: oklch(0.68 0.17 25);
   --danger-hover: oklch(0.74 0.17 25);
@@ -127,7 +127,7 @@
   --shadow-2: 0 2px 6px oklch(0 0 0 / 0.36), 0 12px 28px oklch(0 0 0 / 0.44);
   --shadow-3: 0 4px 12px oklch(0 0 0 / 0.40), 0 18px 44px oklch(0 0 0 / 0.50);
   --shadow-4: 0 8px 20px oklch(0 0 0 / 0.46), 0 32px 64px oklch(0 0 0 / 0.60);
-  --glass-bg: oklch(0.225 0.014 270 / 0.72);
+  --glass-bg: oklch(0.245 0.016 60 / 0.72);
   --drop-shadow-color: oklch(0 0 0 / 0.55);
 
   color-scheme: dark;
@@ -135,23 +135,23 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --canvas: oklch(0.18 0.012 270);
-    --surface: oklch(0.225 0.014 270);
-    --surface-sunken: oklch(0.205 0.012 270);
-    --surface-raised: oklch(0.26 0.016 270);
+    --canvas: oklch(0.20 0.014 60);
+    --surface: oklch(0.245 0.016 60);
+    --surface-sunken: oklch(0.225 0.014 60);
+    --surface-raised: oklch(0.285 0.018 60);
 
-    --ink: oklch(0.96 0.006 85);
-    --ink-muted: oklch(0.72 0.01 270);
-    --ink-faint: oklch(0.64 0.01 270);
+    --ink: oklch(0.95 0.012 82);
+    --ink-muted: oklch(0.72 0.015 70);
+    --ink-faint: oklch(0.62 0.014 65);
 
-    --hairline: oklch(0.30 0.012 270);
-    --hairline-strong: oklch(0.36 0.014 270);
+    --hairline: oklch(0.32 0.014 60);
+    --hairline-strong: oklch(0.38 0.016 60);
 
-    --accent: oklch(0.68 0.15 270);
-    --accent-hover: oklch(0.74 0.15 270);
-    --accent-tint: oklch(0.30 0.05 270);
-    --accent-on: oklch(0.16 0.01 270);
-    --focus-ring: oklch(0.68 0.15 270 / 0.5);
+    --accent: oklch(0.76 0.125 74);
+    --accent-hover: oklch(0.82 0.115 76);
+    --accent-tint: oklch(0.34 0.06 65);
+    --accent-on: oklch(0.20 0.02 60);
+    --focus-ring: oklch(0.76 0.125 74 / 0.5);
 
     --danger: oklch(0.68 0.17 25);
     --danger-hover: oklch(0.74 0.17 25);
@@ -173,7 +173,7 @@
     --shadow-2: 0 2px 6px oklch(0 0 0 / 0.36), 0 12px 28px oklch(0 0 0 / 0.44);
     --shadow-3: 0 4px 12px oklch(0 0 0 / 0.40), 0 18px 44px oklch(0 0 0 / 0.50);
     --shadow-4: 0 8px 20px oklch(0 0 0 / 0.46), 0 32px 64px oklch(0 0 0 / 0.60);
-    --glass-bg: oklch(0.225 0.014 270 / 0.72);
+    --glass-bg: oklch(0.245 0.016 60 / 0.72);
 
     color-scheme: dark;
   }
@@ -310,7 +310,7 @@ main {
 .select {
   appearance: none;
   padding-right: 2.4rem;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='none' stroke='%237a7a86' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M3.5 5.5 7 9l3.5-3.5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='none' stroke='%238a7d6e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M3.5 5.5 7 9l3.5-3.5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.85rem center;
   cursor: pointer;

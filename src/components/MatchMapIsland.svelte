@@ -65,8 +65,8 @@
   // Pin colors derived from theme tokens (accent + status family), not hardcoded.
   function pinColors(isStore: boolean) {
     return isStore
-      ? { fill: token('--accent', '#5b5bd6'), stroke: token('--accent-hover', '#4a4ac0') }
-      : { fill: token('--st-borrowable-fg', '#5a7bb0'), stroke: token('--accent', '#5b5bd6') };
+      ? { fill: token('--accent', '#975d04'), stroke: token('--accent-hover', '#874a00') }
+      : { fill: token('--st-borrowable-fg', '#5a7bb0'), stroke: token('--accent', '#975d04') };
   }
 
   // Animate a pin's radius in with a spring for a tasteful entrance.
@@ -196,7 +196,7 @@
     if (p.latitude && p.longitude) {
       L.circleMarker([p.latitude, p.longitude], {
         radius: 7,
-        fillColor: token('--accent', '#5b5bd6'),
+        fillColor: token('--accent', '#975d04'),
         fillOpacity: 1,
         color: token('--surface', '#fff'),
         weight: 3,

@@ -27,7 +27,7 @@
       name: "Neighbor",
       icon: ICONS.neighbor,
       tagline: "Walking distance",
-      example: "800 meters away. Has the book. Likes coffee.",
+      example: "800 meters away. Has the book. Puts the kettle on.",
       weight: 2,
     },
     {
