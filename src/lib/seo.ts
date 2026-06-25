@@ -43,6 +43,9 @@ export function organizationJsonLd(): object {
     name: SITE_NAME,
     url: SITE_ORIGIN,
     logo: absoluteUrl('/favicon.svg'),
+    slogan: 'You are what you read.',
+    description:
+      'biblocal is a local book-lending and reader-matching app. Build a living bookshelf, find neighbours who share your taste, and borrow, lend, discuss, or gift books nearby.',
   };
 }
 
@@ -52,6 +55,26 @@ export function websiteJsonLd(): object {
     '@type': 'WebSite',
     name: SITE_NAME,
     url: SITE_ORIGIN,
+  };
+}
+
+// Homepage-only: marks biblocal as an interactive web app (not a blog) for
+// Google. Truthful and Rich-Results-eligible; the app is free to use.
+export function webApplicationJsonLd(): object {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: SITE_NAME,
+    url: SITE_ORIGIN,
+    applicationCategory: 'LifestyleApplication',
+    operatingSystem: 'Web',
+    description:
+      'Organize your bookshelf, match with local readers by taste, and lend, borrow, discuss, or gift books with people nearby.',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
   };
 }
 

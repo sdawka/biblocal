@@ -38,8 +38,8 @@
       </h1>
 
       <p class="lede">
-        Build a living bookshelf, then find the people around you who read like you
-        do — to lend, borrow, and actually talk about books.
+        Build a living bookshelf. Then meet the people around you who read like you
+        do: to lend, borrow, and actually talk about the books.
       </p>
 
       <div class="actions">
@@ -49,7 +49,7 @@
             <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
-        <button class="ghost" onclick={scrollDown}>See how it works</button>
+        <button class="ghost" onclick={scrollDown}>How it works</button>
       </div>
 
       <p class="meta">
@@ -81,7 +81,7 @@
   </div>
 
   <button class="scroll-hint" onclick={scrollDown} aria-label="Scroll to learn more">
-    <span>Scroll</span>
+    <span>Keep reading</span>
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 5v14M6 13l6 6 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
