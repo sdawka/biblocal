@@ -13,7 +13,7 @@
       name: "Shelf Twin",
       icon: ICONS.twin,
       tagline: "Suspiciously similar shelves",
-      example: "You both kept the same obscure Calvino. Coincidence doesn't cover it.",
+      example: "You both own that one Calvino nobody finishes. You both finished it.",
       weight: 3,
     },
     {
@@ -55,7 +55,7 @@
         Five ways we match you with <em>the right people.</em>
       </h2>
       <p class="section-lede">
-        Not just who's nearby — who actually gets the reference. Each signal adds
+        Not just who's nearby. Who actually gets the reference. Each signal adds
         weight; together they find the readers worth meeting.
       </p>
     </header>
@@ -84,7 +84,7 @@
     </ol>
 
     <p class="facets-note">
-      <span class="marginalia">More dots, stronger connection — simple as that.</span>
+      <span class="marginalia">More dots, stronger connection. Simple as that.</span>
     </p>
   </div>
 </section>

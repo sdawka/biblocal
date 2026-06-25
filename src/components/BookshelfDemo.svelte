@@ -63,8 +63,8 @@
       </h2>
 
       <p class="section-desc">
-        Every shelf is a branch of the neighborhood library. Add your books, mark what you'll share —
-        that's how matches find you.
+        Every shelf is a branch of the neighborhood library. Add your books, mark what you'll share.
+        That's how matches find you.
       </p>
 
       <p class="shelf-caption">Hover a cover to see the marginalia</p>
