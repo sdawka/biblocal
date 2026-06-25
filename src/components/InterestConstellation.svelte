@@ -169,8 +169,8 @@
 <style>
   .constellation-container {
     background:
-      radial-gradient(ellipse at 30% 20%, oklch(0.30 0.08 270) 0%, transparent 55%),
-      oklch(0.18 0.04 270);
+      radial-gradient(ellipse at 30% 20%, oklch(0.30 0.07 55) 0%, transparent 55%),
+      oklch(0.18 0.03 58);
     border-radius: var(--r-lg);
     padding: var(--s-4);
     position: relative;
@@ -240,11 +240,11 @@
   }
 
   .star.curated {
-    fill: oklch(0.78 0.14 270);
+    fill: oklch(0.80 0.13 74);
   }
 
   .star.freeform {
-    fill: oklch(0.74 0.10 300);
+    fill: oklch(0.74 0.09 48);
   }
 
   .star.inferred {
@@ -267,7 +267,7 @@
   }
 
   .star-label.curated {
-    fill: oklch(0.84 0.10 270);
+    fill: oklch(0.84 0.10 74);
     font-weight: 500;
   }
 
@@ -301,11 +301,11 @@
   }
 
   .legend-item.curated .dot {
-    background: oklch(0.78 0.14 270);
+    background: oklch(0.80 0.13 74);
   }
 
   .legend-item.freeform .dot {
-    background: oklch(0.74 0.10 300);
+    background: oklch(0.74 0.09 48);
   }
 
   .legend-item.inferred .dot {

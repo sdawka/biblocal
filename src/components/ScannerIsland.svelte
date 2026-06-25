@@ -280,7 +280,7 @@
   .scanner-backdrop {
     position: fixed;
     inset: 0;
-    background: oklch(0.18 0.012 270 / 0.5);
+    background: oklch(0.20 0.012 60 / 0.5);
     z-index: 1000;
     display: flex;
     align-items: flex-end;
@@ -312,7 +312,7 @@
     position: relative;
     width: 100%;
     height: 200px;
-    background: oklch(0.18 0.012 270);
+    background: oklch(0.20 0.012 60);
     border-radius: var(--r-md);
     overflow: hidden;
   }

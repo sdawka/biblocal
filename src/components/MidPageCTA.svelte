@@ -6,7 +6,7 @@
 
 <section class="mid-cta" aria-labelledby="mid-cta-title">
   <div class="cta-inner">
-    <p class="cta-kicker"><span class="rule"></span>Your shelf is waiting</p>
+    <p class="cta-kicker"><span class="rule"></span>Your shelf is already an introduction</p>
     <h2 id="mid-cta-title" class="cta-title">
       Stop reading alone. <em>Find your people.</em>
     </h2>
