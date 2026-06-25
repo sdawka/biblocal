@@ -3,7 +3,7 @@
   import { Spring } from 'svelte/motion';
   // Self-hosted (bundled) instead of a render-blocking unpkg stylesheet.
   import 'leaflet/dist/leaflet.css';
-  import { matches } from '../stores/matches';
+  import { discovery } from '../stores/matches';
   import { profile } from '../stores/profile';
   import { loadSeedUsers, usersLoading, usersError } from '../stores/users';
   import type { Match } from '../lib/types';
@@ -11,6 +11,13 @@
   import MatchCardIsland from './MatchCardIsland.svelte';
 
   let matchList = $state<Match[]>([]);
+
+  // People with coordinates get map pins; people who haven't shared a location
+  // still appear, in a separate list below the map.
+  const hasLocation = (m: Match) =>
+    m.user.latitude != null && m.user.longitude != null;
+  let locatedList = $derived(matchList.filter(hasLocation));
+  let unlocatedList = $derived(matchList.filter((m) => !hasLocation(m)));
   let loadingUsers = $state(usersLoading.get());
   let loadError = $state<string | null>(usersError.get());
   let expandedId = $state<string | null>(null);
@@ -201,7 +208,7 @@
 
     // Populate matches from the store and keep pins in sync as it recomputes.
     // (Fires synchronously on subscribe, so this also does the initial render.)
-    const unsubMatches = matches.subscribe((m) => {
+    const unsubMatches = discovery.subscribe((m) => {
       matchList = m;
       if (map) updateMarkers();
     });
@@ -246,7 +253,7 @@
   <div class="cards-panel card">
     <div class="panel-head">
       <span class="eyebrow">Within reach</span>
-      <h2 class="serif">Nearby <span class="count">{matchList.length}</span></h2>
+      <h2 class="serif">Nearby <span class="count">{locatedList.length}</span></h2>
     </div>
 
     {#if loadingUsers && matchList.length === 0}
@@ -269,7 +276,7 @@
       </div>
     {:else}
       <div class="cards-list">
-        {#each matchList as match, i (match.user.id)}
+        {#each locatedList as match, i (match.user.id)}
           <div class="card-slot rise" style={`animation-delay:${Math.min(i * 60, 360)}ms`}>
             <MatchCardIsland
               {match}
@@ -278,6 +285,22 @@
             />
           </div>
         {/each}
+
+        {#if unlocatedList.length > 0}
+          <div class="group-head">
+            <span class="eyebrow">Location not shared</span>
+            <span class="count">{unlocatedList.length}</span>
+          </div>
+          {#each unlocatedList as match, i (match.user.id)}
+            <div class="card-slot rise" style={`animation-delay:${Math.min(i * 60, 360)}ms`}>
+              <MatchCardIsland
+                {match}
+                expanded={expandedId === match.user.id}
+                onToggle={() => toggleExpanded(match.user.id)}
+              />
+            </div>
+          {/each}
+        {/if}
       </div>
     {/if}
   </div>
@@ -458,6 +481,17 @@
   }
 
   .card-slot { display: block; }
+
+  /* Sub-header that separates location-less people from the pinned ones. */
+  .group-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin: var(--s-2) 0 calc(-1 * var(--s-1));
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--hairline);
+  }
+  .group-head .eyebrow { margin: 0; }
 
   @media (max-width: 900px) {
     .match-map {

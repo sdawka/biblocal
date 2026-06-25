@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateMatches } from '../../src/lib/matching';
+import { calculateMatches, calculateDiscovery } from '../../src/lib/matching';
 import type { Book, UserProfile, BookVisibility, BookOwnership, BookIntent } from '../../src/lib/types';
 
 function makeBook(overrides: Partial<Book> = {}): Book {
@@ -441,5 +441,55 @@ describe('calculateMatches', () => {
 
       expect(matches).toHaveLength(50);
     });
+  });
+});
+
+describe('calculateDiscovery', () => {
+  it('includes a sharer with no location and no taste overlap', () => {
+    const sharer = makeUser({
+      name: 'Location-less Sharer',
+      latitude: undefined,
+      longitude: undefined,
+      shelf: [
+        makeBook({ isbn: '999', title: 'Lend Me', intents: ['borrowable'] }),
+      ],
+    });
+
+    const result = calculateDiscovery([], [], [sharer]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].offering?.count).toBe(1);
+    expect(result[0].offering?.items).toContain('Lend Me');
+    expect(result[0].totalScore).toBe(0);
+  });
+
+  it('excludes people with nothing to share and no match', () => {
+    const lurker = makeUser({
+      name: 'Lurker',
+      shelf: [
+        makeBook({ title: 'On Shelf Only', intents: [] }),
+        makeBook({ title: 'Private', visibility: 'private', intents: ['borrowable'] }),
+        makeBook({ title: 'Wanted', ownership: 'seeking', intents: ['borrowable'] }),
+      ],
+    });
+
+    expect(calculateDiscovery([], [], [lurker])).toHaveLength(0);
+  });
+
+  it('still ranks taste matches above pure sharers', () => {
+    const myBooks = [makeBook({ isbn: 'shared', title: 'Common' })];
+    const twin = makeUser({
+      name: 'Twin',
+      shelf: [makeBook({ isbn: 'shared', title: 'Common' })],
+    });
+    const sharer = makeUser({
+      name: 'Just Sharing',
+      shelf: [makeBook({ isbn: 'x', title: 'Free Book', intents: ['giftable'] })],
+    });
+
+    const result = calculateDiscovery(myBooks, [], [sharer, twin]);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].user.name).toBe('Twin');
   });
 });

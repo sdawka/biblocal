@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Spring } from 'svelte/motion';
   import type { Book, BookIntent, BookVisibility, BookOwnership } from '../lib/types';
   import { INTENT_LABELS } from '../lib/intents';
 
@@ -28,47 +27,6 @@
   }: Props = $props();
 
   let showDeleteConfirm = $state(false);
-
-  // Physical, interruptible swipe offset.
-  const swipe = new Spring(0, { stiffness: 0.18, damping: 0.72 });
-  let swipeOpen = $state(false);
-  let startX = 0;
-  let isSwiping = false;
-  const SWIPE_THRESHOLD = 80;
-
-  function handleTouchStart(e: TouchEvent) {
-    if (readonly || !onDelete) return;
-    startX = e.touches[0].clientX;
-    isSwiping = true;
-  }
-
-  function handleTouchMove(e: TouchEvent) {
-    if (!isSwiping) return;
-    const currentX = e.touches[0].clientX;
-    const diff = startX - currentX;
-    // Only allow left swipe, cap at threshold
-    const next = Math.min(Math.max(diff, 0), SWIPE_THRESHOLD);
-    swipe.set(next, { instant: true });
-  }
-
-  function handleTouchEnd() {
-    if (!isSwiping) return;
-    isSwiping = false;
-    // Snap to threshold or back to 0
-    if (swipe.current >= SWIPE_THRESHOLD * 0.6) {
-      swipe.set(SWIPE_THRESHOLD);
-      swipeOpen = true;
-    } else {
-      swipe.set(0);
-      swipeOpen = false;
-    }
-  }
-
-  function handleSwipeDelete() {
-    onDelete?.(book.id);
-    swipe.set(0);
-    swipeOpen = false;
-  }
 
   function handleDeleteClick() {
     showDeleteConfirm = true;
@@ -112,13 +70,7 @@
 <article
   class="book-card card"
   class:seeking={book.ownership === 'seeking'}
-  class:swiping={swipeOpen || swipe.current > 0}
   data-book-id={book.id}
-  ontouchstart={handleTouchStart}
-  ontouchmove={handleTouchMove}
-  ontouchend={handleTouchEnd}
-  ontouchcancel={() => { isSwiping = false; swipe.set(0); swipeOpen = false; }}
-  style="transform: translateX(-{swipe.current}px)"
 >
   {#if book.coverUrl}
     <img src={book.coverUrl} alt="{book.title} cover" class="cover" width="60" height="90" loading="lazy" decoding="async" />
@@ -261,16 +213,6 @@
     {/if}
   {/if}
 
-  {#if !readonly && onDelete && swipe.current > 0}
-    <button
-      class="swipe-delete"
-      style="width: {swipe.current}px"
-      onclick={handleSwipeDelete}
-      aria-label="Delete {book.title}"
-    >
-      Delete
-    </button>
-  {/if}
 </article>
 
 <style>
@@ -287,7 +229,7 @@
     border-left: 3px solid var(--accent);
   }
 
-  .book-card:hover:not(.swiping) {
+  .book-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-2);
     border-color: var(--hairline-strong);
@@ -393,10 +335,18 @@
     opacity: 1;
   }
 
-  /* Touch devices have no hover; show the delete control so left-swipe
-     isn't the only (undiscoverable) delete path. */
+  /* Touch devices have no hover, so the delete control is always shown and
+     enlarged to a proper 44px tap target. .info reserves space on the right so
+     the button never sits on top of the title. */
   @media (hover: none) {
-    .delete-btn { opacity: 1; }
+    .delete-btn {
+      opacity: 1;
+      width: 44px;
+      height: 44px;
+    }
+    .info {
+      padding-right: calc(44px + var(--s-2));
+    }
   }
 
   .delete-btn:hover {
@@ -451,25 +401,6 @@
     100% {
       box-shadow: var(--shadow-1);
     }
-  }
-
-  .swipe-delete {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-ui);
-    font-size: 0.875rem;
-    font-weight: 590;
-    color: var(--danger-on);
-    background: var(--danger);
-    border: none;
-    border-radius: 0 var(--r-lg) var(--r-lg) 0;
-    cursor: pointer;
-    min-width: 60px;
   }
 
   .notes {

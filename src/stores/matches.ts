@@ -2,7 +2,7 @@ import { computed } from 'nanostores';
 import { shelf } from './shelf';
 import { profile } from './profile';
 import { seedUsers } from './users';
-import { calculateMatches } from '../lib/matching';
+import { calculateMatches, calculateDiscovery } from '../lib/matching';
 import type { Match } from '../lib/types';
 
 export const matches = computed(
@@ -19,3 +19,18 @@ export const matches = computed(
 );
 
 export const hasMatches = computed(matches, (m) => m.length > 0);
+
+// Broader than `matches`: also includes people sharing books with no taste
+// overlap, and people without a location. Powers the discovery map.
+export const discovery = computed(
+  [shelf, profile, seedUsers],
+  (shelfData, profileData, users): Match[] => {
+    const myBooks = Object.values(shelfData);
+    const myTopics = [
+      ...(profileData.topics?.curated ?? []),
+      ...(profileData.topics?.inferred ?? []),
+    ];
+
+    return calculateDiscovery(myBooks, myTopics, users);
+  }
+);

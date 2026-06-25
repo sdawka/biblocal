@@ -53,7 +53,7 @@
 
 <section class="shelf">
   <div class="header">
-    <h2 class="serif">Your Shelf <span class="count-tag">{totalBooks} books</span></h2>
+    <h2 class="serif">Your books <span class="count-tag">{totalBooks} books</span></h2>
   </div>
 
   <div class="filter-groups card">

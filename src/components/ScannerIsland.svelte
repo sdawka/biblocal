@@ -1,5 +1,6 @@
 <script lang="ts">
   import Quagga from '@ericblade/quagga2';
+  import { isBookEan13 } from '../lib/openLibrary';
 
   interface Props {
     onScan: (isbn: string) => void;
@@ -16,7 +17,16 @@
   let decoding = $state(false);
   let previousActiveElement: Element | null = null;
 
-  const BARCODE_READERS = ['ean_reader', 'ean_8_reader'];
+  // ISBNs are 13-digit EAN only. Dropping ean_8 stops the scanner from locking
+  // onto short, non-book codes.
+  const BARCODE_READERS = ['ean_reader'];
+
+  // A book's back cover usually has two barcodes and a single frame can misread,
+  // so accept a code only after it reads cleanly on consecutive frames.
+  const REQUIRED_CONFIRMATIONS = 2;
+  const MAX_AVG_ERROR = 0.25;
+  let lastCode = '';
+  let confirmCount = 0;
 
   $effect(() => {
     if (videoRef) {
@@ -91,9 +101,36 @@
       Quagga.start();
 
       Quagga.onDetected((result) => {
-        if (result?.codeResult?.code) {
+        const code = result?.codeResult?.code;
+        if (!code) return;
+
+        // Reject low-confidence reads (Quagga reports a per-segment decode error).
+        const decoded = (result.codeResult.decodedCodes ?? []) as Array<{ error?: number }>;
+        const errors = decoded
+          .map((c) => c.error)
+          .filter((e): e is number => typeof e === 'number');
+        if (errors.length > 0) {
+          const avgError = errors.reduce((sum, e) => sum + e, 0) / errors.length;
+          if (avgError > MAX_AVG_ERROR) {
+            lastCode = '';
+            confirmCount = 0;
+            return;
+          }
+        }
+
+        // Only accept the ISBN, never the price/UPC barcode beside it.
+        if (!isBookEan13(code)) return;
+
+        // Require the same code on consecutive frames before committing.
+        if (code === lastCode) {
+          confirmCount += 1;
+        } else {
+          lastCode = code;
+          confirmCount = 1;
+        }
+        if (confirmCount >= REQUIRED_CONFIRMATIONS) {
           Quagga.stop();
-          onScan(result.codeResult.code);
+          onScan(code);
         }
       });
     } catch (err) {
@@ -136,8 +173,11 @@
       },
       (result) => {
         decoding = false;
-        if (result?.codeResult?.code) {
-          onScan(result.codeResult.code);
+        const code = result?.codeResult?.code;
+        if (code && isBookEan13(code)) {
+          onScan(code);
+        } else if (code) {
+          error = 'That barcode is not an ISBN. Scan the one starting 978 or 979.';
         } else {
           error = 'Could not detect barcode. Try again.';
         }
@@ -175,7 +215,7 @@
           <span class="scan-line"></span>
         </div>
       </div>
-      <p class="instruction muted">Point camera at ISBN barcode</p>
+      <p class="instruction muted">Aim at the ISBN barcode, the one starting 978</p>
     {:else}
       <div class="no-camera">
         <span class="no-camera-icon" aria-hidden="true">
