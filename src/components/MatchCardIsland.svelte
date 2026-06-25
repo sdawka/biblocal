@@ -95,6 +95,12 @@
   let maxFacetCount = $derived(
     activeFacets.reduce((m, { facet }) => Math.max(m, facet.count), 0)
   );
+
+  // People who appear only because they're sharing books (no taste-match facet)
+  // still show what they're offering, so the card isn't blank.
+  let offeringCount = $derived(match.offering?.count ?? 0);
+  let offeringItems = $derived(match.offering?.items ?? []);
+  let showOffering = $derived(activeFacets.length === 0 && offeringCount > 0);
 </script>
 
 <article
@@ -147,6 +153,13 @@
           ></span>
         </span>
       {/each}
+      {#if showOffering}
+        <span class="facet-badge" aria-label="Books to share">
+          <span class="facet-icon" aria-hidden="true">📖</span>
+          <span class="facet-count">{offeringCount}</span>
+          <span class="facet-text">to share</span>
+        </span>
+      {/if}
     </div>
   </button>
 
@@ -185,6 +198,20 @@
           </ul>
         </div>
       {/each}
+
+      {#if showOffering}
+        <div class="facet-detail">
+          <h4>📖 Sharing</h4>
+          <ul>
+            {#each offeringItems.slice(0, 3) as item}
+              <li>{item}</li>
+            {/each}
+            {#if offeringItems.length > 3}
+              <li class="more">+{offeringItems.length - 3} more</li>
+            {/if}
+          </ul>
+        </div>
+      {/if}
 
       {#if !isStore && match.user.borrowStyle}
         <p class="borrow-style">"{match.user.borrowStyle}"</p>
@@ -310,6 +337,7 @@
 
   .facet-icon { font-size: 0.95rem; line-height: 1; }
   .facet-count { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .facet-text { color: var(--ink-muted); font-weight: 540; }
 
   /* Strength meter — accent fill over sunken track, scaled by relative count. */
   .facet-meter {

@@ -108,6 +108,22 @@ function hasAnyMatch(facets: MatchFacets): boolean {
   );
 }
 
+// Books this person is actively sharing: owned, non-private (already filtered),
+// and open to lending, discussing, or gifting.
+function calcOffering(theirBooks: Book[]): MatchFacet {
+  const offered = theirBooks.filter(
+    (b) =>
+      b.ownership === 'have' &&
+      (hasIntent(b, 'borrowable') ||
+        hasIntent(b, 'discussable') ||
+        hasIntent(b, 'giftable'))
+  );
+  return {
+    count: offered.length,
+    items: offered.map((b) => b.title),
+  };
+}
+
 export function calculateMatches(
   myBooks: Book[],
   myTopics: string[],
@@ -160,6 +176,70 @@ export function calculateMatches(
 
   // Sort by distance first (if available), then by score
   return matches.sort((a, b) => {
+    if (a.distanceKm != null && b.distanceKm != null) {
+      const distDiff = a.distanceKm - b.distanceKm;
+      if (Math.abs(distDiff) > 0.5) return distDiff;
+    }
+    return b.totalScore - a.totalScore;
+  });
+}
+
+/**
+ * Discovery is broader than matching: a person appears if they taste-match you
+ * OR are sharing at least one book (lend/discuss/gift). Location is optional —
+ * people without coordinates still show up (the map lists them separately).
+ */
+export function calculateDiscovery(
+  myBooks: Book[],
+  myTopics: string[],
+  users: UserProfile[],
+  location?: LocationFilter
+): Match[] {
+  const myVisibleBooks = filterVisible(myBooks);
+  const results: Match[] = [];
+
+  for (const user of users) {
+    let distanceKm: number | undefined;
+    if (location && user.latitude != null && user.longitude != null) {
+      distanceKm = haversineDistance(
+        location.lat,
+        location.lng,
+        user.latitude,
+        user.longitude
+      );
+      if (distanceKm > location.radiusKm) {
+        continue;
+      }
+    }
+
+    const theirBooks = filterVisible(user.shelf);
+    const theirTopics = [
+      ...(user.topics?.curated ?? []),
+      ...(user.topics?.inferred ?? []),
+    ];
+
+    const facets: MatchFacets = {
+      shelfTwin: calcShelfTwin(myVisibleBooks, theirBooks),
+      readingMentor: calcReadingMentor(myVisibleBooks, theirBooks),
+      localSource: calcLocalSource(myVisibleBooks, theirBooks),
+      discussionMatch: calcDiscussionMatch(myTopics, theirTopics),
+    };
+    const offering = calcOffering(theirBooks);
+
+    if (hasAnyMatch(facets) || offering.count > 0) {
+      results.push({
+        user,
+        facets,
+        offering,
+        totalScore: calcTotalScore(facets),
+        distanceKm,
+      });
+    }
+  }
+
+  // Taste-matched people (higher score) first, then pure offerers; distance
+  // breaks ties when both sides have it.
+  return results.sort((a, b) => {
     if (a.distanceKm != null && b.distanceKm != null) {
       const distDiff = a.distanceKm - b.distanceKm;
       if (Math.abs(distDiff) > 0.5) return distDiff;

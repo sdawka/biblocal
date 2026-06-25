@@ -80,3 +80,20 @@ export function isValidIsbn(isbn: string): boolean {
   const clean = isbn.replace(/[-\s]/g, '');
   return /^(\d{10}|\d{13})$/.test(clean);
 }
+
+/**
+ * True only for an actual book barcode: a 13-digit EAN with a 978/979 prefix
+ * and a valid check digit. The back of a book usually carries a second barcode
+ * (a price add-on or store UPC); this rejects those so the scanner only accepts
+ * the ISBN.
+ */
+export function isBookEan13(code: string): boolean {
+  const clean = code.replace(/[-\s]/g, '');
+  if (!/^(978|979)\d{10}$/.test(clean)) return false;
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
+    sum += Number(clean[i]) * (i % 2 === 0 ? 1 : 3);
+  }
+  const checkDigit = (10 - (sum % 10)) % 10;
+  return checkDigit === Number(clean[12]);
+}

@@ -216,15 +216,28 @@
     {/if}
 
     <div class="pill-section">
+      <span class="label">Who can see this?</span>
       <div class="segmented" role="group" aria-label="Visibility">
         <button
           type="button"
+          aria-pressed={visibility === 'visible'}
+          onclick={() => visibility = 'visible'}
+        >
+          Visible
+        </button>
+        <button
+          type="button"
           aria-pressed={visibility === 'private'}
-          onclick={() => visibility = visibility === 'private' ? 'visible' : 'private'}
+          onclick={() => visibility = 'private'}
         >
           Private
         </button>
       </div>
+      <p class="field-help" aria-live="polite">
+        {visibility === 'visible'
+          ? 'On your shelf for nearby readers to find. It feeds your matches.'
+          : 'Hidden from everyone else. Just for your own records.'}
+      </p>
     </div>
 
     <div class="preview-actions">
@@ -400,6 +413,14 @@
 
   .pill-section .label {
     margin-bottom: var(--s-2);
+  }
+
+  .field-help {
+    margin: var(--s-2) 0 0;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--ink-faint);
   }
 
   .segmented {

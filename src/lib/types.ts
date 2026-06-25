@@ -99,6 +99,9 @@ export interface Match {
   facets: MatchFacets;
   totalScore: number;
   distanceKm?: number;
+  // Books this person is sharing (have + lend/discuss/gift). Lets someone
+  // appear in discovery for offering books even without a taste-match overlap.
+  offering?: MatchFacet;
 }
 
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined';

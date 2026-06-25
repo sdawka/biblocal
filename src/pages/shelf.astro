@@ -28,11 +28,14 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
 
       <PromptIsland client:idle context="shelf" />
 
-      <div class="add-book-section rise rise-1">
-        <AddBookIsland client:load />
-      </div>
+      <section class="compose rise rise-1" aria-labelledby="add-book-title">
+        <h2 id="add-book-title" class="zone-title">Add a book</h2>
 
-      <details class="import-section rise rise-2">
+        <div class="add-book-section">
+          <AddBookIsland client:load />
+        </div>
+
+        <details class="import-section">
         <summary>
           <span class="summary-chevron" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -45,6 +48,7 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
           <ImportIsland client:visible />
         </div>
       </details>
+      </section>
 
       <ShelfContainer client:idle />
     </main>
@@ -67,8 +71,34 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
     margin: 0;
   }
 
+  /* The "Add a book" zone: a distinct sunken panel so it reads as a separate
+     area from the bookshelf list below, which matters most on mobile where the
+     two would otherwise stack into one undifferentiated column. */
+  .compose {
+    margin-bottom: var(--s-7);
+    padding: var(--s-5);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+  }
+
+  .zone-title {
+    margin: 0 0 var(--s-4);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
   .import-section {
-    margin: var(--s-5) 0;
+    margin: var(--s-4) 0 0;
+  }
+
+  @media (max-width: 600px) {
+    .compose {
+      padding: var(--s-4);
+      margin-bottom: var(--s-6);
+    }
   }
 
   .import-section summary {

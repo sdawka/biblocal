@@ -67,6 +67,14 @@
         That's how matches find you.
       </p>
 
+      <p class="scan-hint">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14.5 4h2A1.5 1.5 0 0 1 18 5.5l1 1.5h1.5A1.5 1.5 0 0 1 22 8.5v9A1.5 1.5 0 0 1 20.5 19h-17A1.5 1.5 0 0 1 2 17.5v-9A1.5 1.5 0 0 1 3.5 7H5l1-1.5A1.5 1.5 0 0 1 7.5 4h2" />
+          <circle cx="12" cy="12.5" r="3.5" />
+        </svg>
+        Point your phone at the barcode on the back of any book. It appears.
+      </p>
+
       <p class="shelf-caption">Hover a cover to see the marginalia</p>
     </div>
 
@@ -167,6 +175,24 @@
     font-size: 1.15rem;
     line-height: 1.6;
     color: var(--ink-muted);
+  }
+
+  .scan-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin: 0 0 var(--s-5);
+    padding: var(--s-2) var(--s-4);
+    background: var(--accent-tint);
+    border-radius: var(--r-full);
+    font-family: var(--font-ui);
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: var(--ink-muted);
+  }
+  .scan-hint svg {
+    flex-shrink: 0;
+    color: var(--accent);
   }
 
   .shelf-caption {
