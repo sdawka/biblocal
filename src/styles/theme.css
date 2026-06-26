@@ -40,13 +40,14 @@
   --success-tint: oklch(0.95 0.04 150);
   --success-on: oklch(0.99 0 0);
 
-  /* Status family (derived: low-chroma indigo-adjacent siblings) */
-  --st-private-fg: oklch(0.50 0.012 270);   --st-private-bg: oklch(0.95 0.004 270);
-  --st-visible-fg: oklch(0.52 0.10 270);    --st-visible-bg: oklch(0.95 0.03 270);
-  --st-borrowable-fg: oklch(0.52 0.10 220); --st-borrowable-bg: oklch(0.95 0.03 220);
-  --st-discussable-fg: oklch(0.52 0.10 300);--st-discussable-bg: oklch(0.95 0.03 300);
-  --st-giftable-fg: oklch(0.52 0.11 350);   --st-giftable-bg: oklch(0.95 0.03 350);
-  --st-seeking-fg: oklch(0.50 0.11 70);     --st-seeking-bg: oklch(0.95 0.035 70);
+  /* Status family — warm, distinct hues that sit on cream (taupe, honey,
+     olive, terracotta, rose, rust) */
+  --st-private-fg: oklch(0.42 0.032 58);   --st-private-bg: oklch(0.94 0.016 62);
+  --st-visible-fg: oklch(0.40 0.085 72);    --st-visible-bg: oklch(0.93 0.038 76);
+  --st-borrowable-fg: oklch(0.38 0.075 118); --st-borrowable-bg: oklch(0.93 0.034 115);
+  --st-discussable-fg: oklch(0.40 0.090 38);--st-discussable-bg: oklch(0.93 0.040 40);
+  --st-giftable-fg: oklch(0.42 0.085 22);   --st-giftable-bg: oklch(0.93 0.036 24);
+  --st-seeking-fg: oklch(0.39 0.100 48);     --st-seeking-bg: oklch(0.93 0.042 52);
 
   /* Typography */
   --font-display: 'Newsreader', ui-serif, Georgia, 'Times New Roman', serif;
@@ -116,12 +117,12 @@
   --success-tint: oklch(0.30 0.06 150);
   --success-on: oklch(0.16 0.01 270);
 
-  --st-private-fg: oklch(0.70 0.015 270);   --st-private-bg: oklch(0.28 0.01 270);
-  --st-visible-fg: oklch(0.74 0.10 270);    --st-visible-bg: oklch(0.30 0.05 270);
-  --st-borrowable-fg: oklch(0.74 0.10 220); --st-borrowable-bg: oklch(0.30 0.05 220);
-  --st-discussable-fg: oklch(0.74 0.10 300);--st-discussable-bg: oklch(0.30 0.05 300);
-  --st-giftable-fg: oklch(0.76 0.10 350);   --st-giftable-bg: oklch(0.31 0.05 350);
-  --st-seeking-fg: oklch(0.78 0.10 70);     --st-seeking-bg: oklch(0.31 0.05 70);
+  --st-private-fg: oklch(0.78 0.030 58);   --st-private-bg: oklch(0.30 0.018 60);
+  --st-visible-fg: oklch(0.79 0.082 74);    --st-visible-bg: oklch(0.31 0.042 74);
+  --st-borrowable-fg: oklch(0.78 0.072 118); --st-borrowable-bg: oklch(0.30 0.038 115);
+  --st-discussable-fg: oklch(0.78 0.086 38);--st-discussable-bg: oklch(0.30 0.044 40);
+  --st-giftable-fg: oklch(0.78 0.080 22);   --st-giftable-bg: oklch(0.31 0.040 24);
+  --st-seeking-fg: oklch(0.78 0.095 50);     --st-seeking-bg: oklch(0.31 0.046 52);
 
   --shadow-1: 0 1px 2px oklch(0 0 0 / 0.30), 0 4px 12px oklch(0 0 0 / 0.34);
   --shadow-2: 0 2px 6px oklch(0 0 0 / 0.36), 0 12px 28px oklch(0 0 0 / 0.44);
@@ -162,12 +163,12 @@
     --success-tint: oklch(0.30 0.06 150);
     --success-on: oklch(0.16 0.01 270);
 
-    --st-private-fg: oklch(0.70 0.015 270);   --st-private-bg: oklch(0.28 0.01 270);
-    --st-visible-fg: oklch(0.74 0.10 270);    --st-visible-bg: oklch(0.30 0.05 270);
-    --st-borrowable-fg: oklch(0.74 0.10 220); --st-borrowable-bg: oklch(0.30 0.05 220);
-    --st-discussable-fg: oklch(0.74 0.10 300);--st-discussable-bg: oklch(0.30 0.05 300);
-    --st-giftable-fg: oklch(0.76 0.10 350);   --st-giftable-bg: oklch(0.31 0.05 350);
-    --st-seeking-fg: oklch(0.78 0.10 70);     --st-seeking-bg: oklch(0.31 0.05 70);
+    --st-private-fg: oklch(0.78 0.030 58);   --st-private-bg: oklch(0.30 0.018 60);
+    --st-visible-fg: oklch(0.79 0.082 74);    --st-visible-bg: oklch(0.31 0.042 74);
+    --st-borrowable-fg: oklch(0.78 0.072 118); --st-borrowable-bg: oklch(0.30 0.038 115);
+    --st-discussable-fg: oklch(0.78 0.086 38);--st-discussable-bg: oklch(0.30 0.044 40);
+    --st-giftable-fg: oklch(0.78 0.080 22);   --st-giftable-bg: oklch(0.31 0.040 24);
+    --st-seeking-fg: oklch(0.78 0.095 50);     --st-seeking-bg: oklch(0.31 0.046 52);
 
     --shadow-1: 0 1px 2px oklch(0 0 0 / 0.30), 0 4px 12px oklch(0 0 0 / 0.34);
     --shadow-2: 0 2px 6px oklch(0 0 0 / 0.36), 0 12px 28px oklch(0 0 0 / 0.44);
@@ -433,16 +434,28 @@ main {
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.6rem;
+  gap: 0.32rem;
+  padding: 0.18rem 0.6rem 0.18rem 0.5rem;
   font-family: var(--font-ui);
   font-size: 0.75rem;
-  font-weight: 590;
-  letter-spacing: 0.005em;
+  font-weight: 540;
+  letter-spacing: 0.012em;
+  line-height: 1.4;
   border-radius: var(--r-full);
   color: var(--ink-muted);
   background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, currentColor 16%, transparent);
   white-space: nowrap;
+}
+/* Leading status dot — picks up each variant's text color via currentColor. */
+.pill::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+  flex-shrink: 0;
 }
 .pill[data-status="private"]      { color: var(--st-private-fg);     background: var(--st-private-bg); }
 .pill[data-status="visible"]      { color: var(--st-visible-fg);     background: var(--st-visible-bg); }

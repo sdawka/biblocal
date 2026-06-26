@@ -33,7 +33,7 @@
     {
       name: "Debate Partner",
       icon: ICONS.debate,
-      tagline: "Productive disagreement",
+      tagline: "The reader who argues back",
       example: "You'll argue about Kundera for an hour and both enjoy it",
       weight: 1,
     },
@@ -171,11 +171,13 @@
     border-radius: var(--r-lg);
     box-shadow: var(--shadow-1);
     transition: border-color var(--dur-2) var(--ease-out),
-                box-shadow var(--dur-2) var(--ease-out);
+                box-shadow var(--dur-2) var(--ease-out),
+                transform var(--dur-2) var(--ease-out);
   }
   .facet-card:hover {
-    border-color: var(--hairline-strong);
-    box-shadow: var(--shadow-2);
+    border-color: var(--accent);
+    box-shadow: 0 4px 18px oklch(0.53 0.115 68 / 0.14);
+    transform: translateY(-2px);
   }
 
   /* The first facet (strongest signal) is emphasized with an accent wash. */
