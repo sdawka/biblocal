@@ -1,4 +1,10 @@
 <script lang="ts">
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).home.midCta);
+  const tc = $derived(useTranslations(lang).common);
+
   function scrollToSignIn() {
     document.getElementById('signin-section')?.scrollIntoView({ behavior: 'smooth' });
   }
@@ -6,12 +12,12 @@
 
 <section class="mid-cta" aria-labelledby="mid-cta-title">
   <div class="cta-inner">
-    <p class="cta-kicker"><span class="rule"></span>Your shelf is already an introduction</p>
+    <p class="cta-kicker"><span class="rule"></span>{t.kicker}</p>
     <h2 id="mid-cta-title" class="cta-title">
-      Stop reading alone. <em>Meet them.</em>
+      {t.titleLead}<em>{t.titleAccent}</em>
     </h2>
     <button class="cta-btn btn btn-filled btn-lg" onclick={scrollToSignIn}>
-      Start your shelf
+      {tc.cta.startShelf}
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>

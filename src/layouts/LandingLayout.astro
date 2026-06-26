@@ -2,8 +2,11 @@
 import '../styles/theme.css';
 import Seo from '../components/Seo.astro';
 
+import type { Lang } from '../i18n';
+
 interface Props {
   title: string;
+  lang?: Lang;
   seo?: {
     description?: string;
     ogImage?: string;
@@ -12,7 +15,7 @@ interface Props {
   };
 }
 
-const { title, seo } = Astro.props;
+const { title, seo, lang = 'en' } = Astro.props;
 const description =
   seo?.description ??
   'Build your living bookshelf. Find people nearby with similar taste. Borrow, discuss, and discover locally.';
@@ -20,7 +23,7 @@ const path = Astro.url.pathname;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -34,6 +37,7 @@ const path = Astro.url.pathname;
       title={title}
       description={description}
       path={path}
+      lang={lang}
       ogImage={seo?.ogImage}
       type={seo?.type}
       jsonLd={seo?.jsonLd}

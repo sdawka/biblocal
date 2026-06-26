@@ -6,6 +6,7 @@ export const BLOG_CATEGORIES = ['comparison', 'guide', 'essay'] as const;
 export const blogFrontmatterSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(50).max(160),
+  lang: z.enum(['en', 'fr']).default('en'),
   pubDate: z.coerce.date(),
   updatedDate: z.coerce.date().optional(),
   category: z.enum(BLOG_CATEGORIES),

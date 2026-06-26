@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).home.map);
+
   const matchPoints = [
     { x: 35, y: 40, type: 'reader', label: 'Sarah K.', books: 7 },
     { x: 62, y: 28, type: 'store', label: 'Corner Books', books: 340 },
@@ -12,30 +17,29 @@
 <section class="local-section" aria-labelledby="local-title">
   <div class="section-content">
     <div class="text-content">
-      <p class="eyebrow"><span class="rule"></span><span class="num">03</span>&nbsp;— Right next door</p>
+      <p class="eyebrow"><span class="rule"></span><span class="num">03</span>&nbsp;— {t.eyebrow}</p>
 
       <h2 id="local-title" class="section-title">
-        The people who read like you<br />
-        are <em>closer than you think</em>.
+        {t.titleLines[0]}<br />
+        {t.titleLines[1]} <em>{t.titleAccent}</em>.
       </h2>
 
       <p class="section-desc">
-        biblocal lines up your shelf with the readers and bookshops around you,
-        so a new book, and maybe a new friend, is only a short walk away.
+        {t.desc}
       </p>
 
       <ul class="legend" aria-hidden="true">
-        <li><span class="key reader"></span>Readers nearby</li>
-        <li><span class="key store"></span>Local bookshops</li>
-        <li><span class="key you"></span>You</li>
+        <li><span class="key reader"></span>{t.legendReaders}</li>
+        <li><span class="key store"></span>{t.legendStores}</li>
+        <li><span class="key you"></span>{t.legendYou}</li>
       </ul>
     </div>
 
     <div class="map-container">
       <div class="map-frame card">
         <div class="map-chrome" aria-hidden="true">
-          <span class="map-chrome-title">Within 5km of downtown</span>
-          <span class="map-chrome-tag">Live</span>
+          <span class="map-chrome-title">{t.chromeTitle}</span>
+          <span class="map-chrome-tag">{t.chromeTag}</span>
         </div>
 
         <div class="map-surface">
@@ -49,7 +53,7 @@
               <div class="point-label">
                 <span class="label-name">{point.label}</span>
                 {#if point.books > 0}
-                  <span class="label-books">{point.books} books</span>
+                  <span class="label-books">{point.books} {t.books}</span>
                 {/if}
               </div>
             </div>
@@ -64,7 +68,7 @@
         </div>
       </div>
 
-      <p class="map-caption marginalia">Your neighbourhood, quietly full of fellow readers.</p>
+      <p class="map-caption marginalia">{t.caption}</p>
     </div>
   </div>
 </section>

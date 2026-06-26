@@ -1,0 +1,347 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import Footer from '../components/Footer.astro';
+import { useTranslations, type Lang } from '../i18n';
+
+interface Props {
+  lang?: Lang;
+}
+const { lang = 'en' } = Astro.props;
+const t = useTranslations(lang).howItWorks;
+---
+
+<LandingLayout lang={lang} title={t.meta.title} seo={{ description: t.meta.description }}>
+  <main>
+    <section class="hero-mini">
+      <a href="/" class="back-link rise">{t.hero.back}</a>
+      <span class="eyebrow rise rise-1">{t.hero.eyebrow}</span>
+      <h1 class="serif rise rise-2">{t.hero.titleLines[0]}<br/>{t.hero.titleLines[1]}</h1>
+      <p class="subtitle muted rise rise-3">{t.hero.subtitle}</p>
+    </section>
+
+    <section class="chapter" id="chapter-1">
+      <div class="chapter-header">
+        <span class="eyebrow">{t.chapters.one.eyebrow}</span>
+        <h2 class="serif">{t.chapters.one.title}</h2>
+        <p class="chapter-intro muted">{t.chapters.one.intro}</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="card feature-card">
+          <div class="feature-icon">📱</div>
+          <h3 class="serif">{t.chapters.one.cards.scan.title}</h3>
+          <p class="muted">{t.chapters.one.cards.scan.body}</p>
+        </div>
+        <div class="card feature-card">
+          <div class="feature-icon">📚</div>
+          <h3 class="serif">{t.chapters.one.cards.collection.title}</h3>
+          <p class="muted">{t.chapters.one.cards.collection.body}</p>
+        </div>
+        <div class="card feature-card">
+          <div class="feature-icon">🏷️</div>
+          <h3 class="serif">{t.chapters.one.cards.intentions.title}</h3>
+          <p class="muted">{t.chapters.one.cards.intentions.body}</p>
+        </div>
+      </div>
+
+      <div class="chapter-aside">
+        <span class="marginalia serif">{t.chapters.one.aside}</span>
+      </div>
+    </section>
+
+    <section class="chapter alt" id="chapter-2">
+      <div class="chapter-inner">
+        <div class="chapter-header">
+          <span class="eyebrow">{t.chapters.two.eyebrow}</span>
+          <h2 class="serif">{t.chapters.two.title}</h2>
+          <p class="chapter-intro muted">{t.chapters.two.intro}</p>
+        </div>
+
+        <div class="features-grid">
+          <div class="card feature-card">
+            <div class="feature-icon">🤝</div>
+            <h3 class="serif">{t.chapters.two.cards.noShipping.title}</h3>
+            <p class="muted">{t.chapters.two.cards.noShipping.body}</p>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3 class="serif">{t.chapters.two.cards.find.title}</h3>
+            <p class="muted">{t.chapters.two.cards.find.body}</p>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">🎁</div>
+            <h3 class="serif">{t.chapters.two.cards.give.title}</h3>
+            <p class="muted">{t.chapters.two.cards.give.body}</p>
+          </div>
+        </div>
+
+        <div class="chapter-aside">
+          <span class="marginalia serif">{t.chapters.two.aside}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="chapter-3">
+      <div class="chapter-header">
+        <span class="eyebrow">{t.chapters.three.eyebrow}</span>
+        <h2 class="serif">{t.chapters.three.title}</h2>
+        <p class="chapter-intro muted">{t.chapters.three.intro}</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="card feature-card">
+          <div class="feature-icon">👯</div>
+          <h3 class="serif">{t.chapters.three.cards.twins.title}</h3>
+          <p class="muted">{t.chapters.three.cards.twins.body}</p>
+        </div>
+        <div class="card feature-card">
+          <div class="feature-icon">💬</div>
+          <h3 class="serif">{t.chapters.three.cards.discussion.title}</h3>
+          <p class="muted">{t.chapters.three.cards.discussion.body}</p>
+        </div>
+        <div class="card feature-card">
+          <div class="feature-icon">🏘️</div>
+          <h3 class="serif">{t.chapters.three.cards.local.title}</h3>
+          <p class="muted">{t.chapters.three.cards.local.body}</p>
+        </div>
+      </div>
+
+      <div class="chapter-aside">
+        <span class="marginalia serif">{t.chapters.three.aside}</span>
+      </div>
+    </section>
+
+    <section class="chapter alt" id="colophon">
+      <div class="chapter-inner">
+        <div class="chapter-header">
+          <span class="eyebrow">{t.colophon.eyebrow}</span>
+          <h2 class="serif">{t.colophon.title}</h2>
+          <p class="chapter-intro muted">{t.colophon.intro}</p>
+        </div>
+
+        <div class="colophon-content">
+          <p>
+            {t.colophon.p1Lead}<strong>{t.colophon.p1Strong}</strong>{t.colophon.p1Tail}
+          </p>
+          <p>
+            {t.colophon.p2}
+          </p>
+          <p class="github-link">
+            <a href="https://github.com/sdawka/biblocal" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
+              {t.colophon.github}
+            </a>
+          </p>
+        </div>
+
+        <div class="chapter-aside">
+          <span class="marginalia serif">{t.colophon.footnote1}</span>
+        </div>
+        <div class="chapter-aside footnote-second">
+          <span class="marginalia serif">{t.colophon.footnote2}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <h2 class="serif">{t.cta.title}</h2>
+      <p class="muted">{t.cta.body}</p>
+      <a href="/" class="btn btn-filled btn-lg">{t.cta.button}</a>
+    </section>
+
+    <Footer lang={lang} />
+  </main>
+</LandingLayout>
+
+<style>
+  main {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .hero-mini {
+    padding: var(--s-10) var(--s-6) var(--s-8);
+    text-align: center;
+  }
+
+  .back-link {
+    display: inline-block;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--accent);
+    text-decoration: none;
+    margin-bottom: var(--s-5);
+    transition: color var(--dur-1) var(--ease-soft);
+  }
+
+  .back-link:hover {
+    color: var(--accent-hover);
+  }
+
+  .hero-mini .eyebrow {
+    display: block;
+    margin-bottom: var(--s-3);
+  }
+
+  .hero-mini h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 500;
+    line-height: 1.15;
+    margin: 0 auto var(--s-4);
+    max-width: 720px;
+  }
+
+  .subtitle {
+    font-family: var(--font-ui);
+    font-size: 1.15rem;
+    margin: 0;
+  }
+
+  .chapter {
+    padding: var(--s-10) var(--s-6);
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .chapter.alt {
+    background: var(--surface-sunken);
+    max-width: none;
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .chapter-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .chapter-header {
+    text-align: center;
+    margin-bottom: var(--s-8);
+  }
+
+  .chapter-header .eyebrow {
+    display: inline-block;
+    margin-bottom: var(--s-2);
+  }
+
+  .chapter-header h2 {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 500;
+    margin: 0 0 var(--s-4);
+  }
+
+  .chapter-intro {
+    font-family: var(--font-ui);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--s-5);
+    margin-bottom: var(--s-8);
+  }
+
+  .feature-card {
+    text-align: center;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-2);
+    border-color: var(--hairline-strong);
+  }
+
+  .feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--s-4);
+  }
+
+  .feature-card h3 {
+    font-size: 1.15rem;
+    font-weight: 500;
+    margin: 0 0 var(--s-2);
+  }
+
+  .feature-card p {
+    font-family: var(--font-ui);
+    font-size: 0.95rem;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .chapter-aside {
+    text-align: center;
+    padding: var(--s-5);
+    border-top: 1px solid var(--hairline);
+  }
+
+  .marginalia {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+
+  .cta-section {
+    text-align: center;
+    padding: var(--s-10) var(--s-6);
+    background: var(--surface-sunken);
+    border-top: 1px solid var(--hairline);
+  }
+
+  .cta-section h2 {
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-weight: 500;
+    margin: 0 0 var(--s-4);
+  }
+
+  .cta-section p {
+    font-family: var(--font-ui);
+    font-size: 1.1rem;
+    margin: 0 0 var(--s-6);
+  }
+
+  .colophon-content {
+    max-width: 650px;
+    margin: 0 auto var(--s-8);
+    text-align: center;
+  }
+
+  .colophon-content p {
+    font-family: var(--font-ui);
+    font-size: 1.05rem;
+    color: var(--ink-muted);
+    line-height: 1.8;
+    margin: 0 0 var(--s-4);
+  }
+
+  .colophon-content strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .github-link {
+    margin-top: var(--s-5);
+  }
+
+  .footnote-second {
+    border-top: none;
+    padding-top: 0;
+    margin-top: calc(-1 * var(--s-4));
+  }
+
+  @media (max-width: 600px) {
+    .chapter {
+      padding: var(--s-8) var(--s-4);
+    }
+
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,70 @@
+---
+import { getCollection } from 'astro:content';
+import LandingLayout from '../layouts/LandingLayout.astro';
+import Footer from './Footer.astro';
+import { useTranslations, type Lang } from '../i18n';
+
+interface Props {
+  lang?: Lang;
+}
+const { lang = 'en' } = Astro.props;
+const t = useTranslations(lang).blog;
+
+const posts = (
+  await getCollection('blog', ({ data }) => data.draft !== true && data.lang === lang)
+).sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+
+const postUrl = (id: string) =>
+  lang === 'fr' ? `/fr/blog/${id.replace(/^fr\//, '')}` : `/blog/${id}`;
+const categories: Record<string, string> = t.categories;
+---
+
+<LandingLayout lang={lang} title={t.meta.indexTitle} seo={{ description: t.meta.indexDescription }}>
+  <main>
+    <section class="hero-mini">
+      <a href={lang === 'fr' ? '/fr' : '/'} class="back-link">{t.backHome}</a>
+      <span class="eyebrow">{t.journal}</span>
+      <h1 class="serif">{t.articlesTitle}</h1>
+      <p class="subtitle muted">{t.subtitle}</p>
+    </section>
+
+    <section class="list">
+      {posts.length === 0 && <p class="muted empty">{t.empty}</p>}
+      <ul class="posts">
+        {posts.map((post) => (
+          <li class="post-row card">
+            <a href={postUrl(post.id)} class="post-link">
+              <span class="eyebrow">{categories[post.data.category] ?? post.data.category}</span>
+              <h2 class="serif">{post.data.title}</h2>
+              <p class="muted">{post.data.description}</p>
+              <time datetime={post.data.pubDate.toISOString()} class="post-date muted">
+                {post.data.pubDate.toLocaleDateString(t.dateLocale, { year: 'numeric', month: 'long', day: 'numeric' })}
+              </time>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <Footer lang={lang} />
+  </main>
+</LandingLayout>
+
+<style>
+  main { max-width: none; margin: 0; padding: 0; }
+  .hero-mini { padding: var(--s-10) var(--s-6) var(--s-6); text-align: center; }
+  .back-link { display: inline-block; font-family: var(--font-ui); font-size: 0.9rem; color: var(--accent); text-decoration: none; margin-bottom: var(--s-5); }
+  .hero-mini .eyebrow { display: block; margin-bottom: var(--s-3); }
+  .hero-mini h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 500; margin: 0 auto var(--s-4); }
+  .subtitle { font-family: var(--font-ui); font-size: 1.15rem; margin: 0; }
+  .list { max-width: 760px; margin: 0 auto; padding: var(--s-6); }
+  .empty { text-align: center; padding: var(--s-8) 0; }
+  .posts { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-5); }
+  .post-row { padding: 0; overflow: hidden; }
+  .post-link { display: block; padding: var(--s-6); text-decoration: none; color: inherit; transition: transform var(--dur-1) var(--ease-soft), box-shadow var(--dur-1) var(--ease-soft); }
+  .post-row:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); border-color: var(--hairline-strong); }
+  .post-link h2 { font-size: 1.4rem; font-weight: 500; margin: var(--s-2) 0 var(--s-2); }
+  .post-link p { font-family: var(--font-ui); margin: 0 0 var(--s-3); line-height: 1.6; }
+  .post-date { font-family: var(--font-ui); font-size: 0.85rem; }
+  @media (max-width: 600px) { .list { padding: var(--s-4); } }
+</style>

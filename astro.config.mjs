@@ -13,6 +13,11 @@ const PRIVATE_PREFIXES = ['/shelf', '/matches', '/profile', '/stores', '/store']
 // https://astro.build/config
 export default defineConfig({
   site: 'https://biblocal.com',
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en', 'fr'],
+    routing: { prefixDefaultLocale: false },
+  },
   integrations: [
     svelte(),
     clerk(),

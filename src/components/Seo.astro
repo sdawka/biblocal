@@ -4,19 +4,32 @@ import {
   organizationJsonLd,
   websiteJsonLd,
   SITE_NAME,
+  absoluteUrl,
 } from '../lib/seo';
+import { stripLocale, localizePath, languages, type Lang } from '../i18n';
 
 interface Props {
   title: string;
   description: string;
   path: string;
+  lang?: Lang;
   ogImage?: string;
   type?: 'website' | 'article';
   jsonLd?: object[];
 }
 
-const { title, description, path, ogImage, type, jsonLd = [] } = Astro.props;
+const { title, description, path, lang = 'en', ogImage, type, jsonLd = [] } = Astro.props;
 const seo = resolveSeo({ title, description, path, ogImage, type });
+
+// hreflang alternates for the same page across locales.
+const basePath = stripLocale(path);
+const alternates = (Object.keys(languages) as Lang[]).map((l) => ({
+  lang: l,
+  href: absoluteUrl(localizePath(basePath, l)),
+}));
+const xDefault = absoluteUrl(localizePath(basePath, 'en'));
+const ogLocale = lang === 'fr' ? 'fr_FR' : 'en_US';
+const ogLocaleAlt = lang === 'fr' ? 'en_US' : 'fr_FR';
 
 // Site-wide structured data always present; page-specific appended.
 const graphs = [organizationJsonLd(), websiteJsonLd(), ...jsonLd];
@@ -26,8 +39,15 @@ const graphs = [organizationJsonLd(), websiteJsonLd(), ...jsonLd];
 <meta name="description" content={seo.description} />
 <link rel="canonical" href={seo.canonical} />
 
+{alternates.map((a) => (
+  <link rel="alternate" hreflang={a.lang} href={a.href} />
+))}
+<link rel="alternate" hreflang="x-default" href={xDefault} />
+
 <meta property="og:type" content={seo.type} />
 <meta property="og:site_name" content={SITE_NAME} />
+<meta property="og:locale" content={ogLocale} />
+<meta property="og:locale:alternate" content={ogLocaleAlt} />
 <meta property="og:title" content={seo.title} />
 <meta property="og:description" content={seo.description} />
 <meta property="og:url" content={seo.canonical} />

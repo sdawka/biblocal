@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).home.facets);
+
   // Custom line-icons (stroke = currentColor → accent) for a cohesive, premium feel.
   const ICONS = {
     twin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="6" height="14" rx="1"/><rect x="14" y="5" width="6" height="14" rx="1"/><path d="M4 9h6M14 9h6"/></svg>',
@@ -8,55 +13,24 @@
     syllabus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4L2 9l10 5 10-5-10-5z"/><path d="M6 11.5V16c0 1.2 2.7 2.5 6 2.5s6-1.3 6-2.5v-4.5"/><path d="M22 9v4.5"/></svg>',
   };
 
-  const facets = [
-    {
-      name: "Shelf Twin",
-      icon: ICONS.twin,
-      tagline: "Suspiciously similar shelves",
-      example: "You both own that one Calvino nobody finishes. You both finished it.",
-      weight: 3,
-    },
-    {
-      name: "Book Scout",
-      icon: ICONS.scout,
-      tagline: "They've been where you're going",
-      example: "Owns three books on your maybe-someday list",
-      weight: 2,
-    },
-    {
-      name: "Neighbor",
-      icon: ICONS.neighbor,
-      tagline: "Walking distance",
-      example: "800 meters away. Has the book. Puts the kettle on.",
-      weight: 2,
-    },
-    {
-      name: "Debate Partner",
-      icon: ICONS.debate,
-      tagline: "The reader who argues back",
-      example: "You'll argue about Kundera for an hour and both enjoy it",
-      weight: 1,
-    },
-    {
-      name: "Syllabus Survivor",
-      icon: ICONS.syllabus,
-      tagline: "Shared academic scars",
-      example: "Both required to read it. Both actually did.",
-      weight: 1,
-    },
-  ];
+  const facets = $derived([
+    { ...t.items.shelfTwin, icon: ICONS.twin, weight: 3 },
+    { ...t.items.bookScout, icon: ICONS.scout, weight: 2 },
+    { ...t.items.neighbor, icon: ICONS.neighbor, weight: 2 },
+    { ...t.items.debatePartner, icon: ICONS.debate, weight: 1 },
+    { ...t.items.syllabusSurvivor, icon: ICONS.syllabus, weight: 1 },
+  ]);
 </script>
 
 <section class="facets-section" aria-labelledby="facets-title">
   <div class="section-inner">
     <header class="section-head">
-      <p class="eyebrow"><span class="rule"></span><span class="num">02</span> — Find your people</p>
+      <p class="eyebrow"><span class="rule"></span><span class="num">02</span> — {t.eyebrow}</p>
       <h2 id="facets-title" class="section-title">
-        Five ways we match you with <em>the right people.</em>
+        {t.titleLead}<em>{t.titleAccent}</em>
       </h2>
       <p class="section-lede">
-        Not just who's nearby. Who actually gets the reference. Each signal adds
-        weight; together they find the readers worth meeting.
+        {t.lede}
       </p>
     </header>
 
@@ -65,7 +39,7 @@
         <li class="facet-card" style="--index: {i}">
           <div class="facet-top">
             <span class="facet-icon" aria-hidden="true">{@html facet.icon}</span>
-            <span class="weight-indicator" aria-label="Connection strength {facet.weight} of 3">
+            <span class="weight-indicator" aria-label={t.strength.replace('{n}', String(facet.weight))}>
               {#each Array(3) as _, w}
                 <span class="weight-dot" class:on={w < facet.weight}></span>
               {/each}
@@ -76,7 +50,7 @@
           <p class="facet-tagline">{facet.tagline}</p>
 
           <div class="facet-example">
-            <span class="example-label">Example</span>
+            <span class="example-label">{t.exampleLabel}</span>
             <span class="example-text">{facet.example}</span>
           </div>
         </li>
@@ -84,7 +58,7 @@
     </ol>
 
     <p class="facets-note">
-      <span class="marginalia">More dots, stronger connection. Simple as that.</span>
+      <span class="marginalia">{t.note}</span>
     </p>
   </div>
 </section>
