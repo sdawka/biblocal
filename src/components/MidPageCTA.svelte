@@ -8,7 +8,7 @@
   <div class="cta-inner">
     <p class="cta-kicker"><span class="rule"></span>Your shelf is already an introduction</p>
     <h2 id="mid-cta-title" class="cta-title">
-      Stop reading alone. <em>Find your people.</em>
+      Stop reading alone. <em>Meet them.</em>
     </h2>
     <button class="cta-btn btn btn-filled btn-lg" onclick={scrollToSignIn}>
       Start your shelf

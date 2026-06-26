@@ -213,7 +213,7 @@
     text-transform: uppercase;
     color: var(--ink-faint);
   }
-  .meta i { width: 3px; height: 3px; border-radius: 50%; background: var(--accent); opacity: 0.7; }
+  .meta i { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); opacity: 0.8; }
 
   /* ── Cover wall ─────────────────────────────────────── */
   .wall {

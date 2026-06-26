@@ -20,7 +20,7 @@
       </h2>
 
       <p class="section-desc">
-        biblocal maps your shelf against the readers and bookshops around you,
+        biblocal lines up your shelf with the readers and bookshops around you,
         so a new book, and maybe a new friend, is only a short walk away.
       </p>
 

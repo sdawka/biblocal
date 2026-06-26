@@ -184,6 +184,7 @@
     margin: 0 0 var(--s-5);
     padding: var(--s-2) var(--s-4);
     background: var(--accent-tint);
+    border: 1px solid color-mix(in oklch, var(--accent) 20%, transparent);
     border-radius: var(--r-full);
     font-family: var(--font-ui);
     font-size: 0.95rem;

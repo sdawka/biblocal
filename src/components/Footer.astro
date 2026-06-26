@@ -6,7 +6,7 @@ const currentYear = new Date().getFullYear();
   <div class="footer-inner">
     <div class="brand">
       <a href="/" class="wordmark">biblocal</a>
-      <p class="tagline">Your shelf, their shelf, same street. A living library of the readers around you.</p>
+      <p class="tagline">Your shelf, their shelf, same street. The neighbourhood has been reading all along.</p>
     </div>
 
     <nav class="cols" aria-label="Footer">
@@ -26,9 +26,6 @@ const currentYear = new Date().getFullYear();
 
   <div class="baseline">
     <span class="copyright">© {currentYear} biblocal</span>
-    <span class="made">
-      Built by <a href="https://sahil.pro" target="_blank" rel="noopener">Sahil</a>
-    </span>
   </div>
 </footer>
 
@@ -111,18 +108,11 @@ const currentYear = new Date().getFullYear();
     gap: var(--s-3);
   }
 
-  .copyright,
-  .made {
+  .copyright {
     font-family: var(--font-ui);
     font-size: 0.82rem;
     color: var(--ink-faint);
   }
-  .made a {
-    color: var(--accent);
-    text-decoration: none;
-    transition: color var(--dur-1) var(--ease-soft);
-  }
-  .made a:hover { color: var(--accent-hover); }
 
   @media (max-width: 600px) {
     .footer-inner { flex-direction: column; gap: var(--s-7); }
