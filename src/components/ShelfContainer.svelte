@@ -2,6 +2,9 @@
   import { shelf } from '../stores/shelf';
   import ShelfIsland from './ShelfIsland.svelte';
   import EmptyShelfIsland from './EmptyShelfIsland.svelte';
+  import type { Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
 
   let isEmpty = $state(true);
 
@@ -14,7 +17,7 @@
 </script>
 
 {#if isEmpty}
-  <EmptyShelfIsland />
+  <EmptyShelfIsland {lang} />
 {:else}
-  <ShelfIsland />
+  <ShelfIsland {lang} />
 {/if}

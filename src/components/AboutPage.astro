@@ -1,0 +1,360 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import Footer from './Footer.astro';
+import { useTranslations, type Lang } from '../i18n';
+
+interface Props {
+  lang?: Lang;
+}
+const { lang = 'en' } = Astro.props;
+const t = useTranslations(lang).about;
+---
+
+<LandingLayout lang={lang} title={t.meta.title} seo={{ description: t.meta.description }}>
+  <main>
+    <section class="hero-mini">
+      <a href="/" class="back-link rise">{t.hero.back}</a>
+      <span class="eyebrow rise rise-1">{t.hero.eyebrow}</span>
+      <h1 class="serif rise rise-2">{t.hero.titleLead}<br/>{t.hero.titleTail}</h1>
+      <p class="subtitle muted rise rise-3">{t.hero.subtitle}</p>
+    </section>
+
+    <section class="chapter" id="what-we-are">
+      <div class="chapter-header">
+        <span class="eyebrow">{t.what.eyebrow}</span>
+        <h2 class="serif">{t.what.title}</h2>
+        <p class="chapter-intro muted">{t.what.intro}</p>
+      </div>
+
+      <div class="values-grid">
+        <div class="card value-card">
+          <div class="value-icon">🌱</div>
+          <h3 class="serif">{t.what.values.community.title}</h3>
+          <p class="muted">{t.what.values.community.body}</p>
+        </div>
+        <div class="card value-card">
+          <div class="value-icon">🔓</div>
+          <h3 class="serif">{t.what.values.openSource.title}</h3>
+          <p class="muted">{t.what.values.openSource.body}</p>
+        </div>
+        <div class="card value-card">
+          <div class="value-icon">🏘️</div>
+          <h3 class="serif">{t.what.values.local.title}</h3>
+          <p class="muted">{t.what.values.local.body}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter alt" id="help-us">
+      <div class="chapter-inner">
+        <div class="chapter-header">
+          <span class="eyebrow">{t.help.eyebrow}</span>
+          <h2 class="serif">{t.help.title}</h2>
+          <p class="chapter-intro muted">{t.help.intro}</p>
+        </div>
+
+        <div class="help-grid">
+          <div class="card help-card">
+            <div class="help-number">1</div>
+            <h3 class="serif">{t.help.steps.tell.title}</h3>
+            <p class="muted">{t.help.steps.tell.body}</p>
+          </div>
+          <div class="card help-card">
+            <div class="help-number">2</div>
+            <h3 class="serif">{t.help.steps.share.title}</h3>
+            <p class="muted">{t.help.steps.share.body}</p>
+          </div>
+          <div class="card help-card">
+            <div class="help-number">3</div>
+            <h3 class="serif">{t.help.steps.bookstore.title}</h3>
+            <p class="muted">{t.help.steps.bookstore.body}</p>
+          </div>
+          <div class="card help-card">
+            <div class="help-number">4</div>
+            <h3 class="serif">{t.help.steps.build.title}</h3>
+            <p class="muted">{t.help.steps.build.body}</p>
+          </div>
+        </div>
+
+        <div class="card share-box">
+          <p class="share-prompt muted">{t.help.sharePrompt}</p>
+          <div class="share-url">
+            <code>biblocal.com</code>
+            <button class="btn btn-tinted btn-sm copy-btn" data-copy-label={t.help.copy} data-copied-label={t.help.copied} onclick="navigator.clipboard.writeText('https://biblocal.com'); this.textContent=this.dataset.copiedLabel; setTimeout(() => this.textContent=this.dataset.copyLabel, 2000)">{t.help.copy}</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="why">
+      <div class="chapter-header">
+        <span class="eyebrow">{t.why.eyebrow}</span>
+        <h2 class="serif">{t.why.title}</h2>
+      </div>
+
+      <div class="story-content">
+        {t.why.paragraphs.map((p: string) => <p>{p}</p>)}
+      </div>
+
+      <div class="chapter-aside">
+        <span class="marginalia serif">{t.why.marginalia}</span>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <h2 class="serif">{t.cta.title}</h2>
+      <p class="muted">{t.cta.body}</p>
+      <a href="/" class="btn btn-filled btn-lg">{t.cta.button}</a>
+    </section>
+
+    <Footer lang={lang} />
+  </main>
+</LandingLayout>
+
+<style>
+  main {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .hero-mini {
+    padding: var(--s-10) var(--s-6) var(--s-8);
+    text-align: center;
+  }
+
+  .back-link {
+    display: inline-block;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--accent);
+    text-decoration: none;
+    margin-bottom: var(--s-5);
+    transition: color var(--dur-1) var(--ease-soft);
+  }
+
+  .back-link:hover {
+    color: var(--accent-hover);
+  }
+
+  .hero-mini .eyebrow {
+    display: block;
+    margin-bottom: var(--s-3);
+  }
+
+  .hero-mini h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 500;
+    line-height: 1.15;
+    margin: 0 auto var(--s-4);
+    max-width: 720px;
+  }
+
+  .subtitle {
+    font-family: var(--font-ui);
+    font-size: 1.15rem;
+    margin: 0;
+  }
+
+  .chapter {
+    padding: var(--s-10) var(--s-6);
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .chapter.alt {
+    background: var(--surface-sunken);
+    max-width: none;
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .chapter-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .chapter-header {
+    text-align: center;
+    margin-bottom: var(--s-8);
+  }
+
+  .chapter-header .eyebrow {
+    display: inline-block;
+    margin-bottom: var(--s-2);
+  }
+
+  .chapter-header h2 {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 500;
+    margin: 0 0 var(--s-4);
+  }
+
+  .chapter-intro {
+    font-family: var(--font-ui);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  .values-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--s-5);
+  }
+
+  .value-card {
+    text-align: center;
+  }
+
+  .value-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-2);
+    border-color: var(--hairline-strong);
+  }
+
+  .value-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--s-4);
+  }
+
+  .value-card h3 {
+    font-size: 1.15rem;
+    font-weight: 500;
+    margin: 0 0 var(--s-2);
+  }
+
+  .value-card p {
+    font-family: var(--font-ui);
+    font-size: 0.95rem;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .help-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--s-5);
+    margin-bottom: var(--s-8);
+  }
+
+  .help-card {
+    text-align: center;
+  }
+
+  .help-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--accent);
+    color: var(--accent-on);
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    border-radius: var(--r-full);
+    margin-bottom: var(--s-4);
+  }
+
+  .help-card h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0 0 var(--s-2);
+  }
+
+  .help-card p {
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .share-box {
+    text-align: center;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: var(--s-6);
+  }
+
+  .share-prompt {
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    margin: 0 0 var(--s-4);
+  }
+
+  .share-url {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-4);
+    flex-wrap: wrap;
+  }
+
+  .share-url code {
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 1.2rem;
+    color: var(--ink);
+    background: var(--surface-sunken);
+    padding: var(--s-2) var(--s-4);
+    border-radius: var(--r-md);
+    border: 1px solid var(--hairline);
+  }
+
+  .story-content {
+    max-width: 650px;
+    margin: 0 auto var(--s-8);
+  }
+
+  .story-content p {
+    font-family: var(--font-ui);
+    font-size: 1.1rem;
+    color: var(--ink-muted);
+    line-height: 1.8;
+    margin: 0 0 var(--s-5);
+  }
+
+  .chapter-aside {
+    text-align: center;
+    padding: var(--s-5);
+    border-top: 1px solid var(--hairline);
+  }
+
+  .marginalia {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+
+  .cta-section {
+    text-align: center;
+    padding: var(--s-10) var(--s-6);
+    background: var(--surface-sunken);
+    border-top: 1px solid var(--hairline);
+  }
+
+  .cta-section h2 {
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-weight: 500;
+    margin: 0 0 var(--s-4);
+  }
+
+  .cta-section p {
+    font-family: var(--font-ui);
+    font-size: 1.1rem;
+    margin: 0 0 var(--s-6);
+  }
+
+  @media (max-width: 600px) {
+    .chapter {
+      padding: var(--s-8) var(--s-4);
+    }
+
+    .values-grid,
+    .help-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,42 @@
+---
+import { stripLocale, localizePath, languages, getLangFromUrl, type Lang } from '../i18n';
+
+const current = getLangFromUrl(Astro.url);
+const base = stripLocale(Astro.url.pathname);
+const langs = Object.keys(languages) as Lang[];
+---
+
+<div class="lang-switch" role="group" aria-label="Language">
+  {langs.map((l, i) => (
+    <>
+      {i > 0 && <span class="sep" aria-hidden="true">/</span>}
+      <a
+        href={localizePath(base, l)}
+        hreflang={l}
+        class:list={['lang-link', { active: l === current }]}
+        aria-current={l === current ? 'true' : undefined}
+      >
+        {l.toUpperCase()}
+      </a>
+    </>
+  ))}
+</div>
+
+<style>
+  .lang-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+    font-weight: 590;
+  }
+  .sep { color: var(--ink-faint); }
+  .lang-link {
+    color: var(--ink-faint);
+    text-decoration: none;
+    transition: color var(--dur-1) var(--ease-soft);
+  }
+  .lang-link:hover { color: var(--accent); }
+  .lang-link.active { color: var(--ink); }
+</style>

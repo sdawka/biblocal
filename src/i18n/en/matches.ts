@@ -1,0 +1,75 @@
+// Strings for the Matches flow: page header, map island, match cards,
+// connection requests, and the matches-context profile prompts.
+export default {
+  meta: {
+    title: 'Find Matches | biblocal',
+  },
+  header: {
+    eyebrow: 'Discover',
+    title: 'Nearby',
+    addStore: '+ Add a bookstore',
+  },
+  map: {
+    legend: 'Legend',
+    you: 'You',
+    people: 'People',
+    bookstores: 'Bookstores',
+    withinReach: 'Within reach',
+    nearby: 'Nearby',
+    loading: 'Finding people near you…',
+    errorTitle: "Couldn't load nearby matches.",
+    empty: 'Add some books to find matches!',
+    locationNotShared: 'Location not shared',
+  },
+  card: {
+    facets: {
+      shelfTwin: 'Shelf Twin',
+      readingMentor: 'Reading Mentor',
+      localSource: 'Can Borrow',
+      discussionMatch: 'Discussion Match',
+    },
+    storeFacets: {
+      shelfTwin: 'Books in Common',
+      readingMentor: 'Has What You Seek',
+      localSource: 'Available Here',
+      discussionMatch: 'Your Interests',
+    },
+    booksToShare: 'Books to share',
+    toShare: 'to share',
+    sharing: 'Sharing',
+    more: 'more',
+    visitWebsite: 'Visit website →',
+    viewStoreDetails: 'View store details →',
+    // Connect button labels — mirror src/lib/connection-ui.ts, keyed by its
+    // English label so we can localize without editing that pure module.
+    connect: {
+      'Requesting…': 'Requesting…',
+      Requested: 'Requested',
+      Connected: 'Connected',
+      'Request to Connect': 'Request to Connect',
+    },
+    failedToSend: 'Failed to send request',
+  },
+  requests: {
+    title: 'Connection Requests',
+    someone: 'Someone',
+    accept: 'Accept',
+    decline: 'Decline',
+    acceptAria: 'Accept connection request from {name}',
+    declineAria: 'Decline connection request from {name}',
+    couldNotRespond: 'Could not respond. Please try again.',
+  },
+  prompts: {
+    topics: 'Pick 3 topics that describe your reading taste',
+    freeform: 'Add any tags that describe your interests',
+    borrowStyle: 'How would you describe your lending style?',
+    obsessions: 'What are you currently obsessed with?',
+    borrowStylePlaceholder: 'e.g., careful, 3-week returns',
+    obsessionsPlaceholder: 'e.g., program theory, parables',
+    profileHint: 'Go to your profile to set this up.',
+    save: 'Save',
+    skip: 'Skip',
+    editProfile: 'Edit Profile',
+    later: 'Later',
+  },
+};

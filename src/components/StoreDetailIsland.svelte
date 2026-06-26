@@ -2,12 +2,15 @@
   import { onMount } from 'svelte';
   import BookCard from './BookCard.svelte';
   import { safeExternalUrl } from '../lib/url';
+  import { useTranslations, type Lang } from '../i18n';
 
   interface Props {
     storeId: string;
+    lang?: Lang;
   }
 
-  let { storeId }: Props = $props();
+  let { storeId, lang = 'en' as Lang }: Props = $props();
+  const t = $derived(useTranslations(lang).stores);
 
   interface StoreData {
     id: string;
@@ -44,14 +47,14 @@
       const res = await fetch(`/api/stores/${storeId}`);
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to load store');
+        throw new Error(data.error || t.detail.errorLoadFailed);
       }
       const data = await res.json();
       store = data.store;
       books = data.books;
       canEdit = data.canEdit;
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Something went wrong';
+      error = e instanceof Error ? e.message : t.detail.errorGeneric;
     } finally {
       loading = false;
     }
@@ -77,7 +80,7 @@
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to add book');
+        throw new Error(data.error || t.detail.errorAddBookFailed);
       }
 
       const data = await res.json();
@@ -87,7 +90,7 @@
       newBookIsbn = '';
       showAddBook = false;
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to add book';
+      error = e instanceof Error ? e.message : t.detail.errorAddBookFailed;
     } finally {
       addingBook = false;
     }
@@ -96,14 +99,14 @@
 
 <div class="store-detail">
   {#if loading}
-    <div class="loading muted">Loading store...</div>
+    <div class="loading muted">{t.detail.loading}</div>
   {:else if error}
     <div class="error">{error}</div>
   {:else if store}
     <header class="store-header">
       <div class="store-badge" aria-hidden="true">🏪</div>
       <div class="store-info">
-        <span class="eyebrow">Bookstore</span>
+        <span class="eyebrow">{t.detail.eyebrow}</span>
         <h1 class="serif">{store.name}</h1>
         {#if store.neighborhood}
           <p class="neighborhood">{store.neighborhood}</p>
@@ -130,7 +133,7 @@
 
     {#if store.specialties && store.specialties.length > 0}
       <div class="specialties">
-        <h3>Specialties</h3>
+        <h3>{t.detail.specialtiesHeading}</h3>
         <div class="specialty-tags">
           {#each store.specialties as specialty}
             <span class="tag">{specialty.replace(/-/g, ' ')}</span>
@@ -141,10 +144,10 @@
 
     <section class="featured-shelf card">
       <div class="section-header">
-        <h2>Featured Books</h2>
+        <h2>{t.detail.featuredHeading}</h2>
         {#if canEdit}
           <button class="btn btn-tinted btn-sm" onclick={() => showAddBook = !showAddBook}>
-            {showAddBook ? 'Cancel' : '+ Add book'}
+            {showAddBook ? t.detail.cancel : t.detail.addBook}
           </button>
         {/if}
       </div>
@@ -155,24 +158,24 @@
             class="input"
             type="text"
             bind:value={newBookTitle}
-            placeholder="Book title"
-            aria-label="Book title"
+            placeholder={t.detail.bookTitlePlaceholder}
+            aria-label={t.detail.bookTitlePlaceholder}
             disabled={addingBook}
           />
           <input
             class="input"
             type="text"
             bind:value={newBookAuthor}
-            placeholder="Author"
-            aria-label="Author"
+            placeholder={t.detail.authorPlaceholder}
+            aria-label={t.detail.authorPlaceholder}
             disabled={addingBook}
           />
           <input
             class="input"
             type="text"
             bind:value={newBookIsbn}
-            placeholder="ISBN (optional)"
-            aria-label="ISBN (optional)"
+            placeholder={t.detail.isbnPlaceholder}
+            aria-label={t.detail.isbnPlaceholder}
             disabled={addingBook}
           />
           <button
@@ -180,13 +183,13 @@
             onclick={handleAddBook}
             disabled={addingBook || !newBookTitle.trim() || !newBookAuthor.trim()}
           >
-            {addingBook ? 'Adding...' : 'Add to shelf'}
+            {addingBook ? t.detail.addingBook : t.detail.addToShelf}
           </button>
         </div>
       {/if}
 
       {#if books.length === 0}
-        <p class="empty faint">No featured books yet.</p>
+        <p class="empty faint">{t.detail.emptyBooks}</p>
       {:else}
         <div class="books-grid">
           {#each books as book (book.id)}

@@ -2,7 +2,16 @@
   import { addBook, findDuplicate } from '../stores/shelf';
   import { fetchByIsbn, isValidIsbn } from '../lib/openLibrary';
   import type { Book, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
-  import { INTENT_OPTIONS, INTENT_PROMPT } from '../lib/intents';
+  import { INTENT_OPTIONS } from '../lib/intents';
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).shelf.add);
+  // Localized intent options: order from lib, labels from the dict.
+  const intentOptions = $derived(
+    INTENT_OPTIONS.map((opt) => ({ value: opt.value, label: useTranslations(lang).shelf.intents.labels[opt.value] }))
+  );
+  const intentPrompt = $derived(useTranslations(lang).shelf.intents.prompt);
 
   let ScannerComponent: typeof import('./ScannerIsland.svelte').default | null = $state(null);
 
@@ -46,7 +55,7 @@
 
   async function handleIsbnSubmit() {
     if (!isValidIsbn(isbn)) {
-      error = 'Please enter a valid 10 or 13 digit ISBN';
+      error = t.errors.invalidIsbn;
       return;
     }
 
@@ -64,7 +73,7 @@
         subjects: bookData.subjects,
       };
     } else {
-      error = 'Book not found. Try manual entry.';
+      error = t.errors.notFound;
       title = '';
       author = '';
       mode = 'manual';
@@ -75,7 +84,7 @@
 
   function handleManualSubmit() {
     if (!title.trim() || !author.trim()) {
-      error = 'Title and author are required';
+      error = t.errors.titleAuthorRequired;
       return;
     }
 
@@ -169,7 +178,7 @@
         <img src={previewBook.coverUrl} alt={previewBook.title} class="preview-cover" />
       {:else}
         <div class="preview-cover placeholder">
-          <span>No Cover</span>
+          <span>{t.noCover}</span>
         </div>
       {/if}
       <div class="preview-info">
@@ -179,30 +188,30 @@
     </div>
 
     <div class="pill-section">
-      <span class="label">I…</span>
-      <div class="segmented" role="group" aria-label="Ownership">
+      <span class="label">{t.ownership.prompt}</span>
+      <div class="segmented" role="group" aria-label={t.ownership.groupLabel}>
         <button
           type="button"
           aria-pressed={ownership === 'have'}
           onclick={() => ownership = 'have'}
         >
-          have this
+          {t.ownership.have}
         </button>
         <button
           type="button"
           aria-pressed={ownership === 'seeking'}
           onclick={() => ownership = 'seeking'}
         >
-          am seeking
+          {t.ownership.seeking}
         </button>
       </div>
     </div>
 
     {#if ownership === 'have'}
       <div class="pill-section">
-        <span class="label">{INTENT_PROMPT}</span>
-        <div class="segmented" role="group" aria-label="Intent">
-          {#each INTENT_OPTIONS as opt}
+        <span class="label">{intentPrompt}</span>
+        <div class="segmented" role="group" aria-label={t.intentGroupLabel}>
+          {#each intentOptions as opt}
             <button
               type="button"
               aria-pressed={intents.includes(opt.value)}
@@ -216,63 +225,63 @@
     {/if}
 
     <div class="pill-section">
-      <span class="label">Who can see this?</span>
-      <div class="segmented" role="group" aria-label="Visibility">
+      <span class="label">{t.visibility.prompt}</span>
+      <div class="segmented" role="group" aria-label={t.visibility.groupLabel}>
         <button
           type="button"
           aria-pressed={visibility === 'visible'}
           onclick={() => visibility = 'visible'}
         >
-          Visible
+          {t.visibility.visible}
         </button>
         <button
           type="button"
           aria-pressed={visibility === 'private'}
           onclick={() => visibility = 'private'}
         >
-          Private
+          {t.visibility.private}
         </button>
       </div>
       <p class="field-help" aria-live="polite">
         {visibility === 'visible'
-          ? 'On your shelf for nearby readers to find. It feeds your matches.'
-          : 'Hidden from everyone else. Just for your own records.'}
+          ? t.visibility.helpVisible
+          : t.visibility.helpPrivate}
       </p>
     </div>
 
     <div class="preview-actions">
       <button type="button" class="btn btn-outline" onclick={resetForm}>
-        Cancel
+        {t.cancel}
       </button>
       <button type="button" class="btn btn-filled btn-confirm" onclick={confirmAdd}>
-        Add to Shelf
+        {t.addToShelf}
       </button>
     </div>
 
     {#if duplicateBook}
       <div class="duplicate-warning">
-        <p>You already have <strong>{duplicateBook.title}</strong> on your shelf.</p>
+        <p>{t.duplicate.messageBefore}<strong>{duplicateBook.title}</strong>{t.duplicate.messageAfter}</p>
         <div class="duplicate-actions">
           <button type="button" class="btn btn-outline btn-sm" onclick={viewExisting}>
-            View Existing
+            {t.duplicate.viewExisting}
           </button>
           <button type="button" class="btn btn-tinted btn-sm" onclick={addAnyway}>
-            Add Anyway
+            {t.duplicate.addAnyway}
           </button>
         </div>
       </div>
     {/if}
   {:else}
     <!-- Entry mode -->
-    <div class="segmented tabs" role="group" aria-label="Add method">
+    <div class="segmented tabs" role="group" aria-label={t.addMethodLabel}>
       <button aria-pressed={mode === 'isbn'} onclick={() => switchMode('isbn')}>
-        ISBN Lookup
+        {t.tabs.isbn}
       </button>
       <button
         aria-pressed={mode === 'manual'}
         onclick={() => switchMode('manual')}
       >
-        Manual Entry
+        {t.tabs.manual}
       </button>
     </div>
 
@@ -288,7 +297,7 @@
             class="input"
             type="text"
             bind:value={isbn}
-            placeholder="Enter ISBN (e.g., 9780465026562)"
+            placeholder={t.isbnPlaceholder}
             disabled={loading}
             aria-invalid={error && mode === 'isbn' ? 'true' : undefined}
             aria-describedby={error && mode === 'isbn' ? 'isbn-error' : undefined}
@@ -297,7 +306,7 @@
             type="button"
             class="scan-btn"
             onclick={openScanner}
-            aria-label="Scan ISBN barcode with camera"
+            aria-label={t.scanAriaLabel}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M14.5 4h2A1.5 1.5 0 0 1 18 5.5l1 1.5h1.5A1.5 1.5 0 0 1 22 8.5v9A1.5 1.5 0 0 1 20.5 19h-17A1.5 1.5 0 0 1 2 17.5v-9A1.5 1.5 0 0 1 3.5 7H5l1-1.5A1.5 1.5 0 0 1 7.5 4h2" />
@@ -306,7 +315,7 @@
           </button>
         </div>
         <button type="submit" class="btn btn-filled" disabled={loading}>
-          {loading ? 'Looking up…' : 'Look Up Book'}
+          {loading ? t.lookingUp : t.lookUpBook}
         </button>
       </form>
     {:else}
@@ -320,8 +329,8 @@
           class="input"
           type="text"
           bind:value={title}
-          placeholder="Book title"
-          aria-label="Book title"
+          placeholder={t.titlePlaceholder}
+          aria-label={t.titleAriaLabel}
           aria-invalid={error && mode === 'manual' && !title.trim() ? 'true' : undefined}
           aria-describedby={error && mode === 'manual' ? 'manual-error' : undefined}
         />
@@ -329,12 +338,12 @@
           class="input"
           type="text"
           bind:value={author}
-          placeholder="Author"
-          aria-label="Author name"
+          placeholder={t.authorPlaceholder}
+          aria-label={t.authorAriaLabel}
           aria-invalid={error && mode === 'manual' && !author.trim() ? 'true' : undefined}
           aria-describedby={error && mode === 'manual' ? 'manual-error' : undefined}
         />
-        <button type="submit" class="btn btn-filled">Preview Book</button>
+        <button type="submit" class="btn btn-filled">{t.previewBook}</button>
       </form>
     {/if}
 
@@ -344,7 +353,7 @@
   {/if}
 
   {#if showScanner && ScannerComponent}
-    <ScannerComponent onScan={handleScanResult} onClose={closeScanner} />
+    <ScannerComponent onScan={handleScanResult} onClose={closeScanner} {lang} />
   {/if}
 </div>
 

@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).home.hero);
+
   let failedImages = $state<Set<number>>(new Set());
 
   const handleImageError = (i: number) => {
@@ -29,31 +34,31 @@
 
   <div class="grid">
     <div class="copy">
-      <p class="eyebrow"><span class="rule"></span>The local network for readers</p>
+      <p class="eyebrow"><span class="rule"></span>{t.eyebrow}</p>
 
       <h1>
-        <span class="line">You are what</span>
-        <span class="line">you read.</span>
-        <span class="line accent"><em>So are they.</em></span>
+        {#each t.titleLines as line}
+          <span class="line">{line}</span>
+        {/each}
+        <span class="line accent"><em>{t.titleAccent}</em></span>
       </h1>
 
       <p class="lede">
-        Build a living bookshelf. Then meet the people around you who read like you
-        do: to lend, borrow, and actually talk about the books.
+        {t.lede}
       </p>
 
       <div class="actions">
         <button class="btn btn-filled btn-lg start" onclick={scrollToSignIn}>
-          Start your shelf
+          {t.start}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
-        <button class="ghost" onclick={scrollDown}>How it works</button>
+        <button class="ghost" onclick={scrollDown}>{t.how}</button>
       </div>
 
       <p class="meta">
-        <span>Lend</span><i></i><span>Borrow</span><i></i><span>Discuss</span><i></i><span>Gift</span><i></i><span>Hunt</span>
+        {#each t.meta as m, i}{#if i > 0}<i></i>{/if}<span>{m}</span>{/each}
       </p>
     </div>
 
@@ -81,7 +86,7 @@
   </div>
 
   <button class="scroll-hint" onclick={scrollDown} aria-label="Scroll to learn more">
-    <span>Keep reading</span>
+    <span>{t.scroll}</span>
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 5v14M6 13l6 6 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>

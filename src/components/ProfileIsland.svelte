@@ -4,6 +4,10 @@
   import type { UserProfile, ContactMethod, ContactVisibility } from '../lib/types';
   import TopicPickerIsland from './TopicPickerIsland.svelte';
   import InterestConstellation from './InterestConstellation.svelte';
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).profile);
 
   let isEditing = $state(false);
   let requestingLocation = $state(false);
@@ -101,7 +105,7 @@
     const result = await requestGeolocation('approximate');
     requestingLocation = false;
     if (!result.success) {
-      locationError = result.error || 'Could not get location';
+      locationError = result.error || t.edit.couldNotGetLocation;
       // Fall back to city center
       if (profileData.city) {
         setLocationFromCity(profileData.city);
@@ -148,17 +152,17 @@
   <div class="profile">
     <section class="card rise rise-1">
       <div class="section-header">
-        <h2 class="serif">Edit Profile</h2>
+        <h2 class="serif">{t.edit.heading}</h2>
         <div class="header-actions">
           {#if showSaved}
-            <span class="saved-indicator" role="status">Saved</span>
+            <span class="saved-indicator" role="status">{t.edit.saved}</span>
           {/if}
-          <button class="btn btn-tinted btn-sm" onclick={() => isEditing = false}>Done</button>
+          <button class="btn btn-tinted btn-sm" onclick={() => isEditing = false}>{t.edit.done}</button>
         </div>
       </div>
 
       <div class="field">
-        <label class="label" for="name">Name</label>
+        <label class="label" for="name">{t.edit.nameLabel}</label>
         <input
           id="name"
           class="input"
@@ -169,7 +173,7 @@
       </div>
 
       <div class="field">
-        <label class="label" for="city">City</label>
+        <label class="label" for="city">{t.edit.cityLabel}</label>
         <select id="city" class="select" bind:value={profileData.city} onchange={handleSave}>
           {#each CITIES as city}
             <option value={city}>{city}</option>
@@ -178,7 +182,7 @@
       </div>
 
       <div class="field">
-        <label class="label" for="radius">Search radius: {profileData.radiusKm} km</label>
+        <label class="label" for="radius">{t.edit.radiusLabel.replace('{km}', String(profileData.radiusKm))}</label>
         <input
           id="radius"
           class="range"
@@ -191,25 +195,25 @@
       </div>
 
       <div class="field location-field">
-        <span class="label">Location</span>
+        <span class="label">{t.edit.locationLabel}</span>
         {#if profileData.latitude && profileData.longitude}
           <div class="location-status">
             <span class="location-badge">
               {#if profileData.locationPrecision === 'city'}
-                Using city center
+                {t.edit.usingCityCenter}
               {:else}
-                Your location (~100m precision)
+                {t.edit.yourLocation}
               {/if}
             </span>
             <button class="btn btn-outline btn-sm" onclick={handleEnableLocation} disabled={requestingLocation}>
-              {requestingLocation ? 'Getting…' : 'Update'}
+              {requestingLocation ? t.edit.getting : t.edit.update}
             </button>
           </div>
         {:else}
           <button class="btn btn-outline btn-location" onclick={handleEnableLocation} disabled={requestingLocation}>
-            {requestingLocation ? 'Getting location…' : 'Enable precise location'}
+            {requestingLocation ? t.edit.gettingLocation : t.edit.enablePreciseLocation}
           </button>
-          <p class="location-hint faint">Your location is stored approximately (~100m) and never shared with other users.</p>
+          <p class="location-hint faint">{t.edit.locationHint}</p>
         {/if}
         {#if locationError}
           <p class="location-error" role="alert">{locationError}</p>
@@ -218,25 +222,25 @@
     </section>
 
     <section class="card rise rise-2">
-      <h2 class="serif">Contact Info</h2>
-      <p class="section-desc muted">Let matches connect with you. Only shared when you accept a connection request.</p>
+      <h2 class="serif">{t.contact.heading}</h2>
+      <p class="section-desc muted">{t.contact.desc}</p>
 
       <div class="field">
-        <label class="label" for="contact-method">How can people reach you?</label>
+        <label class="label" for="contact-method">{t.contact.methodLabel}</label>
         <select id="contact-method" class="select" bind:value={contactMethod} onchange={handleContactSave}>
-          <option value="">Select…</option>
-          <option value="email">Email</option>
-          <option value="social">Social media</option>
-          <option value="custom">Other</option>
+          <option value="">{t.contact.methodSelect}</option>
+          <option value="email">{t.contact.methodEmail}</option>
+          <option value="social">{t.contact.methodSocial}</option>
+          <option value="custom">{t.contact.methodCustom}</option>
         </select>
       </div>
 
       {#if contactMethod}
         <div class="field">
           <label class="label" for="contact-value">
-            {#if contactMethod === 'email'}Email address
-            {:else if contactMethod === 'social'}Social handle or link
-            {:else}Contact info
+            {#if contactMethod === 'email'}{t.contact.valueLabelEmail}
+            {:else if contactMethod === 'social'}{t.contact.valueLabelSocial}
+            {:else}{t.contact.valueLabelCustom}
             {/if}
           </label>
           <input
@@ -244,79 +248,80 @@
             class="input"
             type="text"
             bind:value={contactValue}
-            placeholder={contactMethod === 'email' ? 'you@example.com' : contactMethod === 'social' ? '@handle or URL' : 'How to reach you'}
+            placeholder={contactMethod === 'email' ? t.contact.placeholderEmail : contactMethod === 'social' ? t.contact.placeholderSocial : t.contact.placeholderCustom}
             onblur={handleContactSave}
           />
         </div>
 
         <div class="field">
-          <label class="label" for="contact-visibility">Visibility</label>
+          <label class="label" for="contact-visibility">{t.contact.visibilityLabel}</label>
           <select id="contact-visibility" class="select" bind:value={contactVisibility} onchange={handleContactSave}>
-            <option value="hidden">Hidden (no contact)</option>
-            <option value="on-request">On request (reveal when accepted)</option>
-            <option value="public">Public (visible on match cards)</option>
+            <option value="hidden">{t.contact.visibilityHidden}</option>
+            <option value="on-request">{t.contact.visibilityOnRequest}</option>
+            <option value="public">{t.contact.visibilityPublic}</option>
           </select>
         </div>
       {/if}
     </section>
 
     <section class="card rise rise-3">
-      <h2 class="serif">Your Interests</h2>
-      <TopicPickerIsland mode="both" maxCurated={5} />
+      <h2 class="serif">{t.interests.heading}</h2>
+      <TopicPickerIsland mode="both" maxCurated={5} {lang} />
 
       <div class="constellation-wrapper">
-        <h3>Your Interest Constellation</h3>
+        <h3>{t.interests.constellationTitle}</h3>
         <InterestConstellation
           curated={profileData.topics.curated}
           freeform={profileData.topics.freeform}
           inferred={profileData.topics.inferred}
+          {lang}
         />
       </div>
     </section>
 
     <section class="card rise rise-4">
-      <h2 class="serif">Optional Details</h2>
+      <h2 class="serif">{t.optional.heading}</h2>
 
       <div class="field">
-        <label class="label" for="borrow">Lending style</label>
+        <label class="label" for="borrow">{t.optional.lendingStyleLabel}</label>
         <input
           id="borrow"
           class="input"
           type="text"
           bind:value={borrowStyle}
-          placeholder="e.g., careful, notes welcome, 3-week returns"
+          placeholder={t.optional.lendingStylePlaceholder}
           onblur={handleSave}
         />
       </div>
 
       <div class="field">
-        <label class="label" for="obsessions">Current obsessions (comma-separated)</label>
+        <label class="label" for="obsessions">{t.optional.obsessionsLabel}</label>
         <input
           id="obsessions"
           class="input"
           type="text"
           bind:value={obsessions}
-          placeholder="e.g., program theory, parables, coordination"
+          placeholder={t.optional.obsessionsPlaceholder}
           onblur={handleSave}
         />
       </div>
     </section>
 
     <section class="card rise rise-5">
-      <h2 class="serif">Lending Style</h2>
+      <h2 class="serif">{t.lendingStyle.heading}</h2>
       {#if editingPersonality}
         <div class="edit-row">
-          <input class="input" type="text" bind:value={personalityInput} placeholder="e.g., Generous lender" />
-          <button class="btn btn-filled btn-sm" onclick={savePersonality}>Save</button>
-          <button class="btn btn-plain btn-sm" onclick={() => editingPersonality = false}>Cancel</button>
+          <input class="input" type="text" bind:value={personalityInput} placeholder={t.lendingStyle.placeholder} />
+          <button class="btn btn-filled btn-sm" onclick={savePersonality}>{t.lendingStyle.save}</button>
+          <button class="btn btn-plain btn-sm" onclick={() => editingPersonality = false}>{t.lendingStyle.cancel}</button>
         </div>
       {:else}
         <div class="derived-value">
-          <span class="value">{$profile.lendingPersonality || 'Add some books to see your style'}</span>
+          <span class="value">{$profile.lendingPersonality || t.lendingStyle.emptyPrompt}</span>
           {#if $profile.lendingPersonality}
-            <button class="btn btn-outline btn-sm" onclick={startEditPersonality}>Edit</button>
+            <button class="btn btn-outline btn-sm" onclick={startEditPersonality}>{t.lendingStyle.edit}</button>
             {#if $profile.lendingPersonalityOverride}
-              <button class="btn btn-plain btn-sm" onclick={clearPersonalityOverride}>Reset to auto</button>
+              <button class="btn btn-plain btn-sm" onclick={clearPersonalityOverride}>{t.lendingStyle.resetToAuto}</button>
             {/if}
           {/if}
         </div>
@@ -328,9 +333,9 @@
   <div class="profile-view">
     <header class="profile-header card rise rise-1">
       <div class="identity">
-        <h2 class="name serif">{profileData.name || 'Add your name'}</h2>
+        <h2 class="name serif">{profileData.name || t.view.addYourName}</h2>
         {#if profileData.city}
-          <span class="location muted">{profileData.city} · {profileData.radiusKm} km radius</span>
+          <span class="location muted">{profileData.city} · {t.view.radiusSuffix.replace('{km}', String(profileData.radiusKm))}</span>
         {/if}
       </div>
       <button class="btn btn-tinted btn-sm" onclick={() => isEditing = true}>
@@ -338,7 +343,7 @@
           <path d="M12 20h9" />
           <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
         </svg>
-        Edit
+        {t.lendingStyle.edit}
       </button>
     </header>
 
@@ -348,12 +353,13 @@
           curated={profileData.topics.curated}
           freeform={profileData.topics.freeform}
           inferred={profileData.topics.inferred}
+          {lang}
         />
       {:else}
         <div class="empty-constellation card">
-          <p class="muted">Your interest constellation awaits</p>
+          <p class="muted">{t.view.constellationEmpty}</p>
           <button class="btn btn-filled" onclick={() => isEditing = true}>
-            Add interests
+            {t.view.addInterests}
           </button>
         </div>
       {/if}
@@ -366,7 +372,7 @@
         {/if}
         {#if obsessions}
           <p class="obsessions">
-            <span class="label-inline muted">Currently obsessing over:</span>
+            <span class="label-inline muted">{t.view.currentlyObsessing}</span>
             <span class="value">{obsessions}</span>
           </p>
         {/if}
@@ -375,10 +381,10 @@
 
     {#if $profile.lendingPersonality}
       <section class="profile-details lending-personality-view card rise rise-4">
-        <p class="eyebrow personality-label">Lending Personality</p>
+        <p class="eyebrow personality-label">{t.view.lendingPersonality}</p>
         <p class="personality-value serif">{$profile.lendingPersonality}</p>
         {#if $profile.lendingPersonalityOverride}
-          <span class="override-badge">custom</span>
+          <span class="override-badge">{t.view.customBadge}</span>
         {/if}
       </section>
     {/if}

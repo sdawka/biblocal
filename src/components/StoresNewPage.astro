@@ -1,0 +1,69 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AddStoreIsland from './AddStoreIsland.svelte';
+import { Show, UserButton } from '@clerk/astro/components';
+import { env } from 'cloudflare:workers';
+import { useTranslations, localizePath, type Lang } from '../i18n';
+
+interface Props {
+  lang?: Lang;
+}
+const { lang = 'en' } = Astro.props;
+const t = useTranslations(lang).stores;
+const p = (path: string) => localizePath(path, lang);
+
+const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
+---
+
+<Layout lang={lang} title={t.meta.newTitle}>
+  {isQaMode ? (
+    <main>
+      <div class="header-row rise">
+        <a href={p('/matches')} class="back-link">{t.nav.backToMatches}</a>
+      </div>
+      <div class="rise rise-1">
+        <AddStoreIsland lang={lang} client:load />
+      </div>
+    </main>
+  ) : (
+    <>
+      <Show when="signed-out">
+        <script>window.location.href = '/';</script>
+      </Show>
+      <Show when="signed-in">
+        <main>
+          <div class="header-row rise">
+            <a href={p('/matches')} class="back-link">{t.nav.backToMatches}</a>
+            <UserButton />
+          </div>
+          <div class="rise rise-1">
+            <AddStoreIsland lang={lang} client:load />
+          </div>
+        </main>
+      </Show>
+    </>
+  )}
+</Layout>
+
+<style>
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--s-6);
+  }
+
+  .back-link {
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    font-weight: 540;
+    color: var(--ink-muted);
+    text-decoration: none;
+    padding: 0.4rem 0;
+    transition: color var(--dur-1) var(--ease-soft);
+  }
+
+  .back-link:hover {
+    color: var(--accent);
+  }
+</style>

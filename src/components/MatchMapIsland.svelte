@@ -9,6 +9,10 @@
   import type { Match } from '../lib/types';
   import { CITY_COORDINATES, formatDistance } from '../lib/geo';
   import MatchCardIsland from './MatchCardIsland.svelte';
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang }: { lang?: Lang } = $props();
+  const t = $derived(useTranslations(lang).matches.map);
 
   let matchList = $state<Match[]>([]);
 
@@ -202,7 +206,7 @@
         weight: 3,
         className: 'pin pin-you',
       })
-        .bindTooltip('You', { className: 'map-tip map-tip-you' })
+        .bindTooltip(t.you, { className: 'map-tip map-tip-you' })
         .addTo(map);
     }
 
@@ -241,19 +245,19 @@
 
     <!-- Floating glass legend over the map -->
     <div class="legend glass card">
-      <span class="eyebrow">Legend</span>
+      <span class="eyebrow">{t.legend}</span>
       <ul>
-        <li><span class="dot dot-you"></span> You</li>
-        <li><span class="dot dot-person"></span> People</li>
-        <li><span class="dot dot-store"></span> Bookstores</li>
+        <li><span class="dot dot-you"></span> {t.you}</li>
+        <li><span class="dot dot-person"></span> {t.people}</li>
+        <li><span class="dot dot-store"></span> {t.bookstores}</li>
       </ul>
     </div>
   </div>
 
   <div class="cards-panel card">
     <div class="panel-head">
-      <span class="eyebrow">Within reach</span>
-      <h2 class="serif">Nearby <span class="count">{locatedList.length}</span></h2>
+      <span class="eyebrow">{t.withinReach}</span>
+      <h2 class="serif">{t.nearby} <span class="count">{locatedList.length}</span></h2>
     </div>
 
     {#if loadingUsers && matchList.length === 0}
@@ -263,16 +267,16 @@
           <div class="skeleton-card"></div>
           <div class="skeleton-card"></div>
         </div>
-        <p class="state-note">Finding people near you…</p>
+        <p class="state-note">{t.loading}</p>
       </div>
     {:else if loadError && matchList.length === 0}
       <div class="panel-state error" role="alert">
-        <p>Couldn't load nearby matches.</p>
+        <p>{t.errorTitle}</p>
         <p class="state-note">{loadError}</p>
       </div>
     {:else if matchList.length === 0}
       <div class="empty">
-        <p>Add some books to find matches!</p>
+        <p>{t.empty}</p>
       </div>
     {:else}
       <div class="cards-list">
@@ -280,6 +284,7 @@
           <div class="card-slot rise" style={`animation-delay:${Math.min(i * 60, 360)}ms`}>
             <MatchCardIsland
               {match}
+              {lang}
               expanded={expandedId === match.user.id}
               onToggle={() => toggleExpanded(match.user.id)}
             />
@@ -288,13 +293,14 @@
 
         {#if unlocatedList.length > 0}
           <div class="group-head">
-            <span class="eyebrow">Location not shared</span>
+            <span class="eyebrow">{t.locationNotShared}</span>
             <span class="count">{unlocatedList.length}</span>
           </div>
           {#each unlocatedList as match, i (match.user.id)}
             <div class="card-slot rise" style={`animation-delay:${Math.min(i * 60, 360)}ms`}>
               <MatchCardIsland
                 {match}
+                {lang}
                 expanded={expandedId === match.user.id}
                 onToggle={() => toggleExpanded(match.user.id)}
               />

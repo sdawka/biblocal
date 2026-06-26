@@ -8,14 +8,17 @@
     sendConnectionRequest,
   } from '../stores/connections';
   import { connectButtonState } from '../lib/connection-ui';
+  import { useTranslations, type Lang } from '../i18n';
 
   interface Props {
     match: Match;
     expanded?: boolean;
     onToggle?: () => void;
+    lang?: Lang;
   }
 
-  let { match, expanded = false, onToggle }: Props = $props();
+  let { match, expanded = false, onToggle, lang = 'en' as Lang }: Props = $props();
+  const t = $derived(useTranslations(lang).matches.card);
 
   // Connection request state for this match's user.
   let requesting = $state(false);
@@ -36,6 +39,12 @@
     })()
   );
 
+  // connection-ui.ts returns English labels (it's a pure module); map them to
+  // the active language via the dict, keyed by the English label.
+  let connectLabel = $derived(
+    (t.connect as Record<string, string>)[connectState.label] ?? connectState.label
+  );
+
   async function handleConnect(e: MouseEvent) {
     e.stopPropagation();
     if (requesting || !connectState.actionable) return;
@@ -44,7 +53,7 @@
     const result = await sendConnectionRequest(match.user.id);
     requesting = false;
     if (!result.success) {
-      requestError = result.error || 'Failed to send request';
+      requestError = result.error || t.failedToSend;
     }
   }
 
@@ -56,36 +65,37 @@
 
   let isStore = $derived(match.user.type === 'bookstore');
 
-  const FACET_LABELS: Record<string, { label: string; icon: string }> = {
-    shelfTwin: { label: 'Shelf Twin', icon: '📚' },
-    readingMentor: { label: 'Reading Mentor', icon: '🎓' },
-    localSource: { label: 'Can Borrow', icon: '🤝' },
-    discussionMatch: { label: 'Discussion Match', icon: '💬' },
+  // Icons are presentation-only and stay here; labels come from the dict.
+  const FACET_ICONS: Record<string, string> = {
+    shelfTwin: '📚',
+    readingMentor: '🎓',
+    localSource: '🤝',
+    discussionMatch: '💬',
   };
 
-  const STORE_FACET_LABELS: Record<string, { label: string; icon: string }> = {
-    shelfTwin: { label: 'Books in Common', icon: '📚' },
-    readingMentor: { label: 'Has What You Seek', icon: '🔍' },
-    localSource: { label: 'Available Here', icon: '🏪' },
-    discussionMatch: { label: 'Your Interests', icon: '💬' },
+  const STORE_FACET_ICONS: Record<string, string> = {
+    shelfTwin: '📚',
+    readingMentor: '🔍',
+    localSource: '🏪',
+    discussionMatch: '💬',
   };
 
-  function getActiveFacets(): {
-    key: string;
-    facet: MatchFacet;
-    meta: { label: string; icon: string };
-  }[] {
-    const labels = isStore ? STORE_FACET_LABELS : FACET_LABELS;
-    return Object.entries(match.facets)
-      .filter(([_, f]) => f.count > 0)
-      .map(([key, facet]) => ({
-        key,
-        facet,
-        meta: labels[key],
-      }));
-  }
-
-  let activeFacets = $derived(getActiveFacets());
+  let activeFacets = $derived(
+    (() => {
+      const labels = isStore ? t.storeFacets : t.facets;
+      const icons = isStore ? STORE_FACET_ICONS : FACET_ICONS;
+      return Object.entries(match.facets)
+        .filter(([_, f]) => f.count > 0)
+        .map(([key, facet]) => ({
+          key,
+          facet,
+          meta: {
+            label: (labels as Record<string, string>)[key],
+            icon: icons[key],
+          },
+        }));
+    })()
+  );
 
   let specialties = $derived(
     isStore && match.user.specialties ? match.user.specialties : []
@@ -154,10 +164,10 @@
         </span>
       {/each}
       {#if showOffering}
-        <span class="facet-badge" aria-label="Books to share">
+        <span class="facet-badge" aria-label={t.booksToShare}>
           <span class="facet-icon" aria-hidden="true">📖</span>
           <span class="facet-count">{offeringCount}</span>
-          <span class="facet-text">to share</span>
+          <span class="facet-text">{t.toShare}</span>
         </span>
       {/if}
     </div>
@@ -173,13 +183,13 @@
           {#if safeExternalUrl(match.user.website)}
             <p class="website">
               <a href={safeExternalUrl(match.user.website)} target="_blank" rel="noopener noreferrer" onclick={(e) => e.stopPropagation()}>
-                Visit website →
+                {t.visitWebsite}
               </a>
             </p>
           {/if}
           <p class="view-store">
             <a href={`/store/${match.user.id}`} onclick={(e) => e.stopPropagation()}>
-              View store details →
+              {t.viewStoreDetails}
             </a>
           </p>
         </div>
@@ -193,7 +203,7 @@
               <li>{item}</li>
             {/each}
             {#if facet.items.length > 3}
-              <li class="more">+{facet.items.length - 3} more</li>
+              <li class="more">+{facet.items.length - 3} {t.more}</li>
             {/if}
           </ul>
         </div>
@@ -201,13 +211,13 @@
 
       {#if showOffering}
         <div class="facet-detail">
-          <h4>📖 Sharing</h4>
+          <h4>📖 {t.sharing}</h4>
           <ul>
             {#each offeringItems.slice(0, 3) as item}
               <li>{item}</li>
             {/each}
             {#if offeringItems.length > 3}
-              <li class="more">+{offeringItems.length - 3} more</li>
+              <li class="more">+{offeringItems.length - 3} {t.more}</li>
             {/if}
           </ul>
         </div>
@@ -236,7 +246,7 @@
               disabled={!connectState.actionable}
               aria-busy={requesting}
             >
-              {connectState.label}
+              {connectLabel}
             </button>
             {#if requestError}
               <p class="connect-error" role="alert">{requestError}</p>

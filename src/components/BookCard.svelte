@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Book, BookIntent, BookVisibility, BookOwnership } from '../lib/types';
-  import { INTENT_LABELS } from '../lib/intents';
+  import { useTranslations, type Lang } from '../i18n';
 
   interface Props {
     book: Book;
+    lang?: Lang;
     onIntentsChange?: (intents: BookIntent[]) => void;
     onVisibilityChange?: (visibility: BookVisibility) => void;
     onOwnershipChange?: (ownership: BookOwnership) => void;
@@ -16,6 +17,7 @@
 
   let {
     book,
+    lang = 'en' as Lang,
     onIntentsChange,
     onVisibilityChange,
     onOwnershipChange,
@@ -25,6 +27,9 @@
     onDeleteNote,
     readonly = false,
   }: Props = $props();
+
+  const t = $derived(useTranslations(lang).shelf.card);
+  const intentLabels = $derived(useTranslations(lang).shelf.intents.labels);
 
   let showDeleteConfirm = $state(false);
 
@@ -86,22 +91,22 @@
 
     <div class="badges">
       {#if book.ownership === 'seeking'}
-        <span class="pill" data-status="seeking-home">Seeking</span>
+        <span class="pill" data-status="seeking-home">{t.seeking}</span>
       {/if}
       {#if book.visibility === 'private'}
-        <span class="pill" data-status="private">Private</span>
+        <span class="pill" data-status="private">{t.private}</span>
       {/if}
       {#each book.intents as intent}
         {#if readonly}
-          <span class="pill" data-status={intent}>{INTENT_LABELS[intent]}</span>
+          <span class="pill" data-status={intent}>{intentLabels[intent]}</span>
         {:else}
           <button
             class="pill pill-button"
             data-status={intent}
             onclick={() => toggleIntent(intent)}
-            aria-label="Remove {INTENT_LABELS[intent]} intent from {book.title}"
+            aria-label={t.removeIntentAria.replace('{label}', intentLabels[intent]).replace('{title}', book.title)}
           >
-            {INTENT_LABELS[intent]}
+            {intentLabels[intent]}
             <span class="pill-x" aria-hidden="true">
               <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
                 <path d="M2 2l6 6M8 2l-6 6" />
@@ -113,7 +118,7 @@
     </div>
 
     {#if book.addedVia === 'scan'}
-      <span class="verified" title="Added via ISBN scan" aria-label="Added via ISBN scan">
+      <span class="verified" title={t.addedViaScan} aria-label={t.addedViaScan}>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M13.5 4.5 6 12 2.5 8.5" />
         </svg>
@@ -131,9 +136,9 @@
             <path d="M3 2l4 3-4 3" />
           </svg>
           {#if notes.length > 0}
-            {notes.length} {notes.length === 1 ? 'note' : 'notes'}
+            {notes.length} {notes.length === 1 ? t.notes.noteSingular : t.notes.notePlural}
           {:else}
-            Add a note
+            {t.notes.addNote}
           {/if}
         </button>
 
@@ -145,21 +150,21 @@
                 <div class="note-controls">
                   {#if readonly}
                     {#if note.visibility === 'visible'}
-                      <span class="pill pill-sm" data-status="visible">Public</span>
+                      <span class="pill pill-sm" data-status="visible">{t.notes.public}</span>
                     {/if}
                   {:else}
                     <button
                       class="pill pill-sm pill-button"
                       data-status={note.visibility === 'visible' ? 'visible' : 'private'}
                       onclick={() => toggleNoteVisibility(note.id, note.visibility)}
-                      aria-label="Toggle privacy for this note (currently {note.visibility === 'visible' ? 'public' : 'private'})"
+                      aria-label={note.visibility === 'visible' ? t.notes.togglePrivacyPublic : t.notes.togglePrivacyPrivate}
                     >
-                      {note.visibility === 'visible' ? 'Public' : 'Private'}
+                      {note.visibility === 'visible' ? t.notes.public : t.notes.private}
                     </button>
                     <button
                       class="note-delete"
                       onclick={() => onDeleteNote?.(note.id)}
-                      aria-label="Delete this note"
+                      aria-label={t.notes.deleteNoteAria}
                     >
                       <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 2l6 6M8 2l-6 6" /></svg>
                     </button>
@@ -173,15 +178,15 @@
                 <textarea
                   class="textarea note-input"
                   bind:value={draftText}
-                  placeholder="What did you like about this book?"
+                  placeholder={t.notes.placeholder}
                   rows="2"
                 ></textarea>
                 <div class="note-add-actions">
-                  <div class="segmented segmented-sm" role="group" aria-label="Note privacy">
-                    <button type="button" aria-pressed={draftVisibility === 'private'} onclick={() => (draftVisibility = 'private')}>Private</button>
-                    <button type="button" aria-pressed={draftVisibility === 'visible'} onclick={() => (draftVisibility = 'visible')}>Public</button>
+                  <div class="segmented segmented-sm" role="group" aria-label={t.notes.privacyGroupLabel}>
+                    <button type="button" aria-pressed={draftVisibility === 'private'} onclick={() => (draftVisibility = 'private')}>{t.notes.private}</button>
+                    <button type="button" aria-pressed={draftVisibility === 'visible'} onclick={() => (draftVisibility = 'visible')}>{t.notes.public}</button>
                   </div>
-                  <button class="btn btn-filled btn-sm" onclick={submitNote} disabled={!draftText.trim()}>Add note</button>
+                  <button class="btn btn-filled btn-sm" onclick={submitNote} disabled={!draftText.trim()}>{t.notes.addNoteButton}</button>
                 </div>
               </div>
             {/if}
@@ -195,7 +200,7 @@
     <button
       class="delete-btn"
       onclick={handleDeleteClick}
-      aria-label="Delete {book.title} from shelf"
+      aria-label={t.deleteAria.replace('{title}', book.title)}
     >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
@@ -204,10 +209,10 @@
 
     {#if showDeleteConfirm}
       <div class="delete-confirm glass">
-        <p class="serif">Remove from shelf?</p>
+        <p class="serif">{t.removeConfirm}</p>
         <div class="delete-actions">
-          <button class="btn btn-outline btn-sm" onclick={cancelDelete}>Cancel</button>
-          <button class="btn btn-filled btn-sm btn-remove" onclick={confirmDelete}>Remove</button>
+          <button class="btn btn-outline btn-sm" onclick={cancelDelete}>{t.cancel}</button>
+          <button class="btn btn-filled btn-sm btn-remove" onclick={confirmDelete}>{t.remove}</button>
         </div>
       </div>
     {/if}

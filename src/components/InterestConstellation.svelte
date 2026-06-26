@@ -1,11 +1,15 @@
 <script lang="ts">
+  import { useTranslations, type Lang } from '../i18n';
+
   interface Props {
     curated?: string[];
     freeform?: string[];
     inferred?: string[];
+    lang?: Lang;
   }
 
-  let { curated = [], freeform = [], inferred = [] }: Props = $props();
+  let { curated = [], freeform = [], inferred = [], lang = 'en' as Lang }: Props = $props();
+  const t = $derived(useTranslations(lang).profile.constellation);
 
   interface Star {
     id: string;
@@ -99,7 +103,7 @@
 
 {#if hasTopics}
   <div class="constellation-container">
-    <svg viewBox="0 0 100 100" class="constellation" role="img" aria-label="Your reading-interest constellation">
+    <svg viewBox="0 0 100 100" class="constellation" role="img" aria-label={t.ariaLabel}>
       <defs>
         <radialGradient id="starGlow" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.8" />
@@ -155,14 +159,14 @@
     </svg>
 
     <div class="legend">
-      <span class="legend-item curated"><span class="dot"></span> Selected</span>
-      <span class="legend-item freeform"><span class="dot"></span> Custom</span>
-      <span class="legend-item inferred"><span class="dot"></span> From books</span>
+      <span class="legend-item curated"><span class="dot"></span> {t.legendSelected}</span>
+      <span class="legend-item freeform"><span class="dot"></span> {t.legendCustom}</span>
+      <span class="legend-item inferred"><span class="dot"></span> {t.legendFromBooks}</span>
     </div>
   </div>
 {:else}
   <div class="empty-constellation">
-    <p>Add interests to see your constellation</p>
+    <p>{t.empty}</p>
   </div>
 {/if}
 

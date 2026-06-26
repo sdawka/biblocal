@@ -1,52 +1,22 @@
 <script lang="ts">
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).home.shelf);
+
   let failedImages = $state<Set<number>>(new Set());
 
   function handleImageError(index: number) {
     failedImages = new Set([...failedImages, index]);
   }
 
-  const demoBooks = [
-    {
-      title: "Small Gods",
-      author: "Terry Pratchett",
-      status: "discussable",
-      statusLabel: "Let's discuss",
-      cover: "/covers/0062237373.jpg",
-      note: "Om is my favorite tortoise philosopher"
-    },
-    {
-      title: "Gödel, Escher, Bach",
-      author: "Douglas Hofstadter",
-      status: "borrowable",
-      statusLabel: "Will lend",
-      cover: "/covers/0465026567.jpg",
-      note: "You'll either love it or pretend to"
-    },
-    {
-      title: "The Unbearable Lightness of Being",
-      author: "Milan Kundera",
-      status: "visible",
-      statusLabel: "On my shelf",
-      cover: "/covers/0061148520.jpg",
-      note: "Every reading reveals something new"
-    },
-    {
-      title: "Guards! Guards!",
-      author: "Terry Pratchett",
-      status: "giftable",
-      statusLabel: "Free to good home",
-      cover: "/covers/0062225758.jpg",
-      note: "Own too many copies. A good problem."
-    },
-    {
-      title: "The Dispossessed",
-      author: "Ursula K. Le Guin",
-      status: "seeking-home",
-      statusLabel: "Looking for this",
-      cover: "/covers/0061054887.jpg",
-      note: "The ambiguous utopia awaits"
-    },
-  ];
+  const demoBooks = $derived([
+    { title: 'Small Gods', author: 'Terry Pratchett', status: 'discussable', statusLabel: t.demo.discuss, cover: '/covers/0062237373.jpg', note: t.demo.notes.smallGods },
+    { title: 'Gödel, Escher, Bach', author: 'Douglas Hofstadter', status: 'borrowable', statusLabel: t.demo.lend, cover: '/covers/0465026567.jpg', note: t.demo.notes.geb },
+    { title: 'The Unbearable Lightness of Being', author: 'Milan Kundera', status: 'visible', statusLabel: t.demo.onShelf, cover: '/covers/0061148520.jpg', note: t.demo.notes.unbearable },
+    { title: 'Guards! Guards!', author: 'Terry Pratchett', status: 'giftable', statusLabel: t.demo.gift, cover: '/covers/0062225758.jpg', note: t.demo.notes.guards },
+    { title: 'The Dispossessed', author: 'Ursula K. Le Guin', status: 'seeking-home', statusLabel: t.demo.seeking, cover: '/covers/0061054887.jpg', note: t.demo.notes.dispossessed },
+  ]);
 </script>
 
 <section class="bookshelf-section">
@@ -55,16 +25,15 @@
       <p class="eyebrow">
         <span class="rule"></span>
         <span class="num">01</span>
-        <span class="label">— Your shelf</span>
+        <span class="label">— {t.eyebrow}</span>
       </p>
 
       <h2 class="section-title">
-        Your shelf tells people <em>who you are.</em>
+        {t.titleLead}<em>{t.titleAccent}</em>
       </h2>
 
       <p class="section-desc">
-        Every shelf is a branch of the neighborhood library. Add your books, mark what you'll share.
-        That's how matches find you.
+        {t.desc}
       </p>
 
       <p class="scan-hint">
@@ -72,10 +41,10 @@
           <path d="M14.5 4h2A1.5 1.5 0 0 1 18 5.5l1 1.5h1.5A1.5 1.5 0 0 1 22 8.5v9A1.5 1.5 0 0 1 20.5 19h-17A1.5 1.5 0 0 1 2 17.5v-9A1.5 1.5 0 0 1 3.5 7H5l1-1.5A1.5 1.5 0 0 1 7.5 4h2" />
           <circle cx="12" cy="12.5" r="3.5" />
         </svg>
-        Point your phone at the barcode on the back of any book. It appears.
+        {t.scanHint}
       </p>
 
-      <p class="shelf-caption">Hover a cover to see the marginalia</p>
+      <p class="shelf-caption">{t.caption}</p>
     </div>
 
     <div class="shelf-col">

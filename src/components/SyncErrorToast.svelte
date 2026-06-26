@@ -1,5 +1,9 @@
 <script lang="ts">
   import { syncError, clearSyncError } from '../stores/sync-status';
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).common);
 </script>
 
 {#if $syncError}
@@ -8,7 +12,7 @@
     <button
       type="button"
       class="sync-toast-close"
-      aria-label="Dismiss"
+      aria-label={t.dismiss}
       onclick={clearSyncError}
     >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
