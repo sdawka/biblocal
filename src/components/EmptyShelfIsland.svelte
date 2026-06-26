@@ -1,5 +1,9 @@
 <script lang="ts">
   import { shelf, getShelfStats, type ShelfStats } from '../stores/shelf';
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).shelf.empty);
 
   let stats = $state<ShelfStats>({ total: 0, lendable: 0, discussable: 0 });
 
@@ -26,15 +30,15 @@
   <!-- Stats Bar -->
   <div class="stats-bar card">
     <div class="stats-left">
-      <span class="shelf-title serif">Your Shelf</span>
-      <span class="pill" data-status="private">Private</span>
+      <span class="shelf-title serif">{t.shelfTitle}</span>
+      <span class="pill" data-status="private">{t.private}</span>
     </div>
     <div class="stats-right">
-      <span>{stats.lendable} to lend</span>
+      <span>{stats.lendable} {t.toLend}</span>
       <span class="dot" aria-hidden="true">·</span>
-      <span>{stats.discussable} to discuss</span>
+      <span>{stats.discussable} {t.toDiscuss}</span>
       <span class="dot" aria-hidden="true">·</span>
-      <span class="faint">no topics yet</span>
+      <span class="faint">{t.noTopics}</span>
     </div>
   </div>
 
@@ -45,7 +49,7 @@
       <div class="ghost-book two"></div>
       <div class="ghost-book three"></div>
     </div>
-    <p class="ghost-hint faint">Your books will appear here</p>
+    <p class="ghost-hint faint">{t.booksWillAppear}</p>
   </div>
 
   <!-- Choice Cards -->
@@ -57,8 +61,8 @@
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
         </svg>
       </span>
-      <span class="title serif">Add a Book</span>
-      <span class="subtitle muted">Scan barcode or search by title</span>
+      <span class="title serif">{t.addBook}</span>
+      <span class="subtitle muted">{t.addBookSubtitle}</span>
     </button>
 
     <button type="button" class="choice-card card card-interactive secondary" onclick={goToExplore}>
@@ -68,8 +72,8 @@
           <path d="m21 21-4.3-4.3" />
         </svg>
       </span>
-      <span class="title serif">Explore Nearby</span>
-      <span class="subtitle muted">Books &amp; readers in your area</span>
+      <span class="title serif">{t.exploreNearby}</span>
+      <span class="subtitle muted">{t.exploreNearbySubtitle}</span>
     </button>
   </div>
 </section>

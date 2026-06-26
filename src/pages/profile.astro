@@ -1,37 +1,5 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import ProfileIsland from '../components/ProfileIsland.svelte';
-import ConnectionRequestsIsland from '../components/ConnectionRequestsIsland.svelte';
-import SyncErrorToast from '../components/SyncErrorToast.svelte';
-import QaAuthInit from '../components/QaAuthInit.svelte';
-import { UserButton } from '@clerk/astro/components';
-import { env } from 'cloudflare:workers';
-
-const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
-const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
+import ProfilePage from '../components/ProfilePage.astro';
 ---
 
-<Layout title="Your Profile | biblocal">
-  {isQaMode && <QaAuthInit client:load userId={qaUserId} />}
-  <main>
-      <div class="header-row rise">
-        <h1 class="serif">Your Profile</h1>
-        {!isQaMode && <UserButton />}
-      </div>
-
-      <SyncErrorToast client:load />
-
-      <ConnectionRequestsIsland client:idle />
-      <ProfileIsland client:load />
-    </main>
-</Layout>
-
-<style>
-  .header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--s-4);
-    margin-bottom: var(--s-5);
-  }
-</style>
+<ProfilePage lang="en" />

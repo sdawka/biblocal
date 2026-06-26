@@ -6,11 +6,13 @@
     isPromptDismissed,
     updateProfile,
   } from '../stores/profile';
+  import { useTranslations, type Lang } from '../i18n';
 
   interface Prompt {
     id: string;
     trigger: () => boolean;
-    title: string;
+    // Key into the `prompts` translation namespace for the title.
+    titleKey: 'topics' | 'freeform' | 'borrowStyle' | 'obsessions';
     component: 'topics' | 'freeform' | 'borrowStyle' | 'obsessions';
   }
 
@@ -20,7 +22,7 @@
       trigger: () =>
         getBookCount() >= 3 &&
         (profile.get().topics?.curated?.length ?? 0) === 0,
-      title: 'Pick 3 topics that describe your reading taste',
+      titleKey: 'topics',
       component: 'topics',
     },
     {
@@ -28,28 +30,30 @@
       trigger: () =>
         getBookCount() >= 5 &&
         (profile.get().topics?.freeform?.length ?? 0) === 0,
-      title: 'Add any tags that describe your interests',
+      titleKey: 'freeform',
       component: 'freeform',
     },
     {
       id: 'borrow-first-match',
       trigger: () => !profile.get().borrowStyle,
-      title: 'How would you describe your lending style?',
+      titleKey: 'borrowStyle',
       component: 'borrowStyle',
     },
     {
       id: 'obsessions-10',
       trigger: () => getBookCount() >= 10 && !profile.get().currentObsessions,
-      title: 'What are you currently obsessed with?',
+      titleKey: 'obsessions',
       component: 'obsessions',
     },
   ];
 
   interface Props {
     context?: 'shelf' | 'matches';
+    lang?: Lang;
   }
 
-  let { context = 'shelf' }: Props = $props();
+  let { context = 'shelf', lang = 'en' as Lang }: Props = $props();
+  const t = $derived(useTranslations(lang).matches.prompts);
 
   let activePrompt = $state<Prompt | null>(null);
   let inputValue = $state('');
@@ -104,7 +108,7 @@
 {#if activePrompt}
   <div class="prompt rise">
     <div class="prompt-content">
-      <p class="prompt-title">{activePrompt.title}</p>
+      <p class="prompt-title">{t[activePrompt.titleKey]}</p>
 
       {#if activePrompt.component === 'borrowStyle' || activePrompt.component === 'obsessions'}
         <input
@@ -112,19 +116,19 @@
           type="text"
           bind:value={inputValue}
           placeholder={activePrompt.component === 'borrowStyle'
-            ? 'e.g., careful, 3-week returns'
-            : 'e.g., program theory, parables'}
+            ? t.borrowStylePlaceholder
+            : t.obsessionsPlaceholder}
           onkeydown={(e) => e.key === 'Enter' && handleSubmit()}
         />
         <div class="actions">
-          <button class="btn btn-filled btn-sm" onclick={handleSubmit}>Save</button>
-          <button class="btn btn-plain btn-sm" onclick={handleDismiss}>Skip</button>
+          <button class="btn btn-filled btn-sm" onclick={handleSubmit}>{t.save}</button>
+          <button class="btn btn-plain btn-sm" onclick={handleDismiss}>{t.skip}</button>
         </div>
       {:else}
-        <p class="hint muted">Go to your profile to set this up.</p>
+        <p class="hint muted">{t.profileHint}</p>
         <div class="actions">
-          <a class="btn btn-filled btn-sm" href="/profile">Edit Profile</a>
-          <button class="btn btn-plain btn-sm" onclick={handleDismiss}>Later</button>
+          <a class="btn btn-filled btn-sm" href="/profile">{t.editProfile}</a>
+          <button class="btn btn-plain btn-sm" onclick={handleDismiss}>{t.later}</button>
         </div>
       {/if}
     </div>

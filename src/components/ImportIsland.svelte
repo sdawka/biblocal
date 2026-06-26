@@ -1,6 +1,10 @@
 <script lang="ts">
   import { parseGoodreadsCSV, parsedBookToBook, type ParsedBook } from '../lib/goodreads-import';
   import { loadBooksFromServer } from '../stores/shelf';
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).shelf.import);
 
   type Step = 'upload' | 'preview' | 'importing' | 'done';
 
@@ -27,7 +31,7 @@
       step = 'preview';
     };
     reader.onerror = () => {
-      error = 'Failed to read file';
+      error = t.readError;
     };
     reader.readAsText(file);
   }
@@ -56,7 +60,7 @@
       .map(parsedBookToBook);
 
     if (booksToImport.length === 0) {
-      error = 'No books selected';
+      error = t.noneSelected;
       return;
     }
 
@@ -71,14 +75,14 @@
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Import failed');
+        throw new Error(data.error || t.importFailed);
       }
 
       importResult = await res.json();
       await loadBooksFromServer();
       step = 'done';
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Import failed';
+      error = e instanceof Error ? e.message : t.importFailed;
       step = 'preview';
     }
   }
@@ -93,21 +97,20 @@
   }
 
   function ownershipLabel(ownership: string): string {
-    return ownership === 'seeking' ? 'Seeking' : 'Have';
+    return ownership === 'seeking' ? t.seeking : t.have;
   }
 </script>
 
 <div class="import-container">
   {#if step === 'upload'}
     <div class="upload-section">
-      <h3>Import from Goodreads</h3>
+      <h3>{t.title}</h3>
       <p class="instructions">
-        Export your library from Goodreads (My Books &rarr; Import/Export &rarr; Export Library),
-        then upload the CSV file here.
+        {t.instructions}
       </p>
       <label class="file-input">
         <input type="file" accept=".csv" onchange={handleFileSelect} />
-        <span class="btn btn-filled file-btn">Choose CSV File</span>
+        <span class="btn btn-filled file-btn">{t.chooseFile}</span>
       </label>
       {#if error}
         <p class="error">{error}</p>
@@ -117,16 +120,16 @@
   {:else if step === 'preview'}
     <div class="preview-section">
       <div class="preview-header">
-        <h3>{parsedBooks.length} books found</h3>
+        <h3>{parsedBooks.length} {t.booksFound}</h3>
         <div class="select-actions">
-          <button type="button" class="btn btn-plain btn-sm" onclick={selectAll}>Select all</button>
-          <button type="button" class="btn btn-plain btn-sm" onclick={selectNone}>Select none</button>
+          <button type="button" class="btn btn-plain btn-sm" onclick={selectAll}>{t.selectAll}</button>
+          <button type="button" class="btn btn-plain btn-sm" onclick={selectNone}>{t.selectNone}</button>
         </div>
       </div>
 
       {#if parseErrors.length > 0}
         <div class="parse-warnings">
-          {parseErrors.length} rows had issues and were skipped
+          {parseErrors.length} {t.rowsSkipped}
         </div>
       {/if}
 
@@ -148,14 +151,14 @@
       </div>
 
       <div class="preview-actions">
-        <button type="button" class="btn btn-outline btn-cancel" onclick={reset}>Cancel</button>
+        <button type="button" class="btn btn-outline btn-cancel" onclick={reset}>{t.cancel}</button>
         <button
           type="button"
           class="btn btn-filled btn-import"
           onclick={startImport}
           disabled={selectedIds.size === 0}
         >
-          Import {selectedIds.size} books
+          {t.importBooks.replace('{n}', String(selectedIds.size))}
         </button>
       </div>
 
@@ -166,44 +169,44 @@
 
   {:else if step === 'importing'}
     <div class="importing-section">
-      <h3>Importing books...</h3>
+      <h3>{t.importingTitle}</h3>
       <p class="instructions">
-        Fetching cover images from Open Library. This may take a moment.
+        {t.importingDesc}
       </p>
       <div class="spinner"></div>
     </div>
 
   {:else if step === 'done'}
     <div class="done-section">
-      <h3>Import complete</h3>
+      <h3>{t.doneTitle}</h3>
       {#if importResult}
         <div class="result-stats">
           <div class="stat">
             <span class="stat-num">{importResult.imported}</span>
-            <span class="stat-label">imported</span>
+            <span class="stat-label">{t.imported}</span>
           </div>
           {#if importResult.skipped > 0}
             <div class="stat">
               <span class="stat-num">{importResult.skipped}</span>
-              <span class="stat-label">skipped (duplicates)</span>
+              <span class="stat-label">{t.skipped}</span>
             </div>
           {/if}
         </div>
         {#if importResult.errors.length > 0}
           <div class="import-errors">
-            <p>{importResult.errors.length} errors:</p>
+            <p>{importResult.errors.length} {t.errorsLabel}</p>
             <ul>
               {#each importResult.errors.slice(0, 5) as err}
                 <li>{err}</li>
               {/each}
               {#if importResult.errors.length > 5}
-                <li>...and {importResult.errors.length - 5} more</li>
+                <li>{t.andMore.replace('{n}', String(importResult.errors.length - 5))}</li>
               {/if}
             </ul>
           </div>
         {/if}
       {/if}
-      <button type="button" class="btn btn-filled btn-done" onclick={reset}>Done</button>
+      <button type="button" class="btn btn-filled btn-done" onclick={reset}>{t.done}</button>
     </div>
   {/if}
 </div>

@@ -6,6 +6,10 @@
     respondToRequest,
   } from '../stores/connections';
   import type { ConnectionRequest } from '../lib/types';
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang }: { lang?: Lang } = $props();
+  const t = $derived(useTranslations(lang).matches.requests);
 
   let incoming = $state<ConnectionRequest[]>([]);
   let responding = $state<string | null>(null);
@@ -32,7 +36,7 @@
     if (!result.success) {
       respondErrors = {
         ...respondErrors,
-        [requestId]: result.error || 'Could not respond. Please try again.',
+        [requestId]: result.error || t.couldNotRespond,
       };
     }
   }
@@ -40,12 +44,12 @@
 
 {#if incoming.length > 0}
   <section class="connection-requests card rise">
-    <h2 class="serif">Connection Requests <span class="count-tag">{incoming.length}</span></h2>
+    <h2 class="serif">{t.title} <span class="count-tag">{incoming.length}</span></h2>
     <div class="requests-list">
       {#each incoming as request (request.id)}
         <div class="request-card card">
           <div class="request-info">
-            <span class="from-name serif">{request.fromUser?.name || 'Someone'}</span>
+            <span class="from-name serif">{request.fromUser?.name || t.someone}</span>
             {#if request.fromUser?.city}
               <span class="from-city muted">{request.fromUser.city}</span>
             {/if}
@@ -55,17 +59,17 @@
               class="btn btn-filled btn-sm"
               onclick={() => handleRespond(request.id, 'accepted')}
               disabled={responding === request.id}
-              aria-label={`Accept connection request from ${request.fromUser?.name || 'Someone'}`}
+              aria-label={t.acceptAria.replace('{name}', request.fromUser?.name || t.someone)}
             >
-              {responding === request.id ? '…' : 'Accept'}
+              {responding === request.id ? '…' : t.accept}
             </button>
             <button
               class="btn btn-sm btn-decline"
               onclick={() => handleRespond(request.id, 'declined')}
               disabled={responding === request.id}
-              aria-label={`Decline connection request from ${request.fromUser?.name || 'Someone'}`}
+              aria-label={t.declineAria.replace('{name}', request.fromUser?.name || t.someone)}
             >
-              Decline
+              {t.decline}
             </button>
           </div>
           {#if respondErrors[request.id]}

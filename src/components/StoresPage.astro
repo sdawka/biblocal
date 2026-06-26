@@ -1,0 +1,188 @@
+---
+import Layout from '../layouts/Layout.astro';
+import QaAuthInit from './QaAuthInit.svelte';
+import { UserButton } from '@clerk/astro/components';
+import { env } from 'cloudflare:workers';
+import { getDb } from '../db/client';
+import { users } from '../db/schema';
+import { eq } from 'drizzle-orm';
+import { useTranslations, localizePath, type Lang } from '../i18n';
+
+export const prerender = false;
+
+interface Props {
+  lang?: Lang;
+}
+const { lang = 'en' } = Astro.props;
+const t = useTranslations(lang).stores;
+const p = (path: string) => localizePath(path, lang);
+
+type Env = { DB: D1Database; QA_MODE?: string; QA_USER_ID?: string };
+
+const isQaMode = (env as Env)?.QA_MODE === 'true';
+const qaUserId = (env as Env)?.QA_USER_ID || 'qa-test-user';
+
+// Fetch stores directly from DB (server-side)
+const db = getDb((env as Env).DB);
+const stores = await db
+  .select()
+  .from(users)
+  .where(eq(users.type, 'bookstore'));
+
+const storesList = stores.map((s) => ({
+  ...s,
+  specialties: s.specialties ? JSON.parse(s.specialties) : [],
+}));
+---
+
+<Layout lang={lang} title={t.meta.indexTitle}>
+  {isQaMode && <QaAuthInit client:load userId={qaUserId} />}
+  <main>
+    <div class="header-row rise">
+      <div class="header-text">
+        <span class="eyebrow">{t.index.eyebrow}</span>
+        <h1>{t.index.title}</h1>
+      </div>
+      <div class="header-actions">
+        <a href={p('/stores/new')} class="btn btn-tinted btn-sm">{t.index.addStore}</a>
+        {!isQaMode && <UserButton />}
+      </div>
+    </div>
+
+    {storesList.length === 0 ? (
+      <div class="card empty-state rise rise-1">
+        <p class="muted">{t.index.emptyTitle}</p>
+        <p class="faint">
+          {t.index.emptyLead} <a href={p('/stores/new')}>{t.index.emptyLink}</a>.
+        </p>
+      </div>
+    ) : (
+      <div class="stores-grid">
+        {storesList.map((store, i) => (
+          <a
+            href={p(`/store/${store.id}`)}
+            class={`card card-interactive store-card rise rise-${Math.min(i + 1, 6)}`}
+          >
+            <span class="eyebrow store-eyebrow">{t.index.cardEyebrow}</span>
+            <h2 class="serif">{store.name}</h2>
+            {store.neighborhood && (
+              <p class="neighborhood">{store.neighborhood}</p>
+            )}
+            {store.address && (
+              <p class="address muted">{store.address}</p>
+            )}
+            {store.specialties && store.specialties.length > 0 && (
+              <div class="specialties">
+                {store.specialties.slice(0, 3).map((s: string) => (
+                  <span class="tag">{s.replace(/-/g, ' ')}</span>
+                ))}
+                {store.specialties.length > 3 && (
+                  <span class="more faint">{t.index.more.replace('{n}', String(store.specialties.length - 3))}</span>
+                )}
+              </div>
+            )}
+          </a>
+        ))}
+      </div>
+    )}
+  </main>
+</Layout>
+
+<style>
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: var(--s-4);
+    margin-bottom: var(--s-6);
+  }
+
+  .header-text h1 {
+    margin: var(--s-1) 0 0;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    flex-shrink: 0;
+  }
+
+  .empty-state {
+    padding: var(--s-8) var(--s-6);
+    text-align: center;
+  }
+
+  .empty-state p {
+    margin: var(--s-2) 0;
+  }
+
+  .stores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--s-4);
+  }
+
+  .store-card {
+    display: block;
+    text-decoration: none;
+  }
+
+  .store-eyebrow {
+    display: block;
+    margin-bottom: var(--s-2);
+  }
+
+  .store-card h2 {
+    margin: 0 0 var(--s-2);
+    font-size: 1.25rem;
+  }
+
+  .neighborhood {
+    margin: 0 0 var(--s-1);
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--accent);
+    font-weight: 540;
+  }
+
+  .address {
+    margin: 0 0 var(--s-3);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+  }
+
+  .specialties {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+    margin-top: var(--s-3);
+  }
+
+  .tag {
+    padding: 0.2rem 0.6rem;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 540;
+    color: var(--accent);
+    background: var(--accent-tint);
+    border-radius: var(--r-full);
+    white-space: nowrap;
+  }
+
+  .more {
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 560px) {
+    .header-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .header-actions {
+      justify-content: space-between;
+    }
+  }
+</style>

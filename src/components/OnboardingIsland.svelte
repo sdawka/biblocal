@@ -1,5 +1,9 @@
 <script lang="ts">
   import { initProfile } from '../stores/profile';
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).profile.onboarding);
 
   let name = $state('');
   let city = $state('Montreal');
@@ -25,7 +29,7 @@
 
   function handleSubmit() {
     if (!name.trim()) {
-      error = 'Please enter your name';
+      error = t.nameError;
       return;
     }
 
@@ -35,10 +39,10 @@
 </script>
 
 <div class="onboarding card rise">
-  <p class="eyebrow">Welcome</p>
-  <h1 class="serif">Welcome to biblocal</h1>
+  <p class="eyebrow">{t.eyebrow}</p>
+  <h1 class="serif">{t.heading}</h1>
   <p class="tagline muted">
-    Build your living bookshelf. Find people nearby with similar taste.
+    {t.tagline}
   </p>
 
   <form
@@ -48,19 +52,19 @@
     }}
   >
     <div class="field">
-      <label class="label" for="name">What should we call you?</label>
+      <label class="label" for="name">{t.nameLabel}</label>
       <input
         id="name"
         class="input"
         type="text"
         bind:value={name}
-        placeholder="Your name"
+        placeholder={t.namePlaceholder}
         bind:this={nameInput}
       />
     </div>
 
     <div class="field">
-      <label class="label" for="city">Where are you?</label>
+      <label class="label" for="city">{t.cityLabel}</label>
       <select id="city" class="select" bind:value={city}>
         {#each CITIES as c}
           <option value={c}>{c}</option>
@@ -72,7 +76,7 @@
       <p class="error" role="alert">{error}</p>
     {/if}
 
-    <button type="submit" class="btn btn-filled btn-lg">Start Your Shelf</button>
+    <button type="submit" class="btn btn-filled btn-lg">{t.submit}</button>
   </form>
 </div>
 

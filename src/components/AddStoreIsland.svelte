@@ -1,11 +1,14 @@
 <script lang="ts">
   import { CURATED_TOPICS } from '../stores/topics';
+  import { useTranslations, type Lang } from '../i18n';
 
   interface Props {
     onSuccess?: (storeId: string) => void;
+    lang?: Lang;
   }
 
-  let { onSuccess }: Props = $props();
+  let { onSuccess, lang = 'en' as Lang }: Props = $props();
+  const t = $derived(useTranslations(lang).stores);
 
   let name = $state('');
   let neighborhood = $state('');
@@ -48,7 +51,7 @@
 
   async function handleSubmit() {
     if (!name.trim() || !neighborhood || !address.trim()) {
-      error = 'Name, neighborhood, and address are required';
+      error = t.form.validationRequired;
       return;
     }
 
@@ -71,7 +74,7 @@
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to add store');
+        throw new Error(data.error || t.form.errorAddFailed);
       }
 
       const data = await res.json();
@@ -81,7 +84,7 @@
         onSuccess(data.id);
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Something went wrong';
+      error = e instanceof Error ? e.message : t.form.errorGeneric;
     } finally {
       loading = false;
     }
@@ -100,26 +103,26 @@
 </script>
 
 <div class="add-store card">
-  <span class="eyebrow">Local</span>
-  <h2 class="serif">Add a Bookstore</h2>
-  <p class="subtitle muted">Know a great local bookstore? Add it to help others discover it.</p>
+  <span class="eyebrow">{t.form.eyebrow}</span>
+  <h2 class="serif">{t.form.title}</h2>
+  <p class="subtitle muted">{t.form.subtitle}</p>
 
   {#if success}
     <div class="success-message">
       <span class="icon" aria-hidden="true">✓</span>
-      <p>Store added! It will appear in matches for users with similar interests.</p>
-      <button type="button" class="btn btn-tinted" onclick={reset}>Add another</button>
+      <p>{t.form.successMessage}</p>
+      <button type="button" class="btn btn-tinted" onclick={reset}>{t.form.addAnother}</button>
     </div>
   {:else}
     <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
       <div class="field">
-        <label class="label" for="name">Store name *</label>
+        <label class="label" for="name">{t.form.nameLabel}</label>
         <input
           class="input"
           id="name"
           type="text"
           bind:value={name}
-          placeholder="e.g., Argo Bookshop"
+          placeholder={t.form.namePlaceholder}
           disabled={loading}
           aria-required="true"
           aria-invalid={error && !name.trim() ? 'true' : undefined}
@@ -128,7 +131,7 @@
       </div>
 
       <div class="field">
-        <label class="label" for="neighborhood">Neighborhood *</label>
+        <label class="label" for="neighborhood">{t.form.neighborhoodLabel}</label>
         <select
           class="select"
           id="neighborhood"
@@ -138,7 +141,7 @@
           aria-invalid={error && !neighborhood ? 'true' : undefined}
           aria-describedby={error ? 'store-error' : undefined}
         >
-          <option value="">Select neighborhood...</option>
+          <option value="">{t.form.neighborhoodPlaceholder}</option>
           {#each MONTREAL_NEIGHBORHOODS as hood}
             <option value={hood}>{hood}</option>
           {/each}
@@ -146,13 +149,13 @@
       </div>
 
       <div class="field">
-        <label class="label" for="address">Address *</label>
+        <label class="label" for="address">{t.form.addressLabel}</label>
         <input
           class="input"
           id="address"
           type="text"
           bind:value={address}
-          placeholder="e.g., 1915 Ste-Catherine O, Montreal"
+          placeholder={t.form.addressPlaceholder}
           disabled={loading}
           aria-required="true"
           aria-invalid={error && !address.trim() ? 'true' : undefined}
@@ -161,31 +164,31 @@
       </div>
 
       <div class="field">
-        <label class="label" for="website">Website</label>
+        <label class="label" for="website">{t.form.websiteLabel}</label>
         <input
           class="input"
           id="website"
           type="url"
           bind:value={website}
-          placeholder="https://"
+          placeholder={t.form.websitePlaceholder}
           disabled={loading}
         />
       </div>
 
       <div class="field">
-        <label class="label" for="phone">Phone</label>
+        <label class="label" for="phone">{t.form.phoneLabel}</label>
         <input
           class="input"
           id="phone"
           type="tel"
           bind:value={phone}
-          placeholder="514-..."
+          placeholder={t.form.phonePlaceholder}
           disabled={loading}
         />
       </div>
 
       <div class="field specialties-field">
-        <span class="label">Specialties <span class="hint faint">(select up to 6)</span></span>
+        <span class="label">{t.form.specialtiesLabel} <span class="hint faint">{t.form.specialtiesHint}</span></span>
         <div class="specialties-grid">
           {#each CURATED_TOPICS as topic}
             <button
@@ -207,7 +210,7 @@
       {/if}
 
       <button type="submit" class="btn btn-filled btn-lg" disabled={loading}>
-        {loading ? 'Adding...' : 'Add Store'}
+        {loading ? t.form.submitting : t.form.submit}
       </button>
     </form>
   {/if}

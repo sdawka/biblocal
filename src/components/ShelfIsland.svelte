@@ -15,7 +15,16 @@
   } from '../stores/shelf';
   import BookCard from './BookCard.svelte';
   import type { BookIntent } from '../lib/types';
-  import { INTENT_OPTIONS, INTENT_PROMPT } from '../lib/intents';
+  import { INTENT_OPTIONS } from '../lib/intents';
+  import { useTranslations, type Lang } from '../i18n';
+
+  let { lang = 'en' as Lang } = $props();
+  const t = $derived(useTranslations(lang).shelf.list);
+  // Localized intent options: order from lib, labels from the dict.
+  const intentOptions = $derived(
+    INTENT_OPTIONS.map((opt) => ({ value: opt.value, label: useTranslations(lang).shelf.intents.labels[opt.value] }))
+  );
+  const intentPrompt = $derived(useTranslations(lang).shelf.intents.prompt);
 
   let filters = $derived($activeFilters);
   let allBooks = $derived(Object.values($shelf));
@@ -53,34 +62,34 @@
 
 <section class="shelf">
   <div class="header">
-    <h2 class="serif">Your books <span class="count-tag">{totalBooks} books</span></h2>
+    <h2 class="serif">{t.title} <span class="count-tag">{totalBooks} {t.countSuffix}</span></h2>
   </div>
 
   <div class="filter-groups card">
     <div class="filter-row">
-      <span class="filter-label">I…</span>
-      <div class="chip-group" role="group" aria-label="Filter by ownership">
+      <span class="filter-label">{t.filterOwnershipLabel}</span>
+      <div class="chip-group" role="group" aria-label={t.filterOwnershipGroup}>
         <button
           class="chip"
           aria-pressed={filters.ownership.includes('have')}
           onclick={() => toggleOwnershipFilter('have')}
         >
-          have {#if ownershipCounts.have > 0}<span class="count">{ownershipCounts.have}</span>{/if}
+          {t.have} {#if ownershipCounts.have > 0}<span class="count">{ownershipCounts.have}</span>{/if}
         </button>
         <button
           class="chip"
           aria-pressed={filters.ownership.includes('seeking')}
           onclick={() => toggleOwnershipFilter('seeking')}
         >
-          am seeking {#if ownershipCounts.seeking > 0}<span class="count">{ownershipCounts.seeking}</span>{/if}
+          {t.seeking} {#if ownershipCounts.seeking > 0}<span class="count">{ownershipCounts.seeking}</span>{/if}
         </button>
       </div>
     </div>
 
     <div class="filter-row">
-      <span class="filter-label">{INTENT_PROMPT}</span>
-      <div class="chip-group" role="group" aria-label="Filter by intent">
-        {#each INTENT_OPTIONS as opt}
+      <span class="filter-label">{intentPrompt}</span>
+      <div class="chip-group" role="group" aria-label={t.filterIntentGroup}>
+        {#each intentOptions as opt}
           <button
             class="chip"
             aria-pressed={filters.intents.includes(opt.value)}
@@ -94,18 +103,18 @@
 
     <div class="filter-row">
       <span class="filter-label" aria-hidden="true"></span>
-      <div class="chip-group" role="group" aria-label="Filter by visibility">
+      <div class="chip-group" role="group" aria-label={t.filterVisibilityGroup}>
         <button
           class="chip"
           aria-pressed={filters.visibility.includes('private')}
           onclick={() => toggleVisibilityFilter('private')}
         >
-          Private only {#if privateCount > 0}<span class="count">{privateCount}</span>{/if}
+          {t.privateOnly} {#if privateCount > 0}<span class="count">{privateCount}</span>{/if}
         </button>
       </div>
       {#if showClear}
         <button class="btn btn-plain btn-sm clear-link" onclick={() => clearAllFilters()}>
-          Clear filters
+          {t.clearFilters}
         </button>
       {/if}
     </div>
@@ -121,9 +130,9 @@
       </span>
       <p class="muted">
         {#if totalBooks === 0}
-          No books yet. Add your first book above.
+          {t.emptyNoBooks}
         {:else}
-          No books match this filter.
+          {t.emptyNoMatch}
         {/if}
       </p>
     </div>
@@ -135,14 +144,14 @@
           onclick={() => haveExpanded = !haveExpanded}
           aria-expanded={haveExpanded}
           aria-controls="books-i-have-grid"
-          aria-label={haveExpanded ? 'Collapse books I have section' : 'Expand books I have section'}
+          aria-label={haveExpanded ? t.collapseHave : t.expandHave}
         >
           <span class="collapse-icon" class:open={haveExpanded} aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3.5 5.5 7 9l3.5-3.5" />
             </svg>
           </span>
-          <h3 class="serif">Books I Have <span class="count-tag">{booksIHave.length}</span></h3>
+          <h3 class="serif">{t.booksIHave} <span class="count-tag">{booksIHave.length}</span></h3>
         </button>
         {#if haveExpanded}
           <div class="grid" id="books-i-have-grid">
@@ -150,6 +159,7 @@
               <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
                 <BookCard
                   {book}
+                  {lang}
                   onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
                   onDelete={handleDeleteBook}
                   onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
@@ -170,14 +180,14 @@
           onclick={() => seekingExpanded = !seekingExpanded}
           aria-expanded={seekingExpanded}
           aria-controls="books-seeking-grid"
-          aria-label={seekingExpanded ? 'Collapse books I am seeking section' : 'Expand books I am seeking section'}
+          aria-label={seekingExpanded ? t.collapseSeeking : t.expandSeeking}
         >
           <span class="collapse-icon" class:open={seekingExpanded} aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3.5 5.5 7 9l3.5-3.5" />
             </svg>
           </span>
-          <h3 class="serif">Books I'm Seeking <span class="count-tag">{booksImSeeking.length}</span></h3>
+          <h3 class="serif">{t.booksImSeeking} <span class="count-tag">{booksImSeeking.length}</span></h3>
         </button>
         {#if seekingExpanded}
           <div class="grid" id="books-seeking-grid">
@@ -185,6 +195,7 @@
               <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
                 <BookCard
                   {book}
+                  {lang}
                   onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
                   onDelete={handleDeleteBook}
                   onAddNote={(text, visibility) => addNote(book.id, text, visibility)}

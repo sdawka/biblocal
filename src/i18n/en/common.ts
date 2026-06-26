@@ -14,4 +14,12 @@ export default {
     connect: 'Connect',
   },
   langSwitch: { label: 'Language', en: 'English', fr: 'Français' },
+  dismiss: 'Dismiss',
+  appNav: {
+    shelf: 'Shelf',
+    matches: 'Matches',
+    profile: 'Profile',
+    logout: 'Log out',
+    theme: 'Theme',
+  },
 };

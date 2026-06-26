@@ -1,13 +1,16 @@
 <script lang="ts">
   import Quagga from '@ericblade/quagga2';
   import { isBookEan13 } from '../lib/openLibrary';
+  import { useTranslations, type Lang } from '../i18n';
 
   interface Props {
     onScan: (isbn: string) => void;
     onClose: () => void;
+    lang?: Lang;
   }
 
-  let { onScan, onClose }: Props = $props();
+  let { onScan, onClose, lang = 'en' as Lang }: Props = $props();
+  const t = $derived(useTranslations(lang).shelf.scanner);
 
   let videoRef: HTMLDivElement | null = $state(null);
   let fileInputRef: HTMLInputElement | null = $state(null);
@@ -137,11 +140,11 @@
       hasCamera = false;
       const name = err instanceof Error ? err.name : '';
       if (name === 'NotAllowedError') {
-        error = 'Camera permission denied. Allow camera access or upload a photo.';
+        error = t.errors.permissionDenied;
       } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-        error = 'No camera found. Try uploading a photo.';
+        error = t.errors.notFound;
       } else {
-        error = 'Camera not available. Try uploading a photo.';
+        error = t.errors.unavailable;
       }
     }
   }
@@ -177,9 +180,9 @@
         if (code && isBookEan13(code)) {
           onScan(code);
         } else if (code) {
-          error = 'That barcode is not an ISBN. Scan the one starting 978 or 979.';
+          error = t.errors.notIsbn;
         } else {
-          error = 'Could not detect barcode. Try again.';
+          error = t.errors.noDetect;
         }
       }
     );
@@ -206,7 +209,7 @@
   bind:this={dialogRef}
 >
   <div class="scanner-sheet glass" role="document">
-    <h2 id="scanner-title" class="visually-hidden">Scan ISBN Barcode</h2>
+    <h2 id="scanner-title" class="visually-hidden">{t.title}</h2>
     <div class="drag-handle"></div>
 
     {#if hasCamera}
@@ -215,7 +218,7 @@
           <span class="scan-line"></span>
         </div>
       </div>
-      <p class="instruction muted">Aim at the ISBN barcode, the one starting 978</p>
+      <p class="instruction muted">{t.instruction}</p>
     {:else}
       <div class="no-camera">
         <span class="no-camera-icon" aria-hidden="true">
@@ -225,7 +228,7 @@
             <path d="M2 2l20 20" />
           </svg>
         </span>
-        <p class="muted">Camera not available</p>
+        <p class="muted">{t.cameraUnavailable}</p>
       </div>
     {/if}
 
@@ -239,17 +242,17 @@
         class="btn btn-outline upload-btn"
         onclick={triggerFileInput}
         disabled={decoding}
-        aria-label={decoding ? 'Scanning barcode image' : 'Upload a photo of ISBN barcode'}
+        aria-label={decoding ? t.uploadAriaScanning : t.uploadAriaIdle}
       >
-        {decoding ? 'Scanning…' : 'Upload Photo'}
+        {decoding ? t.scanning : t.uploadPhoto}
       </button>
       <button
         type="button"
         class="btn btn-plain cancel-btn"
         onclick={onClose}
-        aria-label="Close scanner"
+        aria-label={t.closeAriaLabel}
       >
-        Cancel
+        {t.cancel}
       </button>
     </div>
 

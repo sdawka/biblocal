@@ -2,13 +2,16 @@
   import { CURATED_TOPICS } from '../stores/topics';
   import { profile, updateTopics } from '../stores/profile';
   import type { UserTopics } from '../lib/types';
+  import { useTranslations, type Lang } from '../i18n';
 
   interface Props {
     mode?: 'curated' | 'freeform' | 'both';
     maxCurated?: number;
+    lang?: Lang;
   }
 
-  let { mode = 'both', maxCurated = 5 }: Props = $props();
+  let { mode = 'both', maxCurated = 5, lang = 'en' as Lang }: Props = $props();
+  const t = $derived(useTranslations(lang).profile.topicPicker);
 
   let topics = $state<UserTopics>({ curated: [], freeform: [], inferred: [] });
   let freeformInput = $state('');
@@ -44,8 +47,8 @@
 <div class="topic-picker">
   {#if mode === 'curated' || mode === 'both'}
     <div class="section">
-      <h3>Pick your interests <span class="count-tag">{topics.curated.length}/{maxCurated}</span></h3>
-      <div class="curated-grid" role="group" aria-label="Curated interests">
+      <h3>{t.pickHeading} <span class="count-tag">{topics.curated.length}/{maxCurated}</span></h3>
+      <div class="curated-grid" role="group" aria-label={t.curatedGroupLabel}>
         {#each CURATED_TOPICS as topic}
           <button
             class="chip"
@@ -64,17 +67,17 @@
 
   {#if mode === 'freeform' || mode === 'both'}
     <div class="section">
-      <h3>Add your own tags</h3>
+      <h3>{t.addOwnHeading}</h3>
       <div class="freeform-input">
         <input
           class="input"
           type="text"
           bind:value={freeformInput}
-          placeholder="e.g., Le Guin fan, solarpunk"
+          placeholder={t.freeformPlaceholder}
           onkeydown={(e) =>
             e.key === 'Enter' && (e.preventDefault(), addFreeform())}
         />
-        <button class="btn btn-tinted" onclick={addFreeform}>Add</button>
+        <button class="btn btn-tinted" onclick={addFreeform}>{t.add}</button>
       </div>
       {#if topics.freeform.length > 0}
         <div class="freeform-tags">
@@ -83,7 +86,7 @@
               {tag}
               <button
                 class="tag-remove"
-                aria-label={`Remove ${tag}`}
+                aria-label={t.removeTag.replace('{tag}', tag)}
                 onclick={() => removeFreeform(tag)}
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
