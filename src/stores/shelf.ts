@@ -101,13 +101,22 @@ export function hasActiveFilters(): boolean {
 }
 
 // Each sync helper takes the `prior` shelf snapshot captured *before* the
-// optimistic mutation. On a non-2xx response or a thrown error it restores that
-// snapshot and surfaces a user-facing message, so a failed sync no longer
-// silently drops (or only-locally persists) the change. A full-snapshot restore
-// is a deliberately simple model: concurrent in-flight mutations are uncommon
-// in this app, and reverting to the pre-mutation shelf is the safe default.
-function rollback(prior: Record<string, Book>): void {
-  shelf.set(prior);
+// optimistic mutation and the id of the book it touched. On a non-2xx response
+// or a thrown error it reverts ONLY that book to its pre-mutation state, merged
+// onto the *current* shelf — so a failed sync no longer clobbers a concurrent
+// mutation to a different book that succeeded in the meantime.
+function rollback(id: string, prior: Record<string, Book>): void {
+  const current = shelf.get();
+  const next = { ...current };
+  const priorBook = prior[id];
+  if (priorBook === undefined) {
+    // The mutation added this book; undo by removing it.
+    delete next[id];
+  } else {
+    // The mutation changed/removed an existing book; restore its prior value.
+    next[id] = priorBook;
+  }
+  shelf.set(next);
   reportSyncError(SYNC_ERROR_MESSAGE);
 }
 
@@ -132,11 +141,11 @@ async function syncAddBook(book: Book, prior: Record<string, Book>): Promise<voi
     });
     if (!res.ok) {
       console.error('Failed to sync book:', await res.text());
-      rollback(prior);
+      rollback(book.id, prior);
     }
   } catch (e) {
     console.error('Failed to sync book:', e);
-    rollback(prior);
+    rollback(book.id, prior);
   }
 }
 
@@ -150,11 +159,11 @@ async function syncUpdateBook(id: string, updates: Partial<Book>, prior: Record<
     });
     if (!res.ok) {
       console.error('Failed to sync book update:', await res.text());
-      rollback(prior);
+      rollback(id, prior);
     }
   } catch (e) {
     console.error('Failed to sync book update:', e);
-    rollback(prior);
+    rollback(id, prior);
   }
 }
 
@@ -164,11 +173,11 @@ async function syncRemoveBook(id: string, prior: Record<string, Book>): Promise<
     const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
     if (!res.ok) {
       console.error('Failed to sync book removal:', await res.text());
-      rollback(prior);
+      rollback(id, prior);
     }
   } catch (e) {
     console.error('Failed to sync book removal:', e);
-    rollback(prior);
+    rollback(id, prior);
   }
 }
 
@@ -183,11 +192,11 @@ async function syncAddNote(bookId: string, note: BookNote, prior: Record<string,
     });
     if (!res.ok) {
       console.error('Failed to sync note:', await res.text());
-      rollback(prior);
+      rollback(bookId, prior);
     }
   } catch (e) {
     console.error('Failed to sync note:', e);
-    rollback(prior);
+    rollback(bookId, prior);
   }
 }
 
@@ -201,11 +210,11 @@ async function syncUpdateNote(bookId: string, noteId: string, updates: Partial<B
     });
     if (!res.ok) {
       console.error('Failed to sync note update:', await res.text());
-      rollback(prior);
+      rollback(bookId, prior);
     }
   } catch (e) {
     console.error('Failed to sync note update:', e);
-    rollback(prior);
+    rollback(bookId, prior);
   }
 }
 
@@ -215,11 +224,11 @@ async function syncRemoveNote(bookId: string, noteId: string, prior: Record<stri
     const res = await fetch(`/api/books/${bookId}/notes/${noteId}`, { method: 'DELETE' });
     if (!res.ok) {
       console.error('Failed to sync note removal:', await res.text());
-      rollback(prior);
+      rollback(bookId, prior);
     }
   } catch (e) {
     console.error('Failed to sync note removal:', e);
-    rollback(prior);
+    rollback(bookId, prior);
   }
 }
 
@@ -356,11 +365,17 @@ interface ServerBook {
 }
 
 export async function loadBooksFromServer(): Promise<void> {
-  if (!currentUserId.get()) return;
+  // Capture the user this load is for; if it changes mid-flight (fast re-login
+  // as a different user), bail before set() so a slow response can't overwrite
+  // the newer user's freshly-loaded shelf.
+  const loadingFor = currentUserId.get();
+  if (!loadingFor) return;
   try {
     const res = await fetch('/api/books?mine=true');
+    if (currentUserId.get() !== loadingFor) return;
     if (!res.ok) return;
     const data = await res.json() as { books: ServerBook[] };
+    if (currentUserId.get() !== loadingFor) return;
     const localBooks: Record<string, Book> = {};
     for (const b of data.books) {
       localBooks[b.id] = {

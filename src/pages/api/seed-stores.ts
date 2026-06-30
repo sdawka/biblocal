@@ -119,7 +119,7 @@ export const POST: APIRoute = async () => {
     });
   } catch (e) {
     console.error('Seed error:', e);
-    return new Response(JSON.stringify({ error: 'Server error', details: String(e) }), {
+    return new Response(JSON.stringify({ error: 'Server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

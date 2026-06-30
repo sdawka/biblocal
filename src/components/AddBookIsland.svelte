@@ -62,24 +62,28 @@
     loading = true;
     error = '';
 
-    const bookData = await fetchByIsbn(isbn);
+    try {
+      const bookData = await fetchByIsbn(isbn);
 
-    if (bookData) {
-      previewBook = {
-        title: bookData.title,
-        author: bookData.author,
-        coverUrl: bookData.coverUrl,
-        isbn: bookData.isbn,
-        subjects: bookData.subjects,
-      };
-    } else {
+      if (bookData) {
+        previewBook = {
+          title: bookData.title,
+          author: bookData.author,
+          coverUrl: bookData.coverUrl,
+          isbn: bookData.isbn,
+          subjects: bookData.subjects,
+        };
+      } else {
+        error = t.errors.notFound;
+        title = '';
+        author = '';
+        mode = 'manual';
+      }
+    } catch {
       error = t.errors.notFound;
-      title = '';
-      author = '';
-      mode = 'manual';
+    } finally {
+      loading = false;
     }
-
-    loading = false;
   }
 
   function handleManualSubmit() {

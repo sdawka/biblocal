@@ -26,7 +26,7 @@ const qaUserId = (env as { QA_USER_ID?: string })?.QA_USER_ID || 'qa-test-user';
         {!isQaMode && <UserButton />}
       </div>
 
-      <SyncErrorToast client:load />
+      <SyncErrorToast lang={lang} client:load />
 
       <ConnectionRequestsIsland client:idle />
       <ProfileIsland lang={lang} client:load />

@@ -9,7 +9,9 @@ export type BookStatus =
   | 'visible'
   | 'borrowable'
   | 'discussable'
-  | 'giftable';
+  | 'giftable'
+  | 'class-resource'
+  | 'seeking-home';
 
 // A note someone attaches to a book they own (e.g. "what I liked about it").
 // Each note carries its own privacy, mirroring book visibility.

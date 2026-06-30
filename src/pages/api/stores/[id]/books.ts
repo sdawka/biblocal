@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../../../../db/client';
 import { users, books } from '../../../../db/schema';
 import { getUserId } from '../../../../lib/auth';
+import { validateEnum, validateIntents, VALID_OWNERSHIP } from '../../../../lib/validation';
 
 interface AddBookBody {
   title: string;
@@ -77,6 +78,9 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     const now = new Date();
     const bookId = `book-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+    // Normalize untrusted enum fields to safe defaults rather than storing junk.
+    const ownership = validateEnum(body.ownership, VALID_OWNERSHIP) ?? 'have';
+
     await db.insert(books).values({
       id: bookId,
       userId: storeId,
@@ -88,8 +92,8 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       // New three-dimension model.
       // Store inventory is inherently public — force visible regardless of input.
       visibility: 'visible',
-      ownership: body.ownership || 'have',
-      intents: body.intents ? JSON.stringify(body.intents) : '[]',
+      ownership,
+      intents: JSON.stringify(validateIntents(body.intents)),
       addedVia: 'manual',
       subjects: body.subjects ? JSON.stringify(body.subjects) : null,
       createdAt: now,

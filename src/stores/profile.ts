@@ -21,7 +21,7 @@ const DEFAULT_TOPICS: UserTopics = {
   inferred: [],
 };
 
-const DEFAULT_PROFILE: UserProfile = {
+export const DEFAULT_PROFILE: UserProfile = {
   id: '',
   name: '',
   city: '',
@@ -135,11 +135,17 @@ interface ServerProfile {
 }
 
 export async function loadProfileFromServer(): Promise<void> {
-  if (!currentUserId.get()) return;
+  // Capture the user this load is for; if it changes mid-flight (fast re-login
+  // as a different user), bail before set() so a slow response can't overwrite
+  // the newer user's freshly-loaded profile.
+  const loadingFor = currentUserId.get();
+  if (!loadingFor) return;
   try {
     const res = await fetch('/api/profile');
+    if (currentUserId.get() !== loadingFor) return;
     if (!res.ok) return;
     const data = await res.json() as { profile: ServerProfile };
+    if (currentUserId.get() !== loadingFor) return;
     const sp = data.profile;
     const current = profile.get();
     profile.set({
@@ -160,8 +166,8 @@ export async function loadProfileFromServer(): Promise<void> {
           })()
         : undefined,
       topics: {
-        curated: sp.topicsCurated ? JSON.parse(sp.topicsCurated) : [],
-        freeform: sp.topicsFreeform ? JSON.parse(sp.topicsFreeform) : [],
+        curated: sp.topicsCurated ? safeJsonDecode<string[]>([])(sp.topicsCurated) : [],
+        freeform: sp.topicsFreeform ? safeJsonDecode<string[]>([])(sp.topicsFreeform) : [],
         inferred: current.topics.inferred,
       },
       // Geolocation

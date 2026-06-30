@@ -12,6 +12,7 @@ export const matches = computed(
     const myTopics = [
       ...(profileData.topics?.curated ?? []),
       ...(profileData.topics?.inferred ?? []),
+      ...(profileData.topics?.freeform ?? []),
     ];
 
     return calculateMatches(myBooks, myTopics, users);
@@ -29,6 +30,7 @@ export const discovery = computed(
     const myTopics = [
       ...(profileData.topics?.curated ?? []),
       ...(profileData.topics?.inferred ?? []),
+      ...(profileData.topics?.freeform ?? []),
     ];
 
     return calculateDiscovery(myBooks, myTopics, users);

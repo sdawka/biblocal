@@ -14,6 +14,8 @@ interface OpenLibraryAuthor {
 const CACHE_KEY = 'biblocal:isbn-cache:v1';
 
 function getCache(): Record<string, Partial<Book>> {
+  // src/lib must be SSR-safe: localStorage doesn't exist on the server.
+  if (typeof localStorage === 'undefined') return {};
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     return cached ? JSON.parse(cached) : {};
@@ -23,6 +25,8 @@ function getCache(): Record<string, Partial<Book>> {
 }
 
 function setCache(isbn: string, book: Partial<Book>): void {
+  // src/lib must be SSR-safe: localStorage doesn't exist on the server.
+  if (typeof localStorage === 'undefined') return;
   try {
     const cache = getCache();
     cache[isbn] = book;
@@ -34,7 +38,9 @@ function setCache(isbn: string, book: Partial<Book>): void {
 
 async function fetchAuthorName(authorKey: string): Promise<string> {
   try {
-    const res = await fetch(`https://openlibrary.org${authorKey}.json`);
+    const res = await fetch(`https://openlibrary.org${authorKey}.json`, {
+      signal: AbortSignal.timeout(5000),
+    });
     if (!res.ok) return 'Unknown Author';
     const data: OpenLibraryAuthor = await res.json();
     return data.name;
@@ -50,7 +56,9 @@ export async function fetchByIsbn(isbn: string): Promise<Partial<Book> | null> {
   if (cached) return cached;
 
   try {
-    const res = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`);
+    const res = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`, {
+      signal: AbortSignal.timeout(5000),
+    });
     if (!res.ok) return null;
 
     const data: OpenLibraryBook = await res.json();

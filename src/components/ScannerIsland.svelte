@@ -31,11 +31,15 @@
   let lastCode = '';
   let confirmCount = 0;
 
+  let mounted = false;
+
   $effect(() => {
+    mounted = true;
     if (videoRef) {
       initScanner();
     }
     return () => {
+      mounted = false;
       Quagga.stop();
     };
   });
@@ -100,6 +104,10 @@
         },
         locate: true,
       });
+
+      // The component may have been destroyed while init() was awaiting; bail
+      // before start() so we don't leak the camera MediaStream.
+      if (!mounted) return;
 
       Quagga.start();
 

@@ -28,8 +28,8 @@
 
   // Track the seed-user fetch so the panel can tell loading/error apart from a
   // genuinely empty match list.
-  $effect(() => usersLoading.subscribe((v) => { loadingUsers = v; }));
-  $effect(() => usersError.subscribe((v) => { loadError = v; }));
+  $effect(() => usersLoading.subscribe((v) => (loadingUsers = v)));
+  $effect(() => usersError.subscribe((v) => (loadError = v)));
   let mapContainer: HTMLDivElement;
   let map: any;
   // markerId -> { marker, isStore, baseRadius }
