@@ -24,7 +24,7 @@ A local book-lending and taste-matching webapp. People build a living bookshelf 
 
 See `src/lib/types.ts`. Core: `Book`, `BookStatus`, `UserProfile`.
 
-BookStatus values: `private`, `visible`, `borrowable`, `discussable`, `giftable`, `class-resource`, `seeking-home`.
+BookStatus values: `private`, `visible`, `borrowable`, `discussable`, `giftable`, `seeking-home`. (`BookStatus` is a legacy compat type; the live model is `BookVisibility` + `BookOwnership` + `BookIntent`.)
 
 ## Commands
 

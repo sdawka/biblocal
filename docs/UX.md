@@ -19,7 +19,6 @@ Main screen after login. Three parts:
 | `borrowable` | You'll lend it |
 | `discussable` | You want to discuss it |
 | `giftable` | Free to a good home |
-| `class-resource` | Teaching/learning material |
 | `seeking-home` | You're looking for this book |
 
 ### Profile (`/profile`)
