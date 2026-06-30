@@ -92,7 +92,10 @@ function buildNotes(rating: string, review: string, privateNotes: string): strin
 }
 
 export function parseGoodreadsCSV(csvContent: string): ImportResult {
-  const lines = csvContent.split('\n').filter(line => line.trim());
+  // Normalize Windows (\r\n) and old-Mac (\r) line endings to \n first.
+  // A trailing \r on the last header (e.g. "Private Notes") otherwise makes
+  // its indexOf lookup fail, silently dropping that column from CSV exports.
+  const lines = csvContent.replace(/\r\n?/g, '\n').split('\n').filter(line => line.trim());
   if (lines.length < 2) {
     return { books: [], errors: [{ row: 0, message: 'CSV file is empty or has no data rows' }] };
   }

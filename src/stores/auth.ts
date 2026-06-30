@@ -21,7 +21,14 @@ export async function onUserChange(userId: string | null): Promise<void> {
   }
 }
 
-export function onLogout(): void {
+export async function onLogout(): Promise<void> {
   currentUserId.set(null);
   clearUserData();
+  // clearUserData() only wipes localStorage; reset the in-memory atoms too so
+  // the previous user's shelf/profile don't linger until a page reload. Dynamic
+  // import avoids a circular dependency (shelf/profile import from auth).
+  const { shelf } = await import('./shelf');
+  const { profile, DEFAULT_PROFILE } = await import('./profile');
+  shelf.set({});
+  profile.set(DEFAULT_PROFILE);
 }

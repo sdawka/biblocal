@@ -58,7 +58,7 @@
             disabled={!topics.curated.includes(topic) &&
               topics.curated.length >= maxCurated}
           >
-            {topic.replace('-', ' ')}
+            {topic.replace(/-/g, ' ')}
           </button>
         {/each}
       </div>

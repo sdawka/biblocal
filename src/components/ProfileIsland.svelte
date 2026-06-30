@@ -23,6 +23,11 @@
     saveTimeout = setTimeout(() => { showSaved = false; }, 2000);
   }
 
+  // Clear the pending saved-indicator timer if the component is destroyed.
+  $effect(() => () => {
+    if (saveTimeout) clearTimeout(saveTimeout);
+  });
+
   let profileData = $state<UserProfile>({
     id: '',
     name: '',

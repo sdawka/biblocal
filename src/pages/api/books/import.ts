@@ -34,9 +34,16 @@ interface ImportResult {
   errors: string[];
 }
 
+// How many cover lookups to run at once. Sequential fetches (200 of them)
+// can exceed the Worker time limit; batching keeps total wall-time bounded
+// while not opening too many sockets at once.
+const COVER_FETCH_CONCURRENCY = 10;
+
 async function fetchCoverUrl(isbn: string): Promise<string | null> {
   try {
-    const res = await fetch(`https://openlibrary.org/isbn/${isbn}.json`);
+    const res = await fetch(`https://openlibrary.org/isbn/${isbn}.json`, {
+      signal: AbortSignal.timeout(5000),
+    });
     if (!res.ok) return null;
     const data = await res.json() as { covers?: number[] };
     if (data.covers?.[0]) {
@@ -46,6 +53,22 @@ async function fetchCoverUrl(isbn: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+// Resolve covers for a set of ISBNs concurrently in bounded batches.
+// A failed lookup must never abort the import, so each settles to null.
+async function fetchCovers(isbns: string[]): Promise<Map<string, string>> {
+  const covers = new Map<string, string>();
+  for (let i = 0; i < isbns.length; i += COVER_FETCH_CONCURRENCY) {
+    const batch = isbns.slice(i, i + COVER_FETCH_CONCURRENCY);
+    const results = await Promise.all(
+      batch.map(async (isbn) => [isbn, await fetchCoverUrl(isbn)] as const)
+    );
+    for (const [isbn, url] of results) {
+      if (url) covers.set(isbn, url);
+    }
+  }
+  return covers;
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -91,22 +114,31 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const result: ImportResult = { imported: 0, skipped: 0, errors: [] };
     const now = new Date();
 
+    // Determine which books will actually be imported first, then fetch their
+    // covers concurrently in bounded batches. Doing the cover lookups inline
+    // (sequentially, with a forced delay) risked exceeding the Worker time
+    // limit and leaving partial imports.
+    const toImport: ImportBook[] = [];
     for (const book of body.books) {
       if (!book.title || !book.author) {
         result.errors.push(`Skipped book with missing title or author`);
         continue;
       }
-
       if (book.isbn && existingIsbns.has(book.isbn)) {
         result.skipped++;
         continue;
       }
+      // Mark as seen so a duplicate ISBN later in the same payload is skipped,
+      // matching the original per-iteration dedup behavior.
+      if (book.isbn) existingIsbns.add(book.isbn);
+      toImport.push(book);
+    }
 
-      let coverUrl: string | null = null;
-      if (book.isbn) {
-        coverUrl = await fetchCoverUrl(book.isbn);
-        await new Promise(r => setTimeout(r, 100));
-      }
+    const coverIsbns = [...new Set(toImport.map(b => b.isbn).filter((i): i is string => !!i))];
+    const coverByIsbn = await fetchCovers(coverIsbns);
+
+    for (const book of toImport) {
+      const coverUrl: string | null = book.isbn ? coverByIsbn.get(book.isbn) ?? null : null;
 
       // Normalize untrusted enum fields to safe defaults rather than storing junk.
       const visibility = validateEnum(book.visibility, VALID_VISIBILITY) ?? 'visible';
@@ -131,9 +163,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
           updatedAt: now,
         });
         result.imported++;
-        if (book.isbn) {
-          existingIsbns.add(book.isbn);
-        }
       } catch (e) {
         result.errors.push(`Failed to import "${book.title}": ${e instanceof Error ? e.message : 'Unknown error'}`);
       }
