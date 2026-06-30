@@ -10,7 +10,6 @@ export type BookStatus =
   | 'borrowable'
   | 'discussable'
   | 'giftable'
-  | 'class-resource'
   | 'seeking-home';
 
 // A note someone attaches to a book they own (e.g. "what I liked about it").
