@@ -364,21 +364,52 @@ interface ServerBook {
   createdAt: string;
 }
 
+// Legacy pre-sync-fix books live only in localStorage and must be uploaded, not discarded.
+function findLocalOnlyBooks(
+  localSnapshot: Record<string, Book>,
+  serverBooks: Record<string, Book>,
+): Book[] {
+  const serverList = Object.values(serverBooks);
+  const localOnly: Book[] = [];
+
+  for (const localBook of Object.values(localSnapshot)) {
+    if (serverBooks[localBook.id]) continue;
+
+    if (localBook.isbn) {
+      const isbnMatch = serverList.find(b => b.isbn === localBook.isbn);
+      if (isbnMatch) continue;
+    }
+
+    const normalTitle = normalizeString(localBook.title);
+    const normalAuthor = normalizeString(localBook.author);
+    const titleMatch = serverList.find(
+      b => normalizeString(b.title) === normalTitle && normalizeString(b.author) === normalAuthor,
+    );
+    if (titleMatch) continue;
+
+    localOnly.push(localBook);
+  }
+
+  return localOnly;
+}
+
 export async function loadBooksFromServer(): Promise<void> {
   // Capture the user this load is for; if it changes mid-flight (fast re-login
   // as a different user), bail before set() so a slow response can't overwrite
   // the newer user's freshly-loaded shelf.
   const loadingFor = currentUserId.get();
   if (!loadingFor) return;
+  // Snapshot local shelf before the request so legacy-only books can be recovered.
+  const preLoadSnapshot = shelf.get();
   try {
     const res = await fetch('/api/books?mine=true');
     if (currentUserId.get() !== loadingFor) return;
     if (!res.ok) return;
     const data = await res.json() as { books: ServerBook[] };
     if (currentUserId.get() !== loadingFor) return;
-    const localBooks: Record<string, Book> = {};
+    const serverBooks: Record<string, Book> = {};
     for (const b of data.books) {
-      localBooks[b.id] = {
+      serverBooks[b.id] = {
         id: b.id,
         isbn: b.isbn || undefined,
         title: b.title,
@@ -402,7 +433,12 @@ export async function loadBooksFromServer(): Promise<void> {
         addedAt: new Date(b.createdAt).getTime(),
       };
     }
-    shelf.set(localBooks);
+    const localOnly = findLocalOnlyBooks(preLoadSnapshot, serverBooks);
+    const merged: Record<string, Book> = { ...serverBooks };
+    for (const book of localOnly) merged[book.id] = book;
+    shelf.set(merged);
+    // Upload each local-only book fire-and-forget; syncAddBook rolls back on failure.
+    for (const book of localOnly) syncAddBook(book, serverBooks);
   } catch (e) {
     console.error('Failed to load books from server:', e);
   }
