@@ -2,7 +2,9 @@
 import '../styles/theme.css';
 import { SignOutButton } from '@clerk/astro/components';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+import AuthInit from '../components/AuthInit.svelte';
 import { useTranslations, localizePath, stripLocale, getLangFromUrl, type Lang } from '../i18n';
+import { getUserId } from '../lib/auth';
 
 interface Props {
   title: string;
@@ -13,6 +15,7 @@ const { title, lang = getLangFromUrl(Astro.url) } = Astro.props;
 const t = useTranslations(lang).common;
 const currentPath = stripLocale(Astro.url.pathname);
 const p = (path: string) => localizePath(path, lang);
+const userId = getUserId(Astro.locals as Parameters<typeof getUserId>[0]);
 ---
 
 <!doctype html>
@@ -44,6 +47,7 @@ const p = (path: string) => localizePath(path, lang);
     </script>
   </head>
   <body>
+    {userId && <AuthInit client:load userId={userId} />}
     <nav class="glass">
       <a href={p('/')} class="logo">biblocal</a>
       <button

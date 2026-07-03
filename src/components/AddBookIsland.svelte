@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { addBook, findDuplicate } from '../stores/shelf';
+  import { addBook, findDuplicate, clearAllFilters } from '../stores/shelf';
   import { fetchByIsbn, isValidIsbn } from '../lib/openLibrary';
   import type { Book, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
   import { INTENT_OPTIONS } from '../lib/intents';
@@ -113,6 +113,7 @@
 
   function doAdd() {
     if (!previewBook) return;
+    clearAllFilters();
 
     addBook({
       title: previewBook.title,

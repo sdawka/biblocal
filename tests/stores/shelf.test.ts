@@ -1,17 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+let _mockUserId: string | null = 'test-user-123';
+
 // Must mock auth before importing shelf
 vi.mock('../../src/stores/auth', () => ({
-  currentUserId: { get: () => 'test-user-123' },
+  currentUserId: { get: () => _mockUserId },
 }));
 
 vi.mock('../../src/stores/topics', () => ({
   inferTopicsFromSubjects: (subjects: string[]) => subjects.slice(0, 3),
 }));
 
+vi.mock('../../src/stores/sync-status', () => ({
+  reportSyncError: vi.fn(),
+}));
+
 import {
   shelf,
   activeFilter,
+  activeFilters,
   addBook,
   updateBook,
   updateBookStatus,
@@ -20,10 +27,12 @@ import {
   getShelfStats,
   getInferredTopics,
   findDuplicate,
+  clearAllFilters,
   addNote,
   updateNote,
   removeNote,
 } from '../../src/stores/shelf';
+import { reportSyncError } from '../../src/stores/sync-status';
 import type { Book, BookStatus } from '../../src/lib/types';
 
 describe('Shelf Store', () => {
@@ -200,6 +209,35 @@ describe('Shelf Store', () => {
     it('can be set to specific status', () => {
       activeFilter.set('borrowable');
       expect(activeFilter.get()).toBe('borrowable');
+    });
+  });
+
+  describe('clearAllFilters', () => {
+    it('resets all active filters to empty defaults', () => {
+      activeFilters.set({ visibility: ['private'], ownership: ['seeking'], intents: ['borrowable'] });
+      clearAllFilters();
+      expect(activeFilters.get()).toEqual({ visibility: [], ownership: [], intents: [] });
+    });
+  });
+
+  describe('null userId: optimistic mutations are rolled back', () => {
+    beforeEach(() => {
+      _mockUserId = null;
+      shelf.set({});
+      vi.mocked(reportSyncError).mockClear();
+    });
+
+    afterEach(() => {
+      _mockUserId = 'test-user-123';
+    });
+
+    it('addBook rolls back and reports a sync error when user is not authenticated', () => {
+      addBook({ title: 'Ghost Book', author: 'Nobody', addedVia: 'manual' });
+
+      // The null-userId guard fires before any await inside syncAddBook, so
+      // rollback() is called synchronously — the shelf is already empty on return.
+      expect(Object.keys(shelf.get())).toHaveLength(0);
+      expect(vi.mocked(reportSyncError)).toHaveBeenCalledWith(expect.any(String));
     });
   });
 

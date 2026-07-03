@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   test: {
@@ -9,7 +10,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      'cloudflare:workers': './tests/mocks/cloudflare-workers.ts',
+      'cloudflare:workers': fileURLToPath(
+        new URL('./tests/mocks/cloudflare-workers.ts', import.meta.url),
+      ),
     },
   },
 });

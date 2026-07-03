@@ -121,7 +121,7 @@ function rollback(id: string, prior: Record<string, Book>): void {
 }
 
 async function syncAddBook(book: Book, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) return;
+  if (!currentUserId.get()) { rollback(book.id, prior); return; }
   try {
     const res = await fetch('/api/books', {
       method: 'POST',
@@ -150,7 +150,7 @@ async function syncAddBook(book: Book, prior: Record<string, Book>): Promise<voi
 }
 
 async function syncUpdateBook(id: string, updates: Partial<Book>, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) return;
+  if (!currentUserId.get()) { rollback(id, prior); return; }
   try {
     const res = await fetch(`/api/books/${id}`, {
       method: 'PATCH',
@@ -168,7 +168,7 @@ async function syncUpdateBook(id: string, updates: Partial<Book>, prior: Record<
 }
 
 async function syncRemoveBook(id: string, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) return;
+  if (!currentUserId.get()) { rollback(id, prior); return; }
   try {
     const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
     if (!res.ok) {
@@ -182,7 +182,7 @@ async function syncRemoveBook(id: string, prior: Record<string, Book>): Promise<
 }
 
 async function syncAddNote(bookId: string, note: BookNote, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) return;
+  if (!currentUserId.get()) { rollback(bookId, prior); return; }
   try {
     const res = await fetch(`/api/books/${bookId}/notes`, {
       method: 'POST',
@@ -201,7 +201,7 @@ async function syncAddNote(bookId: string, note: BookNote, prior: Record<string,
 }
 
 async function syncUpdateNote(bookId: string, noteId: string, updates: Partial<BookNote>, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) return;
+  if (!currentUserId.get()) { rollback(bookId, prior); return; }
   try {
     const res = await fetch(`/api/books/${bookId}/notes/${noteId}`, {
       method: 'PATCH',
@@ -219,7 +219,7 @@ async function syncUpdateNote(bookId: string, noteId: string, updates: Partial<B
 }
 
 async function syncRemoveNote(bookId: string, noteId: string, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) return;
+  if (!currentUserId.get()) { rollback(bookId, prior); return; }
   try {
     const res = await fetch(`/api/books/${bookId}/notes/${noteId}`, { method: 'DELETE' });
     if (!res.ok) {

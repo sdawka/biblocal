@@ -41,7 +41,9 @@
     "@astrojs/check": "^0.9.9",
     "@cloudflare/workers-types": "^4.20260505.1",
     "@testing-library/svelte": "^5.3.1",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/leaflet": "^1.9.21",
+    "better-sqlite3": "^12.11.1",
     "drizzle-kit": "^0.31.10",
     "jsdom": "^29.1.1",
     "playwright": "^1.60.0",
@@ -49,5 +51,8 @@
   },
   "overrides": {
     "vite": "^7"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true
   }
 }
