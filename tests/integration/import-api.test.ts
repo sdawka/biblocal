@@ -28,6 +28,31 @@ afterEach(() => {
   resetTestDb();
 });
 
+// ─── FK hardening: brand-new user must not get per-book FK errors ────────────
+
+describe('POST /api/books/import — FK hardening', () => {
+  it('brand-new user (no users row) imports all books without FK errors', async () => {
+    const BRAND_NEW = 'brand-new-import-user-fk';
+    // Deliberately no seedUser call
+
+    const { status, json } = await callApiAs(BRAND_NEW, importHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books/import`,
+      body: {
+        books: [
+          { title: 'Book One', author: 'Author One', visibility: 'visible', ownership: 'have', intents: [] },
+          { title: 'Book Two', author: 'Author Two', visibility: 'visible', ownership: 'have', intents: [] },
+        ],
+      },
+    });
+
+    expect(status).toBe(200);
+    const result = json as { imported: number; skipped: number; errors: string[] };
+    expect(result.imported).toBe(2);
+    expect(result.errors).toHaveLength(0);
+  });
+});
+
 // ─── BUG 3: Imported notes must go to bookNotes table ────────────────────────
 
 describe('POST /api/books/import — notes saved to bookNotes table', () => {

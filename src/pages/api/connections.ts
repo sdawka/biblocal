@@ -6,6 +6,7 @@ import { env } from 'cloudflare:workers';
 import { getDb } from '../../db/client';
 import { connectionRequests, users } from '../../db/schema';
 import { getUserId } from '../../lib/auth';
+import { getOrCreateUser } from '../../db/users';
 
 type Env = { DB: D1Database };
 
@@ -89,8 +90,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const db = getDb((env as Env).DB);
 
-    // Check if user has contact info set
-    const [sender] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    // Ensure sender row exists before any FK insert; auto-create on first interaction.
+    const sender = await getOrCreateUser(db, userId);
     if (!sender?.contactValue) {
       return new Response(
         JSON.stringify({ error: 'Set your contact info before sending requests' }),
@@ -98,7 +99,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // Check for existing request
+    // Recipient must genuinely exist — do not auto-create.
+    const [recipient] = await db.select({ id: users.id }).from(users).where(eq(users.id, toUserId)).limit(1);
+    if (!recipient) {
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check for existing request. Order newest-first so a pending row in either
+    // direction is seen before any older declined row — prevents the reactivation
+    // path from flipping a stale declined row while a live pending one exists.
     const existing = await db
       .select()
       .from(connectionRequests)
@@ -114,6 +126,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           )
         )
       )
+      .orderBy(desc(connectionRequests.createdAt))
       .limit(1);
 
     // A stale-declined request for the SAME ordered (from,to) pair must be

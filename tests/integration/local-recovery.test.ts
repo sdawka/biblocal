@@ -172,6 +172,47 @@ describe('local-recovery: loadBooksFromServer() reconciles unsynced local books'
     expect(noIsbnRow).toHaveLength(1);
   });
 
+  it('local-only book survives in shelf when the recovery upload fails', async () => {
+    await seedServerBook({ id: 'server-1', title: 'Server Book', author: 'Server Author' });
+
+    // A legacy book that exists only locally; its upload will fail
+    const legacy: Book = {
+      id: 'legacy-1',
+      title: 'Legacy Book',
+      author: 'Legacy Author',
+      visibility: 'visible',
+      ownership: 'have',
+      intents: [],
+      addedVia: 'manual',
+      addedAt: Date.now(),
+    };
+    shelf.set({ [legacy.id]: legacy });
+
+    // GET routes to the real handler; POST (the recovery upload) always fails
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const method = (init?.method ?? 'GET').toUpperCase();
+        if (url === '/api/books' && method === 'POST') {
+          return makeResponse(500, { error: 'Server error' });
+        }
+        if (url.startsWith('/api/books') && method === 'GET') {
+          return getBookHandler(makeHandlerContext('GET', url));
+        }
+        return makeResponse(200, {});
+      }),
+    );
+
+    await loadBooksFromServer();
+    await new Promise(r => setTimeout(r, 300));
+
+    // The failed upload must NOT delete the legacy book from the shelf —
+    // it has to survive (in localStorage) so the next load can retry.
+    const shelfState = shelf.get();
+    expect(shelfState['legacy-1']).toBeDefined();
+    expect(shelfState['server-1']).toBeDefined();
+  });
+
   it('local book matching server book by ISBN (different id) → server copy wins, no new DB row', async () => {
     const SHARED_ISBN = '978-0-7432-7356-5';
 

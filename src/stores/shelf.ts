@@ -437,8 +437,10 @@ export async function loadBooksFromServer(): Promise<void> {
     const merged: Record<string, Book> = { ...serverBooks };
     for (const book of localOnly) merged[book.id] = book;
     shelf.set(merged);
-    // Upload each local-only book fire-and-forget; syncAddBook rolls back on failure.
-    for (const book of localOnly) syncAddBook(book, serverBooks);
+    // Upload each local-only book fire-and-forget. `merged` (not `serverBooks`)
+    // must be the prior snapshot: on upload failure, rollback restores the book
+    // instead of deleting the only surviving copy from localStorage.
+    for (const book of localOnly) syncAddBook(book, merged);
   } catch (e) {
     console.error('Failed to load books from server:', e);
   }
