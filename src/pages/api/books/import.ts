@@ -6,6 +6,7 @@ import { env } from 'cloudflare:workers';
 import { getDb } from '../../../db/client';
 import { books, bookNotes } from '../../../db/schema';
 import { getUserId } from '../../../lib/auth';
+import { getOrCreateUser } from '../../../db/users';
 import {
   validateEnum,
   validateIntents,
@@ -82,6 +83,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const db = getDb((env as Env).DB);
+    await getOrCreateUser(db, userId);
+
     const body = await request.json() as { books: ImportBook[] };
 
     if (!body.books || !Array.isArray(body.books)) {

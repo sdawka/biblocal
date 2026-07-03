@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { GET as getConnectionsHandler, POST as postConnectionHandler } from '../../src/pages/api/connections';
 import { PATCH as patchConnectionHandler } from '../../src/pages/api/connections/[id]';
-import { createTestDb } from '../helpers/test-db';
+import { createTestDb, seedUser } from '../helpers/test-db';
 import { setTestDb, resetTestDb } from '../mocks/cloudflare-workers';
 import { callApiAs } from '../helpers/api';
 import type { D1Shim } from '../helpers/d1-shim';
@@ -110,6 +110,78 @@ describe('POST /api/connections — declined-cooldown direction', () => {
       body: { toUserId: USER_B },
     });
     expect(status).toBe(201);
+  });
+});
+
+// ─── BUG: pending reverse request must block reactivation of old declined row ──
+
+describe('POST /api/connections — pending-reverse blocks reactivation', () => {
+  beforeEach(() => {
+    seedUserWithContact(db, USER_A, 'Alice');
+    seedUserWithContact(db, USER_B, 'Bob');
+  });
+
+  it('pending B→A row prevents A from reactivating stale declined A→B row', async () => {
+    // Old A→B declined, cooldown expired (31 days ago)
+    const declinedId = 'old-declined-a-b';
+    const thirtyOneDaysAgoSec = Math.floor((Date.now() - 31 * 24 * 60 * 60 * 1000) / 1000);
+    db.prepare(
+      'INSERT INTO connection_requests (id, from_user_id, to_user_id, status, created_at, responded_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(declinedId, USER_A, USER_B, 'declined', thirtyOneDaysAgoSec, thirtyOneDaysAgoSec).run();
+
+    // Newer B→A pending (inserted after, so larger created_at)
+    const pendingId = 'newer-pending-b-a';
+    const nowSec = Math.floor(Date.now() / 1000);
+    db.prepare(
+      'INSERT INTO connection_requests (id, from_user_id, to_user_id, status, created_at, responded_at) VALUES (?, ?, ?, ?, ?, null)'
+    ).bind(pendingId, USER_B, USER_A, 'pending', nowSec).run();
+
+    // A POSTs to B: must be blocked because B→A is pending, not reactivate the old declined row
+    const { status } = await callApiAs(USER_A, postConnectionHandler, {
+      method: 'POST',
+      url: `${BASE}/api/connections`,
+      body: { toUserId: USER_B },
+    });
+
+    expect(status).toBe(400);
+
+    // The stale A→B row must NOT have been flipped to pending
+    const { results } = await db.prepare('SELECT status FROM connection_requests WHERE id = ?').bind(declinedId).all();
+    expect((results[0] as { status: string }).status).toBe('declined');
+  });
+});
+
+// ─── FK hardening: sender auto-create + recipient existence check ─────────────
+
+describe('POST /api/connections — FK hardening', () => {
+  it('brand-new sender (no users row) has row auto-created, returns 400 for missing contact info — not 500', async () => {
+    const BRAND_NEW = 'brand-new-conn-sender';
+    seedUser(db, 'conn-fk-recipient');
+
+    const { status } = await callApiAs(BRAND_NEW, postConnectionHandler, {
+      method: 'POST',
+      url: `${BASE}/api/connections`,
+      body: { toUserId: 'conn-fk-recipient' },
+    });
+
+    // Clean business error (no contact info), not a FK-violation 500
+    expect(status).toBe(400);
+
+    // Sender row was auto-created by the handler
+    const { results } = await db.prepare('SELECT id FROM users WHERE id = ?').bind(BRAND_NEW).all();
+    expect(results).toHaveLength(1);
+  });
+
+  it('nonexistent recipient returns 404, not 500', async () => {
+    seedUserWithContact(db, USER_A, 'Alice');
+
+    const { status } = await callApiAs(USER_A, postConnectionHandler, {
+      method: 'POST',
+      url: `${BASE}/api/connections`,
+      body: { toUserId: 'nonexistent-recipient-xyz' },
+    });
+
+    expect(status).toBe(404);
   });
 });
 

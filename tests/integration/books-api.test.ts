@@ -168,6 +168,68 @@ describe('POST /api/books', () => {
   });
 });
 
+// ─── POST /api/books — id idempotency ────────────────────────────────────────
+
+describe('POST /api/books — id idempotency', () => {
+  beforeEach(() => {
+    seedUser(db, USER_A);
+    seedUser(db, USER_B);
+  });
+
+  it('same-user same-id double POST → 200 + single row in DB', async () => {
+    const fixedId = 'fixed-book-id-abc123';
+    const body = { id: fixedId, title: 'Dune', author: 'Frank Herbert' };
+
+    const first = await callApiAs(USER_A, postBookHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books`,
+      body,
+    });
+    expect(first.status).toBe(201);
+
+    const second = await callApiAs(USER_A, postBookHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books`,
+      body,
+    });
+    expect(second.status).toBe(200);
+
+    const firstId = (first.json as { book: { id: string } }).book.id;
+    const secondId = (second.json as { book: { id: string } }).book.id;
+    expect(firstId).toBe(fixedId);
+    expect(secondId).toBe(fixedId);
+
+    const { results } = await db.prepare('SELECT COUNT(*) as c FROM books WHERE id = ?').bind(fixedId).all();
+    expect((results[0] as { c: number }).c).toBe(1);
+  });
+
+  it('id squatting: different user with same id → 201 with a fresh id, both rows exist', async () => {
+    const fixedId = 'squatted-book-id-abc123';
+
+    const first = await callApiAs(USER_A, postBookHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books`,
+      body: { id: fixedId, title: 'Book A', author: 'Author A' },
+    });
+    expect(first.status).toBe(201);
+
+    const second = await callApiAs(USER_B, postBookHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books`,
+      body: { id: fixedId, title: 'Book B', author: 'Author B' },
+    });
+    expect(second.status).toBe(201);
+
+    // User B gets a fresh id — the original is not leaked
+    const bId = (second.json as { book: { id: string } }).book.id;
+    expect(bId).not.toBe(fixedId);
+
+    // Both rows exist
+    const { results } = await db.prepare('SELECT COUNT(*) as c FROM books').bind().all();
+    expect((results[0] as { c: number }).c).toBe(2);
+  });
+});
+
 // ─── PATCH /api/books/:id ─────────────────────────────────────────────────────
 
 describe('PATCH /api/books/:id', () => {

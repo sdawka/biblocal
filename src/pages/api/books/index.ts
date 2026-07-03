@@ -205,8 +205,27 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const now = new Date();
+
+    // If the client supplied an id, check whether it already exists.
+    // Same user re-posting the same id → return the existing book (idempotent).
+    // A different user owns that id → generate a fresh one so we don't leak its existence.
+    let bookId = body.id || generateId();
+    if (body.id) {
+      const [existingById] = await db.select().from(books).where(eq(books.id, body.id)).limit(1);
+      if (existingById) {
+        if (existingById.userId === userId) {
+          const [withExistingNotes] = await withNotes(db, [existingById], false);
+          return new Response(JSON.stringify({ book: withExistingNotes }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        bookId = generateId();
+      }
+    }
+
     const book = {
-      id: body.id || generateId(), // Honor a client-supplied id for idempotency.
+      id: bookId,
       userId: userId,
       title: body.title,
       author: body.author,
