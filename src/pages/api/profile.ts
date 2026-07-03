@@ -6,6 +6,7 @@ import { env } from 'cloudflare:workers';
 import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
 import { getUserId } from '../../lib/auth';
+import { getOrCreateUser } from '../../db/users';
 import {
   validateEnum,
   VALID_CONTACT_VISIBILITY,
@@ -28,21 +29,6 @@ function badRequest(error: string) {
 }
 
 type Env = { DB: D1Database };
-
-async function getOrCreateUser(db: ReturnType<typeof getDb>, userId: string) {
-  const existing = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (existing.length > 0) return existing[0];
-
-  const now = new Date();
-  await db.insert(users).values({
-    id: userId,
-    email: `${userId}@clerk.user`,
-    createdAt: now,
-    updatedAt: now,
-  });
-  const created = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  return created[0];
-}
 
 // GET /api/profile - get own profile (requires auth)
 export const GET: APIRoute = async ({ locals }) => {

@@ -1,6 +1,5 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import QaAuthInit from './QaAuthInit.svelte';
 import { UserButton } from '@clerk/astro/components';
 import { env } from 'cloudflare:workers';
 import { getDb } from '../db/client';
@@ -20,7 +19,6 @@ const p = (path: string) => localizePath(path, lang);
 type Env = { DB: D1Database; QA_MODE?: string; QA_USER_ID?: string };
 
 const isQaMode = (env as Env)?.QA_MODE === 'true';
-const qaUserId = (env as Env)?.QA_USER_ID || 'qa-test-user';
 
 // Fetch stores directly from DB (server-side)
 const db = getDb((env as Env).DB);
@@ -36,7 +34,6 @@ const storesList = stores.map((s) => ({
 ---
 
 <Layout lang={lang} title={t.meta.indexTitle}>
-  {isQaMode && <QaAuthInit client:load userId={qaUserId} />}
   <main>
     <div class="header-row rise">
       <div class="header-text">

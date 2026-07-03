@@ -4,7 +4,7 @@ export const prerender = false;
 import { eq } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { getDb } from '../../../db/client';
-import { books } from '../../../db/schema';
+import { books, bookNotes } from '../../../db/schema';
 import { getUserId } from '../../../lib/auth';
 import {
   validateEnum,
@@ -145,8 +145,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       const ownership = validateEnum(book.ownership, VALID_OWNERSHIP) ?? 'have';
 
       try {
+        const bookId = crypto.randomUUID();
         await db.insert(books).values({
-          id: crypto.randomUUID(),
+          id: bookId,
           userId,
           title: book.title,
           author: book.author,
@@ -158,10 +159,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
           intents: JSON.stringify(validateIntents(book.intents)),
           addedVia: 'goodreads',
           subjects: null,
-          notes: book.notes || null,
           createdAt: now,
           updatedAt: now,
         });
+
+        if (book.notes) {
+          await db.insert(bookNotes).values({
+            id: crypto.randomUUID(),
+            bookId,
+            userId,
+            text: book.notes,
+            visibility: 'private',
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+
         result.imported++;
       } catch (e) {
         result.errors.push(`Failed to import "${book.title}": ${e instanceof Error ? e.message : 'Unknown error'}`);

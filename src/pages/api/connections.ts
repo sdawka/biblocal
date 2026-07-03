@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 
 export const prerender = false;
-import { eq, or, and, desc, sql } from 'drizzle-orm';
+import { eq, or, and, desc, sql, inArray } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { getDb } from '../../db/client';
 import { connectionRequests, users } from '../../db/schema';
@@ -33,7 +33,23 @@ export const GET: APIRoute = async ({ locals }) => {
       )
       .orderBy(desc(connectionRequests.createdAt));
 
-    return new Response(JSON.stringify({ connections: requests }), {
+    const userIds = [...new Set(requests.flatMap((r) => [r.fromUserId, r.toUserId]))];
+    const userMap = new Map<string, { id: string; name: string | null }>();
+    if (userIds.length > 0) {
+      const userRows = await db
+        .select({ id: users.id, name: users.name })
+        .from(users)
+        .where(inArray(users.id, userIds));
+      for (const u of userRows) userMap.set(u.id, u);
+    }
+
+    const enriched = requests.map((r) => ({
+      ...r,
+      fromUser: userMap.get(r.fromUserId) ?? null,
+      toUser: userMap.get(r.toUserId) ?? null,
+    }));
+
+    return new Response(JSON.stringify({ connections: enriched }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -106,15 +122,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (existing.length > 0) {
       const req = existing[0];
       if (req.status === 'declined') {
-        const cooldownStart = Date.now() - 30 * 24 * 60 * 60 * 1000;
-        if (req.respondedAt && req.respondedAt.getTime() > cooldownStart) {
-          return new Response(
-            JSON.stringify({ error: 'Request was declined. Please wait before trying again.' }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } }
-          );
-        }
-        if (req.fromUserId === userId && req.toUserId === toUserId) {
-          reactivateId = req.id;
+        // Only the original requester is subject to the 30-day cooldown.
+        // The decliner (req.fromUserId !== userId) can initiate a new request freely.
+        if (req.fromUserId === userId) {
+          const cooldownStart = Date.now() - 30 * 24 * 60 * 60 * 1000;
+          if (req.respondedAt && req.respondedAt.getTime() > cooldownStart) {
+            return new Response(
+              JSON.stringify({ error: 'Request was declined. Please wait before trying again.' }),
+              { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+          }
+          if (req.toUserId === toUserId) {
+            reactivateId = req.id;
+          }
         }
       } else {
         return new Response(JSON.stringify({ error: 'Connection request already exists' }), {
@@ -124,15 +144,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
     }
 
-    // Rate limit: max 5 requests per day
-    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    // Rate limit: max 5 requests per day.
+    // created_at is stored as INTEGER (Unix epoch seconds), so compare numerically.
+    const dayAgoSec = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000);
     const recentRequests = await db
       .select({ count: sql<number>`count(*)` })
       .from(connectionRequests)
       .where(
         and(
           eq(connectionRequests.fromUserId, userId),
-          sql`${connectionRequests.createdAt} > ${dayAgo}`
+          sql`${connectionRequests.createdAt} > ${dayAgoSec}`
         )
       );
 
