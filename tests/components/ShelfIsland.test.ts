@@ -158,36 +158,30 @@ describe('ShelfIsland', () => {
       });
     });
 
-    // BUG (src/stores/shelf.ts — loadBooksFromServer):
-    //
-    //   const preLoadSnapshot = shelf.get();   ← snapshot taken before the await
-    //   const res = await fetch('/api/books?mine=true');   ← async gap
-    //   ...
-    //   const localOnly = findLocalOnlyBooks(preLoadSnapshot, serverBooks);
-    //   shelf.set({ ...serverBooks, ...localOnly_map });
-    //
-    // Any book added between the snapshot and shelf.set() is absent from
-    // preLoadSnapshot. If the server hasn't committed the POST yet either
-    // (the typical case right after a quick add), findLocalOnlyBooks returns []
-    // for that book and shelf.set() overwrites the store without it — the book
-    // silently disappears. This is the most likely mechanism behind the user
-    // complaint "I added a book and it didn't show up."
+    // Regression test: loadBooksFromServer() takes preLoadSnapshot = shelf.get()
+    // before the awaited fetch, then merges: merged = { ...serverBooks, ...localOnly }.
+    // A book added optimistically after the snapshot but absent from the server
+    // response must not be dropped by the merge. This was the suspected mechanism
+    // behind "I added a book and it didn't show up."
     it(
-      'book added while loadBooksFromServer is in-flight is not clobbered by the server response (load-race bug)',
+      'book added while loadBooksFromServer is in-flight is not clobbered by the server response',
       async () => {
         const { release } = setupDeferredFetch([]); // server will return zero books
 
-        const loadPromise = loadBooksFromServer(); // preLoadSnapshot taken here → {}
+        const loadPromise = loadBooksFromServer(); // GET now in-flight
 
-        // User adds a book while the GET is still in-flight
+        // User adds a book while the GET is still awaiting the response
         const book = addBook({ title: 'Vanishing Act', author: 'Author', addedVia: 'manual', ownership: 'have' });
-        expect(shelf.get()[book.id]).toBeTruthy(); // book is in the store right now
+        expect(shelf.get()[book.id]).toBeTruthy();
 
-        // Server responds with zero books (the POST hasn't landed yet)
+        // Server responds with an empty book list
         release();
         await loadPromise;
 
-        // Book should still be in the store — it is NOT (the bug)
+        // Confirm the GET was actually issued (rules out an early-return false positive)
+        expect(vi.mocked(fetch)).toHaveBeenCalledWith('/api/books?mine=true');
+
+        // Book must survive the merge
         expect(shelf.get()[book.id]).toBeTruthy();
       }
     );
