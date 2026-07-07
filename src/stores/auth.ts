@@ -9,6 +9,15 @@ export async function onUserChange(userId: string | null): Promise<void> {
     const identity = checkUserIdentity(userId);
     if (identity === 'different') {
       clearUserData();
+      // Mirror onLogout: reset in-memory atoms before loading the new user's
+      // data so the previous user's shelf/profile are not treated as
+      // "local-only" and uploaded under the new user's credentials.
+      const { shelf } = await import('./shelf');
+      shelf.set({});
+      const { profile, DEFAULT_PROFILE } = await import('./profile');
+      profile.set(DEFAULT_PROFILE);
+      const { connectionRequests } = await import('./connections');
+      connectionRequests.set([]);
     }
     setLastUserId(userId);
     currentUserId.set(userId);

@@ -5,6 +5,7 @@ import { currentUserId } from './auth';
 import { reportSyncError } from './sync-status';
 
 const SYNC_ERROR_MESSAGE = 'Could not save your change. Please try again.';
+const LOAD_SYNC_ERROR_MESSAGE = 'Could not load your shelf from the server. Please try again.';
 
 function safeJsonDecode<T>(defaultValue: T) {
   return (str: string): T => {
@@ -120,6 +121,39 @@ function rollback(id: string, prior: Record<string, Book>): void {
   reportSyncError(SYNC_ERROR_MESSAGE);
 }
 
+// Field-aware rollback for update mutations. Reverts only the fields this
+// mutation changed, and only when the current value still matches the
+// optimistically-written value — so a later edit to the same field wins
+// (its value differs from what we wrote, so we leave it alone).
+function rollbackFields(id: string, updates: Partial<Book>, prior: Record<string, Book>): void {
+  const current = shelf.get();
+  const priorBook = prior[id];
+  if (priorBook === undefined) {
+    // Prior snapshot had no book at this id — treat as add rollback.
+    const next = { ...current };
+    delete next[id];
+    shelf.set(next);
+    reportSyncError(SYNC_ERROR_MESSAGE);
+    return;
+  }
+  const currentBook = current[id];
+  if (!currentBook) {
+    // Book was removed after the optimistic write; nothing left to revert.
+    reportSyncError(SYNC_ERROR_MESSAGE);
+    return;
+  }
+  const reverted: Book = { ...currentBook };
+  for (const key of Object.keys(updates) as Array<keyof Book>) {
+    // Only revert a field if it still holds the optimistically-written value.
+    // If it has changed (a subsequent edit won), leave the later value intact.
+    if (JSON.stringify(reverted[key]) === JSON.stringify(updates[key])) {
+      Object.assign(reverted, { [key]: priorBook[key] });
+    }
+  }
+  shelf.set({ ...current, [id]: reverted });
+  reportSyncError(SYNC_ERROR_MESSAGE);
+}
+
 async function syncAddBook(book: Book, prior: Record<string, Book>): Promise<void> {
   if (!currentUserId.get()) { rollback(book.id, prior); return; }
   try {
@@ -150,7 +184,7 @@ async function syncAddBook(book: Book, prior: Record<string, Book>): Promise<voi
 }
 
 async function syncUpdateBook(id: string, updates: Partial<Book>, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) { rollback(id, prior); return; }
+  if (!currentUserId.get()) { rollbackFields(id, updates, prior); return; }
   try {
     const res = await fetch(`/api/books/${id}`, {
       method: 'PATCH',
@@ -159,11 +193,11 @@ async function syncUpdateBook(id: string, updates: Partial<Book>, prior: Record<
     });
     if (!res.ok) {
       console.error('Failed to sync book update:', await res.text());
-      rollback(id, prior);
+      rollbackFields(id, updates, prior);
     }
   } catch (e) {
     console.error('Failed to sync book update:', e);
-    rollback(id, prior);
+    rollbackFields(id, updates, prior);
   }
 }
 
@@ -404,7 +438,10 @@ export async function loadBooksFromServer(): Promise<void> {
   try {
     const res = await fetch('/api/books?mine=true');
     if (currentUserId.get() !== loadingFor) return;
-    if (!res.ok) return;
+    if (!res.ok) {
+      reportSyncError(LOAD_SYNC_ERROR_MESSAGE);
+      return;
+    }
     const data = await res.json() as { books: ServerBook[] };
     if (currentUserId.get() !== loadingFor) return;
     const serverBooks: Record<string, Book> = {};
@@ -433,16 +470,25 @@ export async function loadBooksFromServer(): Promise<void> {
         addedAt: new Date(b.createdAt).getTime(),
       };
     }
-    const localOnly = findLocalOnlyBooks(preLoadSnapshot, serverBooks);
+    // Legacy recovery: books that were local-only BEFORE this request started.
+    // Used for uploads only — mid-flight adds (not in preLoadSnapshot) already
+    // have their own syncAddBook POST in flight and must NOT be double-posted.
+    const legacyLocalOnly = findLocalOnlyBooks(preLoadSnapshot, serverBooks);
+    // Use a fresh snapshot for the merge so books added via addBook() while the
+    // GET was in flight are preserved (they were not in preLoadSnapshot and are
+    // not on the server, but are now in shelf.get()).
+    const postFetchSnapshot = shelf.get();
+    const allLocalOnly = findLocalOnlyBooks(postFetchSnapshot, serverBooks);
     const merged: Record<string, Book> = { ...serverBooks };
-    for (const book of localOnly) merged[book.id] = book;
+    for (const book of allLocalOnly) merged[book.id] = book;
     shelf.set(merged);
-    // Upload each local-only book fire-and-forget. `merged` (not `serverBooks`)
-    // must be the prior snapshot: on upload failure, rollback restores the book
-    // instead of deleting the only surviving copy from localStorage.
-    for (const book of localOnly) syncAddBook(book, merged);
+    // Upload each legacy-local-only book fire-and-forget. `merged` (not
+    // `serverBooks`) must be the prior snapshot: on upload failure, rollback
+    // restores the book instead of deleting the only surviving copy from localStorage.
+    for (const book of legacyLocalOnly) syncAddBook(book, merged);
   } catch (e) {
     console.error('Failed to load books from server:', e);
+    reportSyncError(LOAD_SYNC_ERROR_MESSAGE);
   }
 }
 

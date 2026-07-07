@@ -10,7 +10,14 @@ import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
 import { getUserId } from '../../lib/auth';
 import { safeExternalUrl } from '../../lib/url';
-import { safeJsonArray } from '../../lib/validation';
+import {
+  safeJsonArray,
+  MAX_STORE_NAME_LEN,
+  MAX_NEIGHBORHOOD_LEN,
+  MAX_ADDRESS_LEN,
+  MAX_CITY_LEN,
+  MAX_PHONE_LEN,
+} from '../../lib/validation';
 
 interface CreateStoreBody {
   name: string;
@@ -113,6 +120,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
         JSON.stringify({ error: 'Name, neighborhood, and address are required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    if (body.name.length > MAX_STORE_NAME_LEN) {
+      return new Response(JSON.stringify({ error: `Store name must be at most ${MAX_STORE_NAME_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.neighborhood.length > MAX_NEIGHBORHOOD_LEN) {
+      return new Response(JSON.stringify({ error: `Neighborhood must be at most ${MAX_NEIGHBORHOOD_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.address.length > MAX_ADDRESS_LEN) {
+      return new Response(JSON.stringify({ error: `Address must be at most ${MAX_ADDRESS_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.city && body.city.length > MAX_CITY_LEN) {
+      return new Response(JSON.stringify({ error: `City must be at most ${MAX_CITY_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.phone && body.phone.length > MAX_PHONE_LEN) {
+      return new Response(JSON.stringify({ error: `Phone must be at most ${MAX_PHONE_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     const db = getDb((env as Env).DB);
