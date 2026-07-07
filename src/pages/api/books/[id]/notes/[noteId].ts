@@ -10,6 +10,8 @@ import { validateEnum, VALID_VISIBILITY } from '../../../../../lib/validation';
 
 type Env = { DB: D1Database };
 
+const MAX_NOTE_TEXT_LEN = 5000;
+
 function json(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -49,6 +51,9 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     if (updates.text !== undefined) {
       const text = updates.text.trim();
       if (!text) return json({ error: 'Note text required' }, 400);
+      if (text.length > MAX_NOTE_TEXT_LEN) {
+        return json({ error: `Note text must be at most ${MAX_NOTE_TEXT_LEN} characters` }, 400);
+      }
       filtered.text = text;
     }
     if (updates.visibility !== undefined) {

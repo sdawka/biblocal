@@ -5,12 +5,18 @@ import { env } from 'cloudflare:workers';
 
 type Env = { DB: D1Database };
 
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { getDb } from '../../../db/client';
 import { users, books } from '../../../db/schema';
 import { getUserId } from '../../../lib/auth';
 import { safeExternalUrl } from '../../../lib/url';
 import { safeJsonArray } from '../../../lib/validation';
+
+const MAX_STORE_NAME_LEN = 120;
+const MAX_NEIGHBORHOOD_LEN = 120;
+const MAX_ADDRESS_LEN = 200;
+const MAX_CITY_LEN = 120;
+const MAX_PHONE_LEN = 30;
 
 export const GET: APIRoute = async ({ params, locals }) => {
   try {
@@ -39,13 +45,15 @@ export const GET: APIRoute = async ({ params, locals }) => {
 
     const store = storeResults[0];
 
+    // Only surface visible books on public store pages; private books are owner-only.
     const storeBooks = await db
       .select()
       .from(books)
-      .where(eq(books.userId, storeId));
+      .where(and(eq(books.userId, storeId), eq(books.visibility, 'visible')));
 
     const userId = getUserId(locals);
-    const canEdit = userId === store.addedBy;
+    // Null-safe: two null userIds must not equal each other (unauthenticated visitor).
+    const canEdit = userId !== null && userId === store.addedBy;
 
     return new Response(
       JSON.stringify({
@@ -142,6 +150,23 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     }
 
     const body = (await request.json()) as UpdateStoreBody;
+
+    if (body.name !== undefined && body.name.length > MAX_STORE_NAME_LEN) {
+      return new Response(JSON.stringify({ error: `Store name must be at most ${MAX_STORE_NAME_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.neighborhood !== undefined && body.neighborhood.length > MAX_NEIGHBORHOOD_LEN) {
+      return new Response(JSON.stringify({ error: `Neighborhood must be at most ${MAX_NEIGHBORHOOD_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.address !== undefined && body.address.length > MAX_ADDRESS_LEN) {
+      return new Response(JSON.stringify({ error: `Address must be at most ${MAX_ADDRESS_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.city !== undefined && body.city.length > MAX_CITY_LEN) {
+      return new Response(JSON.stringify({ error: `City must be at most ${MAX_CITY_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.phone !== undefined && body.phone.length > MAX_PHONE_LEN) {
+      return new Response(JSON.stringify({ error: `Phone must be at most ${MAX_PHONE_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const allowedFields = ['name', 'neighborhood', 'address', 'website', 'phone', 'specialties', 'city'];
     const updates: Record<string, unknown> = { updatedAt: new Date() };
 

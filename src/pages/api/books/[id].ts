@@ -118,11 +118,29 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       filtered.intents = JSON.stringify(validateIntents(updates.intents));
     }
 
-    await db.update(books).set(filtered).where(eq(books.id, bookId));
+    // Include userId in WHERE for defense-in-depth (ownership already verified above).
+    await db.update(books).set(filtered).where(and(eq(books.id, bookId), eq(books.userId, userId)));
 
-    const updated = await db.select().from(books).where(eq(books.id, bookId)).limit(1);
+    const updatedRows = await db.select().from(books).where(eq(books.id, bookId)).limit(1);
 
-    return new Response(JSON.stringify({ book: updated[0] }), {
+    // Attach structured notes (BookNote[]) so the PATCH response shape matches
+    // GET /api/books?mine=true, which also runs rows through withNotes(). Without
+    // this, `notes` in the response is the legacy books.notes text column (null)
+    // and a client that merges the PATCH response into local state would clobber
+    // the user's structured notes with null.
+    const noteRows = await db
+      .select({
+        id: bookNotes.id,
+        bookId: bookNotes.bookId,
+        text: bookNotes.text,
+        visibility: bookNotes.visibility,
+        createdAt: bookNotes.createdAt,
+      })
+      .from(bookNotes)
+      .where(eq(bookNotes.bookId, bookId));
+    const notes = noteRows.map(({ bookId: _bkId, ...n }) => n);
+
+    return new Response(JSON.stringify({ book: { ...updatedRows[0], notes } }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

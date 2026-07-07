@@ -14,6 +14,7 @@ import {
   VALID_VISIBILITY,
   VALID_OWNERSHIP,
   VALID_STATUS,
+  VALID_ADDED_VIA,
 } from '../../../lib/validation';
 
 type Env = { DB: D1Database };
@@ -224,6 +225,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
     }
 
+    // Coerce invalid addedVia to 'manual' (same as import.ts does for visibility/ownership).
+    // addedVia is a provenance field, not a user-facing control, so coercion is preferable
+    // to rejecting the whole create request.
+    const addedVia = body.addedVia
+      ? (validateEnum(body.addedVia, VALID_ADDED_VIA) ?? 'manual')
+      : 'manual';
+
     const book = {
       id: bookId,
       userId: userId,
@@ -235,7 +243,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       visibility,
       ownership,
       intents: JSON.stringify(validateIntents(body.intents)),
-      addedVia: body.addedVia || 'manual',
+      addedVia,
       subjects: body.subjects ? JSON.stringify(body.subjects) : null,
       notes: body.notes || null,
       createdAt: now,
@@ -244,7 +252,24 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     await db.insert(books).values(book);
 
-    return new Response(JSON.stringify({ book }), {
+    // Fetch the persisted DB row and attach structured notes (BookNote[]) so
+    // the 201 response shape matches GET /api/books?mine=true. Without this,
+    // `notes` in the response is the legacy books.notes text column (null on
+    // create) while GET returns `notes` as a BookNote[] via withNotes().
+    const insertedRows = await db.select().from(books).where(eq(books.id, bookId)).limit(1);
+    const noteRows = await db
+      .select({
+        id: bookNotes.id,
+        bookId: bookNotes.bookId,
+        text: bookNotes.text,
+        visibility: bookNotes.visibility,
+        createdAt: bookNotes.createdAt,
+      })
+      .from(bookNotes)
+      .where(eq(bookNotes.bookId, bookId));
+    const notes = noteRows.map(({ bookId: _bkId, ...n }) => n);
+
+    return new Response(JSON.stringify({ book: { ...insertedRows[0], notes } }), {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
     });

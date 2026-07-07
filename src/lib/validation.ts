@@ -10,6 +10,7 @@ export const VALID_CONTACT_VISIBILITY = ['hidden', 'on-request', 'public'] as co
 export const VALID_STATUS = ['private', 'visible', 'borrowable', 'discussable', 'giftable'] as const;
 export const VALID_CONTACT_METHOD = ['email', 'social', 'custom'] as const;
 export const VALID_LOCATION_PRECISION = ['exact', 'approximate', 'city'] as const;
+export const VALID_ADDED_VIA = ['scan', 'manual', 'goodreads'] as const;
 
 export type Visibility = (typeof VALID_VISIBILITY)[number];
 export type Ownership = (typeof VALID_OWNERSHIP)[number];

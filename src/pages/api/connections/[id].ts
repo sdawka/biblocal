@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 
 export const prerender = false;
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { getDb } from '../../../db/client';
 import { connectionRequests } from '../../../db/schema';
@@ -67,11 +67,12 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    // Update the request
+    // Update the request. Include toUserId in the WHERE for defense-in-depth
+    // (ownership is already verified above, but the write should also be self-scoped).
     await db
       .update(connectionRequests)
       .set({ status, respondedAt: new Date() })
-      .where(eq(connectionRequests.id, id));
+      .where(and(eq(connectionRequests.id, id), eq(connectionRequests.toUserId, userId)));
 
     return new Response(JSON.stringify({ success: true, status }), {
       status: 200,

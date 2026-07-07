@@ -115,6 +115,28 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
+    const MAX_STORE_NAME_LEN = 120;
+    const MAX_NEIGHBORHOOD_LEN = 120;
+    const MAX_ADDRESS_LEN = 200;
+    const MAX_CITY_LEN = 120;
+    const MAX_PHONE_LEN = 30;
+
+    if (body.name.length > MAX_STORE_NAME_LEN) {
+      return new Response(JSON.stringify({ error: `Store name must be at most ${MAX_STORE_NAME_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.neighborhood.length > MAX_NEIGHBORHOOD_LEN) {
+      return new Response(JSON.stringify({ error: `Neighborhood must be at most ${MAX_NEIGHBORHOOD_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.address.length > MAX_ADDRESS_LEN) {
+      return new Response(JSON.stringify({ error: `Address must be at most ${MAX_ADDRESS_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.city && body.city.length > MAX_CITY_LEN) {
+      return new Response(JSON.stringify({ error: `City must be at most ${MAX_CITY_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (body.phone && body.phone.length > MAX_PHONE_LEN) {
+      return new Response(JSON.stringify({ error: `Phone must be at most ${MAX_PHONE_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const db = getDb((env as Env).DB);
     const now = new Date();
     const storeId = `store-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
