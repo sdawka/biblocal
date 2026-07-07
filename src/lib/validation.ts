@@ -12,6 +12,13 @@ export const VALID_CONTACT_METHOD = ['email', 'social', 'custom'] as const;
 export const VALID_LOCATION_PRECISION = ['exact', 'approximate', 'city'] as const;
 export const VALID_ADDED_VIA = ['scan', 'manual', 'goodreads'] as const;
 
+// Store field length caps, shared by POST /api/stores and PATCH /api/stores/[id].
+export const MAX_STORE_NAME_LEN = 120;
+export const MAX_NEIGHBORHOOD_LEN = 120;
+export const MAX_ADDRESS_LEN = 200;
+export const MAX_CITY_LEN = 120;
+export const MAX_PHONE_LEN = 30;
+
 export type Visibility = (typeof VALID_VISIBILITY)[number];
 export type Ownership = (typeof VALID_OWNERSHIP)[number];
 export type Intent = (typeof VALID_INTENTS)[number];

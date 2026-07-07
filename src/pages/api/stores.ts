@@ -10,7 +10,14 @@ import { getDb } from '../../db/client';
 import { users } from '../../db/schema';
 import { getUserId } from '../../lib/auth';
 import { safeExternalUrl } from '../../lib/url';
-import { safeJsonArray } from '../../lib/validation';
+import {
+  safeJsonArray,
+  MAX_STORE_NAME_LEN,
+  MAX_NEIGHBORHOOD_LEN,
+  MAX_ADDRESS_LEN,
+  MAX_CITY_LEN,
+  MAX_PHONE_LEN,
+} from '../../lib/validation';
 
 interface CreateStoreBody {
   name: string;
@@ -114,12 +121,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    const MAX_STORE_NAME_LEN = 120;
-    const MAX_NEIGHBORHOOD_LEN = 120;
-    const MAX_ADDRESS_LEN = 200;
-    const MAX_CITY_LEN = 120;
-    const MAX_PHONE_LEN = 30;
 
     if (body.name.length > MAX_STORE_NAME_LEN) {
       return new Response(JSON.stringify({ error: `Store name must be at most ${MAX_STORE_NAME_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });

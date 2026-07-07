@@ -62,6 +62,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
         .limit(1);
       if (existingNote) {
         if (existingNote.userId === userId && existingNote.bookId === bookId) {
+          // 200 (not 201): nothing was created; clients must key off res.ok.
           return json({ note: existingNote }, 200);
         }
         noteId = crypto.randomUUID();

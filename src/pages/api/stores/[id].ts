@@ -10,13 +10,14 @@ import { getDb } from '../../../db/client';
 import { users, books } from '../../../db/schema';
 import { getUserId } from '../../../lib/auth';
 import { safeExternalUrl } from '../../../lib/url';
-import { safeJsonArray } from '../../../lib/validation';
-
-const MAX_STORE_NAME_LEN = 120;
-const MAX_NEIGHBORHOOD_LEN = 120;
-const MAX_ADDRESS_LEN = 200;
-const MAX_CITY_LEN = 120;
-const MAX_PHONE_LEN = 30;
+import {
+  safeJsonArray,
+  MAX_STORE_NAME_LEN,
+  MAX_NEIGHBORHOOD_LEN,
+  MAX_ADDRESS_LEN,
+  MAX_CITY_LEN,
+  MAX_PHONE_LEN,
+} from '../../../lib/validation';
 
 export const GET: APIRoute = async ({ params, locals }) => {
   try {
