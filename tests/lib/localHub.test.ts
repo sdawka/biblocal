@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { it, expect } from 'vitest';
 import { isWithinBounds, splitDiscovery, sortByDistance, hasLocation, bookOwnerLocated } from '../../src/lib/localHub';
 import type { Match, LocalBook, UserProfile } from '../../src/lib/types';
 
@@ -40,4 +40,17 @@ it('bookOwnerLocated respects owner coords + null bounds', () => {
   expect(bookOwnerLocated(row, bounds)).toBe(true);
   const rowFar = { ...row, owner: user('o2', { latitude: 10, longitude: 10 }) } as LocalBook;
   expect(bookOwnerLocated(rowFar, bounds)).toBe(false);
+});
+
+it('isWithinBounds handles the antimeridian (wrapped bounds, west > east)', () => {
+  const wrap = { north: 60, south: -60, east: -170, west: 170 };
+  expect(isWithinBounds(35, 179, wrap)).toBe(true);   // just west of the date line
+  expect(isWithinBounds(35, -179, wrap)).toBe(true);  // just east of the date line
+  expect(isWithinBounds(35, 0, wrap)).toBe(false);    // opposite side of the globe
+});
+
+it('isWithinBounds normal (non-wrapped) bounds still work', () => {
+  const b = { north: 46, south: 45, east: -73, west: -74 };
+  expect(isWithinBounds(45.5, -73.5, b)).toBe(true);
+  expect(isWithinBounds(45.5, 0, b)).toBe(false);
 });

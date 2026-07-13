@@ -8,7 +8,12 @@ export interface MapBounds {
 }
 
 export function isWithinBounds(lat: number, lng: number, b: MapBounds): boolean {
-  return lat <= b.north && lat >= b.south && lng <= b.east && lng >= b.west;
+  const inLat = lat <= b.north && lat >= b.south;
+  // Handle the antimeridian: when the viewport wraps the date line, Leaflet's
+  // getBounds() returns west > east, so the in-range test inverts to an OR.
+  const inLng =
+    b.west <= b.east ? lng >= b.west && lng <= b.east : lng >= b.west || lng <= b.east;
+  return inLat && inLng;
 }
 
 export function hasLocation(m: { user: UserProfile }): boolean {
