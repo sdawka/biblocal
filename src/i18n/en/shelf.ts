@@ -101,6 +101,9 @@ export default {
     expandHave: 'Expand books I have section',
     collapseSeeking: 'Collapse books I am seeking section',
     expandSeeking: 'Expand books I am seeking section',
+    viewCovers: 'Covers',
+    viewDetails: 'Details',
+    viewToggleGroup: 'Book display',
   },
   empty: {
     shelfTitle: 'Your Shelf',

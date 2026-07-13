@@ -101,6 +101,9 @@ export default {
     expandHave: 'Développer la section des livres que je possède',
     collapseSeeking: 'Réduire la section des livres que je recherche',
     expandSeeking: 'Développer la section des livres que je recherche',
+    viewCovers: 'Couvertures',
+    viewDetails: 'Détails',
+    viewToggleGroup: 'Affichage des livres',
   },
   empty: {
     shelfTitle: 'Votre étagère',

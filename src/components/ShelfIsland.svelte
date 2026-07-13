@@ -13,6 +13,7 @@
     updateNote,
     removeNote,
   } from '../stores/shelf';
+  import { shelfView, setShelfView } from '../stores/shelf-view';
   import BookCard from './BookCard.svelte';
   import type { BookIntent } from '../lib/types';
   import { INTENT_OPTIONS } from '../lib/intents';
@@ -20,6 +21,7 @@
 
   let { lang = 'en' as Lang } = $props();
   const t = $derived(useTranslations(lang).shelf.list);
+  let view = $derived($shelfView);
   // Localized intent options: order from lib, labels from the dict.
   const intentOptions = $derived(
     INTENT_OPTIONS.map((opt) => ({ value: opt.value, label: useTranslations(lang).shelf.intents.labels[opt.value] }))
@@ -117,6 +119,26 @@
           {t.clearFilters}
         </button>
       {/if}
+    </div>
+
+    <div class="filter-row">
+      <span class="filter-label" aria-hidden="true"></span>
+      <div class="segmented" role="group" aria-label={t.viewToggleGroup}>
+        <button
+          type="button"
+          aria-pressed={view === 'covers'}
+          onclick={() => setShelfView('covers')}
+        >
+          {t.viewCovers}
+        </button>
+        <button
+          type="button"
+          aria-pressed={view === 'details'}
+          onclick={() => setShelfView('details')}
+        >
+          {t.viewDetails}
+        </button>
+      </div>
     </div>
   </div>
 
