@@ -56,7 +56,6 @@
             <span class="skeleton-spine" style="animation-delay: {i * 0.08}s"></span>
           {/each}
         </div>
-        <div class="skeleton-ledge"></div>
       </div>
     </div>
   {:else}
@@ -100,7 +99,7 @@
     box-shadow: 0 1px 0 var(--hairline);
   }
 
-  /* Loading skeleton: a few ghost spines sitting on a plain ledge, so the
+  /* Loading skeleton: a few ghost spines with a shimmer sweep, so the
      initial load reads as "shelf filling in" rather than "you have no
      books." No add-slot/explore CTA while this is showing. */
   .skeleton-shelf {
@@ -141,14 +140,6 @@
 
   @keyframes skeleton-shimmer {
     to { transform: translateX(100%); }
-  }
-
-  .skeleton-ledge {
-    height: 34px;
-    margin-top: -1px;
-    background: var(--shelf-wood);
-    border-top: 1px solid var(--hairline-strong);
-    border-radius: 0 0 var(--r-sm) var(--r-sm);
   }
 
   @media (max-width: 600px) {

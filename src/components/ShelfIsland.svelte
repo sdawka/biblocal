@@ -17,7 +17,6 @@
   import BookCard from './BookCard.svelte';
   import BookSpine from './BookSpine.svelte';
   import BookDetailSheet from './BookDetailSheet.svelte';
-  import Shelf from './Shelf.svelte';
   import type { BookIntent } from '../lib/types';
   import { INTENT_OPTIONS } from '../lib/intents';
   import { useTranslations, type Lang } from '../i18n';
@@ -183,15 +182,13 @@
         </button>
         {#if haveExpanded}
           {#if view === 'covers'}
-            <Shelf>
-              <div class="covers-row" id="books-i-have-grid">
-                {#each booksIHave as book, i (book.id)}
-                  <div class="spine-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                    <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
-                  </div>
-                {/each}
-              </div>
-            </Shelf>
+            <div class="covers-row" id="books-i-have-grid">
+              {#each booksIHave as book, i (book.id)}
+                <div class="spine-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                </div>
+              {/each}
+            </div>
           {:else}
             <div class="grid" id="books-i-have-grid">
               {#each booksIHave as book, i (book.id)}
@@ -231,15 +228,13 @@
         </button>
         {#if seekingExpanded}
           {#if view === 'covers'}
-            <Shelf>
-              <div class="covers-row" id="books-seeking-grid">
-                {#each booksImSeeking as book, i (book.id)}
-                  <div class="spine-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                    <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
-                  </div>
-                {/each}
-              </div>
-            </Shelf>
+            <div class="covers-row" id="books-seeking-grid">
+              {#each booksImSeeking as book, i (book.id)}
+                <div class="spine-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                </div>
+              {/each}
+            </div>
           {:else}
             <div class="grid" id="books-seeking-grid">
               {#each booksImSeeking as book, i (book.id)}
@@ -361,38 +356,6 @@
     margin-bottom: var(--s-6);
   }
 
-  /* No inline padding here: this section is the containing block that
-     Shelf.svelte's full-bleed `margin-inline: calc(50% - min(1600px,100vw)/2)`
-     breaks out from. Any inline padding on it (vs. the zero padding on the
-     "Have" section) shifts its content box and makes the seeking shelf bay
-     break out asymmetrically. The heading inset lives on .section-header
-     instead, which doesn't contain the <Shelf>. */
-  .shelf-section.seeking {
-    position: relative;
-  }
-
-  /* Library-shelf upright: a hairline rule capped by a short accent end-stop
-     at the top — intentional shelf furniture, not a stray highlight bar. */
-  .shelf-section.seeking::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: linear-gradient(
-      180deg,
-      var(--accent) 0,
-      var(--accent) 14px,
-      var(--hairline-strong) 14px,
-      var(--hairline-strong) 100%
-    );
-  }
-
-  .shelf-section.seeking .section-header {
-    padding-left: var(--s-5);
-  }
-
   .section-header {
     display: flex;
     align-items: center;
@@ -482,17 +445,33 @@
   }
 
   /* Covers view: a single horizontal row of fixed-width spines that scrolls
-     sideways, like a real bookshelf — no wrapping, no row pitch to keep in
-     sync with Shelf.svelte. Shelf.svelte renders one static ledge board
-     under this row; the row scrolls over it independently. */
+     sideways within the normal content column — no wrapping. The row itself
+     is the scroll container: it never exceeds its parent's width, so when
+     the spines' total width overflows, the row scrolls (trackpad, shift+wheel,
+     scrollbar) instead of the page body. */
   .covers-row {
     display: flex;
+    width: 100%;
     gap: 20px;
     overflow-x: auto;
     overflow-y: visible;
     scroll-snap-type: x proximity;
-    padding-block: 0 4px;
+    padding-block: 0 var(--s-3);
     scrollbar-width: thin;
+    scrollbar-color: var(--hairline-strong) transparent;
+  }
+
+  .covers-row::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .covers-row::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .covers-row::-webkit-scrollbar-thumb {
+    background: var(--hairline-strong);
+    border-radius: var(--r-full);
   }
 
   .covers-row > :global(*) {
