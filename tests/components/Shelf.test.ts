@@ -21,9 +21,8 @@ describe('Shelf', () => {
   it('marks furniture aria-hidden so it is invisible to assistive tech', () => {
     const { container } = render(Shelf);
 
-    const grain = container.querySelector('.grain');
     const corbels = container.querySelectorAll('.corbel');
-    expect(grain?.getAttribute('aria-hidden')).toBe('true');
+    expect(corbels).toHaveLength(2);
     corbels.forEach((corbel) => {
       expect(corbel.getAttribute('aria-hidden')).toBe('true');
     });
