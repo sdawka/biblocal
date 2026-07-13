@@ -61,7 +61,9 @@
     width: 100%;
     padding: 0;
     border: none;
-    background: none;
+    /* Neutral book-shaped fill so a spine reads as a book even before its
+       lazy cover image paints (avoids an empty gold-edged box on load). */
+    background: var(--surface-sunken);
     cursor: pointer;
     border-radius: 2px var(--r-sm) var(--r-sm) 2px;
     box-shadow: var(--shadow-3);
