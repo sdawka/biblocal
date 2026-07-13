@@ -17,6 +17,7 @@
   import BookCard from './BookCard.svelte';
   import BookSpine from './BookSpine.svelte';
   import BookDetailSheet from './BookDetailSheet.svelte';
+  import Shelf from './Shelf.svelte';
   import type { BookIntent } from '../lib/types';
   import { INTENT_OPTIONS } from '../lib/intents';
   import { useTranslations, type Lang } from '../i18n';
@@ -182,11 +183,13 @@
         </button>
         {#if haveExpanded}
           {#if view === 'covers'}
-            <div class="grid covers" id="books-i-have-grid">
-              {#each booksIHave as book (book.id)}
-                <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
-              {/each}
-            </div>
+            <Shelf>
+              <div class="grid covers" id="books-i-have-grid">
+                {#each booksIHave as book (book.id)}
+                  <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                {/each}
+              </div>
+            </Shelf>
           {:else}
             <div class="grid" id="books-i-have-grid">
               {#each booksIHave as book, i (book.id)}
@@ -226,11 +229,13 @@
         </button>
         {#if seekingExpanded}
           {#if view === 'covers'}
-            <div class="grid covers" id="books-seeking-grid">
-              {#each booksImSeeking as book (book.id)}
-                <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
-              {/each}
-            </div>
+            <Shelf>
+              <div class="grid covers" id="books-seeking-grid">
+                {#each booksImSeeking as book (book.id)}
+                  <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                {/each}
+              </div>
+            </Shelf>
           {:else}
             <div class="grid" id="books-seeking-grid">
               {#each booksImSeeking as book, i (book.id)}
@@ -463,8 +468,8 @@
     }
   }
 
-  /* Covers view: fixed-width tiles so rows share a uniform height — a later
-     phase relies on this constant pitch to align ornate shelf ledges. */
+  /* Covers view: fixed-width tiles so rows share a uniform height — Shelf.svelte
+     relies on this constant row pitch to align its ornate ledges. */
   .grid.covers {
     display: grid;
     grid-template-columns: repeat(auto-fill, 132px);
@@ -480,9 +485,8 @@
     }
   }
 
-  /* Each card in a row stretches to a shared height so their ledges line up. */
+  /* Details is a plain card grid — no shelf furniture; each card just rises in. */
   .book-wrapper {
-    position: relative;
     display: flex;
     opacity: 0;
     animation: rise var(--dur-3) var(--ease-out) forwards;
@@ -490,24 +494,6 @@
 
   .book-wrapper > :global(.book-card) {
     flex: 1;
-  }
-
-  /* Shelf plank: a solid wooden board beneath each row. The negative insets
-     pull adjacent boards together so a row reads as one continuous shelf; the
-     lit top lip + darker front face + cast shadow give it physical depth, and
-     the books sit directly on it. */
-  .book-wrapper::after {
-    content: '';
-    position: absolute;
-    left: calc(var(--s-4) / -2);
-    right: calc(var(--s-4) / -2);
-    bottom: -10px;
-    height: 8px;
-    border-radius: 1px 1px 2px 2px;
-    background: var(--shelf-wood);
-    box-shadow:
-      0 4px 9px -5px var(--drop-shadow-color),
-      inset 0 1px 0 var(--surface);
   }
 
   @media (max-width: 600px) {

@@ -78,6 +78,9 @@
     var(--hairline-strong) 55%,
     var(--hairline) 100%
   );
+  /* Solid wood tone for SVG fills (corbels etc.) where a gradient can't be
+     used as a `fill` value directly. */
+  --shelf-wood-solid: var(--hairline-strong);
 
   /* Radii */
   --r-sm: 8px;
@@ -93,6 +96,7 @@
 
   --maxw: 1120px;
   --maxw-shelf: 1360px;   /* dedicated wider Biblio column */
+  --maxw-shelf-wide: 1600px; /* full-bleed cap for the ornate Covers shelf bay */
 
   color-scheme: light;
 }
