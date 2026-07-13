@@ -96,7 +96,7 @@ source "$SCRIPT_DIR/../lib/helpers.sh"
 
 # Assertions
 assert_url "/biblio"
-assert_element "Your Shelf"
+assert_element "Biblio"
 
 # Actions
 login_test_user

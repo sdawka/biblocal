@@ -3,7 +3,7 @@
 export default {
   page: {
     eyebrow: 'Votre bibliothèque',
-    title: 'Votre étagère',
+    title: 'Biblio',
     metaTitle: 'Votre étagère | biblocal',
     zoneTitle: 'Ajouter un livre',
     importSummary: 'Importer depuis Goodreads',

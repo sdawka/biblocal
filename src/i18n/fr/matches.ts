@@ -5,7 +5,7 @@ export default {
   },
   header: {
     eyebrow: 'Découvrir',
-    title: 'À proximité',
+    title: 'Local',
     addStore: '+ Ajouter une librairie',
   },
   views: {

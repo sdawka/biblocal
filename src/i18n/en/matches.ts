@@ -6,7 +6,7 @@ export default {
   },
   header: {
     eyebrow: 'Discover',
-    title: 'Nearby',
+    title: 'Local',
     addStore: '+ Add a bookstore',
   },
   views: {
