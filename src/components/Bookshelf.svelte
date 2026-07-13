@@ -48,6 +48,12 @@
         <span class="add-label">{isEmpty ? t.empty.addFirst : t.page.zoneTitle}</span>
       </button>
     {/if}
+    {#if isEmpty && !adding}
+      <a class="explore-nearby" href={lang === 'fr' ? '/fr/local' : '/local'}>
+        <span class="explore-title">{t.empty.exploreNearby}</span>
+        <span class="explore-subtitle">{t.empty.exploreNearbySubtitle}</span>
+      </a>
+    {/if}
   </div>
 </div>
 
@@ -116,5 +122,28 @@
 
   .import-section {
     margin-top: var(--s-4);
+  }
+
+  .explore-nearby {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin-top: var(--s-3);
+    color: var(--ink-muted);
+    text-decoration: none;
+  }
+
+  .explore-nearby:hover {
+    color: var(--accent);
+  }
+
+  .explore-title {
+    font-weight: 590;
+    font-size: 0.9rem;
+  }
+
+  .explore-subtitle {
+    font-size: 0.8rem;
+    color: var(--ink-faint);
   }
 </style>

@@ -22,6 +22,11 @@ export default {
   empty: {
     books: 'No books nearby yet',
   },
+  local: {
+    search: 'Search title or author',
+    fit: 'fit',
+    seeOwner: 'See {name} nearby',
+  },
   map: {
     legend: 'Legend',
     you: 'You',

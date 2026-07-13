@@ -43,4 +43,17 @@ describe('Bookshelf', () => {
     // AddBookIsland renders an ISBN input
     expect(screen.getByPlaceholderText(/isbn/i)).toBeTruthy();
   });
+
+  it('shows an Explore nearby link on the empty shelf', () => {
+    render(Bookshelf, { props: { lang: 'en' } });
+    const link = screen.getByRole('link', { name: /explore nearby/i });
+    expect(link).toBeTruthy();
+    expect(link.getAttribute('href')).toContain('/local');
+  });
+
+  it('hides the Explore nearby link while adding a book', async () => {
+    render(Bookshelf, { props: { lang: 'en' } });
+    await fireEvent.click(screen.getByRole('button', { name: /add.*book/i }));
+    expect(screen.queryByRole('link', { name: /explore nearby/i })).toBeNull();
+  });
 });

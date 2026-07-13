@@ -74,7 +74,7 @@
   </div>
 
   {#if view === 'books'}
-    <input class="search" type="search" placeholder="Search title or author" bind:value={query} />
+    <input class="search" type="search" placeholder={t.local.search} bind:value={query} />
     {#if groups.length === 0}
       <p class="empty">{t.empty.books}</p>
     {:else}
@@ -82,7 +82,14 @@
         <section class="group">
           <h2 class="group-head">{t.groups[group.intent]}</h2>
           {#each group.books as row (row.owner.id + row.book.id + row.intent)}
-            <BookDiscoveryRow {row} {lang} />
+            <BookDiscoveryRow
+              {row}
+              {lang}
+              onOwner={(id) => {
+                view = 'people';
+                expandedId = id;
+              }}
+            />
           {/each}
         </section>
       {/each}

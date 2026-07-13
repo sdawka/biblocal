@@ -1,9 +1,14 @@
 <script lang="ts">
   import type { LocalBook } from '../lib/types';
   import { formatDistance } from '../lib/geo';
-  import type { Lang } from '../i18n';
+  import { useTranslations, type Lang } from '../i18n';
 
-  let { row, lang = 'en' as Lang }: { row: LocalBook; lang?: Lang } = $props();
+  let {
+    row,
+    lang = 'en' as Lang,
+    onOwner,
+  }: { row: LocalBook; lang?: Lang; onOwner?: (ownerId: string) => void } = $props();
+  const t = $derived(useTranslations(lang).matches.local);
   let open = $state(false);
 </script>
 
@@ -20,13 +25,19 @@
       <span class="owner">
         {row.owner.name}
         {#if row.distanceKm != null}· {formatDistance(row.distanceKm)}{/if}
-        {#if row.isTasteMatch}· <span class="star">★ fit</span>{/if}
+        {#if row.isTasteMatch}· <span class="star">★ {t.fit}</span>{/if}
       </span>
     </span>
   </button>
   {#if open}
     <div class="row-detail">
-      <a class="btn btn-sm" href={`/local?owner=${row.owner.id}`}>See {row.owner.name}'s shelf</a>
+      <button
+        class="btn btn-sm"
+        type="button"
+        onclick={() => onOwner?.(row.owner.id)}
+      >
+        {t.seeOwner.replace('{name}', row.owner.name)}
+      </button>
     </div>
   {/if}
 </article>

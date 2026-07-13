@@ -21,6 +21,11 @@ export default {
   empty: {
     books: 'Aucun livre à proximité',
   },
+  local: {
+    search: 'Rechercher par titre ou auteur',
+    fit: 'affinité',
+    seeOwner: 'Voir {name} à proximité',
+  },
   map: {
     legend: 'Légende',
     you: 'Vous',

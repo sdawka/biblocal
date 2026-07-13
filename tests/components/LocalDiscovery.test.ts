@@ -49,4 +49,20 @@ describe('LocalDiscovery', () => {
     await fireEvent.click(screen.getByRole('tab', { name: /people/i }));
     expect(screen.getByText('Bob')).toBeTruthy();
   });
+
+  it('jumps to the People view with the owner expanded when a book row owner action is clicked', async () => {
+    render(LocalDiscovery, { props: { lang: 'en' } });
+
+    // Expand the book row to reveal the owner action.
+    await fireEvent.click(screen.getByText('Dune'));
+    const ownerButton = screen.getByRole('button', { name: /see bob nearby/i });
+    await fireEvent.click(ownerButton);
+
+    // We should now be on the People tab (Books search input gone) with
+    // Bob's card rendered and expanded.
+    const peopleTab = screen.getByRole('tab', { name: /people/i });
+    expect(peopleTab.getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByPlaceholderText(/search title or author/i)).toBeNull();
+    expect(screen.getByText('Bob')).toBeTruthy();
+  });
 });
