@@ -73,9 +73,9 @@ run_journey() {
 
 # Run journeys
 run_journey "Authentication" "$SCRIPT_DIR/journeys/01-auth.sh"
-run_journey "Shelf Operations" "$SCRIPT_DIR/journeys/02-shelf.sh"
+run_journey "Biblio Operations" "$SCRIPT_DIR/journeys/02-shelf.sh"
 run_journey "Profile" "$SCRIPT_DIR/journeys/03-profile.sh"
-run_journey "Matches" "$SCRIPT_DIR/journeys/04-matches.sh"
+run_journey "Local" "$SCRIPT_DIR/journeys/04-matches.sh"
 run_journey "Navigation" "$SCRIPT_DIR/journeys/05-navigation.sh"
 run_journey "Onboarding" "$SCRIPT_DIR/journeys/06-onboarding.sh"
 run_journey "Geolocation" "$SCRIPT_DIR/journeys/07-geolocation.sh"

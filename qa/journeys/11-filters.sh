@@ -17,9 +17,9 @@ npm run qa:scenario power --silent >/dev/null 2>&1 || {
 }
 pass "Power scenario loaded"
 
-# Navigate to shelf
-info "Test: Shelf loads with many books"
-agent-browser open "$BASE_URL/shelf" >/dev/null 2>&1
+# Navigate to biblio
+info "Test: Biblio loads with many books"
+agent-browser open "$BASE_URL/biblio" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 sleep 2
 
@@ -27,7 +27,7 @@ snapshot=$(agent-browser snapshot -i 2>/dev/null)
 
 # Should see multiple books
 if echo "$snapshot" | grep -qi "dune\|foundation\|neuromancer"; then
-  pass "Multiple books visible on shelf"
+  pass "Multiple books visible on biblio"
 else
   info "Book titles not found in snapshot"
 fi
@@ -134,16 +134,16 @@ if [ -n "$all_ref" ]; then
   pass "Reset to all books"
 else
   # Reload page to reset
-  agent-browser open "$BASE_URL/shelf" >/dev/null 2>&1
+  agent-browser open "$BASE_URL/biblio" >/dev/null 2>&1
   agent-browser wait --load networkidle >/dev/null 2>&1
   pass "Page reloaded to reset filters"
 fi
 
-# Verify shelf stats
-info "Test: Shelf statistics"
+# Verify biblio stats
+info "Test: Biblio statistics"
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
 if echo "$snapshot" | grep -qi "[0-9]\+.*book\|total\|lend\|discuss"; then
-  pass "Shelf statistics visible"
+  pass "Biblio statistics visible"
 else
   info "Statistics format may vary"
 fi

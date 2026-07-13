@@ -109,6 +109,7 @@ export default {
     toDiscuss: 'à discuter',
     noTopics: 'aucun sujet pour le moment',
     booksWillAppear: 'Vos livres apparaîtront ici',
+    addFirst: 'Ajoutez votre premier livre',
     addBook: 'Ajouter un livre',
     addBookSubtitle: 'Scannez un code-barres ou cherchez par titre',
     exploreNearby: 'Explorer à proximité',

@@ -68,20 +68,20 @@ login_test_user() {
   # Retry the navigation: agent-browser occasionally reports about:blank on the
   # first open, which previously caused a spurious assert_url failure downstream.
   if [ "$QA_MODE" = "true" ]; then
-    info "QA Mode: Skipping login, navigating to /shelf"
+    info "QA Mode: Skipping login, navigating to /biblio"
     local tries=0 url=""
     while [ $tries -lt 3 ]; do
-      agent-browser open "$BASE_URL/shelf" >/dev/null 2>&1
+      agent-browser open "$BASE_URL/biblio" >/dev/null 2>&1
       agent-browser wait --load networkidle >/dev/null 2>&1
       url=$(get_url)
-      [[ "$url" == *"/shelf"* ]] && break
+      [[ "$url" == *"/biblio"* ]] && break
       tries=$((tries + 1))
       sleep 1
     done
-    if [[ "$url" == *"/shelf"* ]]; then
+    if [[ "$url" == *"/biblio"* ]]; then
       pass "QA Mode active"
     else
-      fail "QA Mode: could not navigate to /shelf (last url: '$url')"
+      fail "QA Mode: could not navigate to /biblio (last url: '$url')"
     fi
     return 0
   fi

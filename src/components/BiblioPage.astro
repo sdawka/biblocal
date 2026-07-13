@@ -1,0 +1,53 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Bookshelf from './Bookshelf.svelte';
+import PromptIsland from './PromptIsland.svelte';
+import SyncErrorToast from './SyncErrorToast.svelte';
+import { UserButton } from '@clerk/astro/components';
+import { env } from 'cloudflare:workers';
+import { useTranslations, type Lang } from '../i18n';
+
+interface Props {
+  lang?: Lang;
+}
+const { lang = 'en' } = Astro.props;
+const t = useTranslations(lang).shelf;
+
+const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
+---
+
+<Layout lang={lang} title={t.page.metaTitle}>
+  <main>
+      <div class="header-row rise">
+        <div class="header-text">
+          <p class="eyebrow">{t.page.eyebrow}</p>
+          <h1>{t.page.title}</h1>
+        </div>
+        {!isQaMode && <UserButton />}
+      </div>
+
+      <SyncErrorToast lang={lang} client:load />
+
+      <PromptIsland lang={lang} client:idle context="shelf" />
+
+      <Bookshelf lang={lang} client:load />
+    </main>
+</Layout>
+
+<style>
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--s-4);
+    margin-bottom: var(--s-5);
+  }
+
+  .header-text .eyebrow {
+    margin: 0 0 var(--s-2);
+  }
+
+  .header-text h1 {
+    margin: 0;
+  }
+</style>

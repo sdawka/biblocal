@@ -34,7 +34,7 @@
     }
 
     initProfile(name.trim(), city);
-    window.location.href = '/shelf';
+    window.location.href = '/biblio';
   }
 </script>
 

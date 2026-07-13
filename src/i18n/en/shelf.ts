@@ -110,6 +110,7 @@ export default {
     toDiscuss: 'to discuss',
     noTopics: 'no topics yet',
     booksWillAppear: 'Your books will appear here',
+    addFirst: 'Add your first book',
     addBook: 'Add a Book',
     addBookSubtitle: 'Scan barcode or search by title',
     exploreNearby: 'Explore Nearby',

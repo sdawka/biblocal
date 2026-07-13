@@ -5,7 +5,7 @@
   import { INTENT_OPTIONS } from '../lib/intents';
   import { useTranslations, type Lang } from '../i18n';
 
-  let { lang = 'en' as Lang } = $props();
+  let { lang = 'en' as Lang, onClose = undefined as (() => void) | undefined } = $props();
   const t = $derived(useTranslations(lang).shelf.add);
   // Localized intent options: order from lib, labels from the dict.
   const intentOptions = $derived(
@@ -128,6 +128,7 @@
     });
 
     resetForm();
+    onClose?.();
   }
 
   function addAnyway() {
@@ -149,6 +150,11 @@
         setTimeout(() => card.classList.remove('highlight-pulse'), 1000);
       }
     }, 100);
+  }
+
+  function handleCancel() {
+    resetForm();
+    onClose?.();
   }
 
   function switchMode(newMode: Mode) {
@@ -255,7 +261,7 @@
     </div>
 
     <div class="preview-actions">
-      <button type="button" class="btn btn-outline" onclick={resetForm}>
+      <button type="button" class="btn btn-outline" onclick={handleCancel}>
         {t.cancel}
       </button>
       <button type="button" class="btn btn-filled btn-confirm" onclick={confirmAdd}>

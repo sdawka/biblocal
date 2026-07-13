@@ -8,11 +8,17 @@ import sitemap from '@astrojs/sitemap';
 
 // Auth-gated app routes have no SEO value and are Disallow-ed in robots.txt;
 // keep them out of the sitemap so it only advertises public, indexable pages.
-const PRIVATE_PREFIXES = ['/shelf', '/matches', '/profile', '/stores', '/store'];
+const PRIVATE_PREFIXES = ['/biblio', '/local', '/profile', '/stores', '/store'];
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://biblocal.com',
+  redirects: {
+    '/shelf': '/biblio',
+    '/matches': '/local',
+    '/fr/shelf': '/fr/biblio',
+    '/fr/matches': '/fr/local',
+  },
   i18n: {
     defaultLocale: 'en',
     locales: ['en', 'fr'],

@@ -15,15 +15,15 @@ login_test_user
 info "Test: Navigation bar elements"
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
 assert_element "biblocal"
-assert_element "Shelf"
-assert_element "Matches"
+assert_element "Biblio"
+assert_element "Local"
 assert_element "Profile"
 
-# Test 2: Active state on shelf
+# Test 2: Active state on biblio
 info "Test: Active state indicates current page"
-# We should be on /shelf after login
-if echo "$snapshot" | grep -i "shelf" | grep -qi "active\|current\|selected"; then
-  pass "Active state shown for Shelf"
+# We should be on /biblio after login
+if echo "$snapshot" | grep -i "biblio" | grep -qi "active\|current\|selected"; then
+  pass "Active state shown for Biblio"
 else
   # Check visually - take screenshot
   agent-browser screenshot >/dev/null 2>&1
@@ -32,7 +32,7 @@ fi
 
 # Test 3: Navigate via nav links
 info "Test: Nav links work correctly"
-pages=("Profile" "Matches" "Shelf")
+pages=("Profile" "Local" "Biblio")
 for page in "${pages[@]}"; do
   snapshot=$(agent-browser snapshot -i 2>/dev/null)
   ref=$(echo "$snapshot" | grep -i "link \"$page\"" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
@@ -45,7 +45,7 @@ for page in "${pages[@]}"; do
 done
 
 # Test 4: Logo click behavior
-# In normal mode an authenticated user is redirected / → /shelf. QA_MODE bypasses
+# In normal mode an authenticated user is redirected / → /biblio. QA_MODE bypasses
 # Clerk, so that redirect (gated on a Clerk userId) doesn't fire and the logo lands
 # on the marketing home page instead.
 info "Test: Logo click behavior"
@@ -57,8 +57,8 @@ if is_qa_mode; then
   assert_url "/"
   pass "Logo navigates to home (QA mode: no authenticated redirect)"
 else
-  assert_url "/shelf"
-  pass "Logo redirects to shelf for authenticated user"
+  assert_url "/biblio"
+  pass "Logo redirects to biblio for authenticated user"
 fi
 
 # Test 5: User menu

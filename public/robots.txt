@@ -1,8 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /shelf
-Disallow: /matches
+Disallow: /biblio
+Disallow: /local
 Disallow: /profile
 Disallow: /stores
 Disallow: /store

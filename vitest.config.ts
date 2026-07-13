@@ -17,5 +17,11 @@ export default defineConfig({
         new URL('./tests/mocks/cloudflare-workers.ts', import.meta.url),
       ),
     },
+    conditions: ['node'],
+  },
+  ssr: {
+    resolve: {
+      conditions: ['node'],
+    },
   },
 });
