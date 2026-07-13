@@ -12,8 +12,11 @@
     query: string;
     onQueryChange: (query: string) => void;
     bookGroups: LocalBookGroup[];
+    bookGroupsUnlocated: LocalBookGroup[];
     peopleInView: Match[];
+    peopleUnlocated: Match[];
     storesInView: Match[];
+    storesUnlocated: Match[];
     inViewCount: number;
     expandedId: string | null;
     onToggle: (id: string) => void;
@@ -30,8 +33,11 @@
     query,
     onQueryChange,
     bookGroups,
+    bookGroupsUnlocated,
     peopleInView,
+    peopleUnlocated,
     storesInView,
+    storesUnlocated,
     inViewCount,
     expandedId,
     onToggle,
@@ -44,6 +50,7 @@
 
   const t = $derived(useTranslations(lang).matches);
   const th = $derived(t.hub);
+  const locationNotShared = $derived(t.map.locationNotShared);
 
   const emptyMessage = $derived(
     panel === 'books' ? th.emptyBooks : panel === 'people' ? th.emptyPeople : th.emptyStores
@@ -104,7 +111,7 @@
     <p class="state-note">{error}</p>
   </div>
 {:else if panel === 'books'}
-  {#if bookGroups.length === 0}
+  {#if bookGroups.length === 0 && bookGroupsUnlocated.length === 0}
     <div class="empty">
       <p>{emptyMessage}</p>
     </div>
@@ -121,10 +128,25 @@
           {/each}
         </section>
       {/each}
+      {#if bookGroupsUnlocated.length > 0}
+        <section class="group group-unlocated">
+          <div class="group-head">
+            <span class="eyebrow">{locationNotShared}</span>
+            <span class="count">
+              {bookGroupsUnlocated.reduce((n, g) => n + g.books.length, 0)}
+            </span>
+          </div>
+          {#each bookGroupsUnlocated as group (group.intent)}
+            {#each group.books as row (row.owner.id + row.book.id + row.intent)}
+              <BookDiscoveryRow {row} {lang} onOwner={(id) => onOwner(id)} />
+            {/each}
+          {/each}
+        </section>
+      {/if}
     </div>
   {/if}
 {:else if panel === 'people'}
-  {#if peopleInView.length === 0}
+  {#if peopleInView.length === 0 && peopleUnlocated.length === 0}
     <div class="empty">
       <p>{emptyMessage}</p>
     </div>
@@ -140,9 +162,27 @@
           />
         </div>
       {/each}
+      {#if peopleUnlocated.length > 0}
+        <section class="group group-unlocated">
+          <div class="group-head">
+            <span class="eyebrow">{locationNotShared}</span>
+            <span class="count">{peopleUnlocated.length}</span>
+          </div>
+          {#each peopleUnlocated as match, i (match.user.id)}
+            <div class="card-slot rise" style={`animation-delay:${Math.min(i * 60, 360)}ms`}>
+              <MatchCardIsland
+                {match}
+                {lang}
+                expanded={expandedId === match.user.id}
+                onToggle={() => onToggle(match.user.id)}
+              />
+            </div>
+          {/each}
+        </section>
+      {/if}
     </div>
   {/if}
-{:else if storesInView.length === 0}
+{:else if storesInView.length === 0 && storesUnlocated.length === 0}
   <div class="empty">
     <p>{emptyMessage}</p>
   </div>
@@ -158,6 +198,24 @@
         />
       </div>
     {/each}
+    {#if storesUnlocated.length > 0}
+      <section class="group group-unlocated">
+        <div class="group-head">
+          <span class="eyebrow">{locationNotShared}</span>
+          <span class="count">{storesUnlocated.length}</span>
+        </div>
+        {#each storesUnlocated as match, i (match.user.id)}
+          <div class="card-slot rise" style={`animation-delay:${Math.min(i * 60, 360)}ms`}>
+            <MatchCardIsland
+              {match}
+              {lang}
+              expanded={expandedId === match.user.id}
+              onToggle={() => onToggle(match.user.id)}
+            />
+          </div>
+        {/each}
+      </section>
+    {/if}
   </div>
 {/if}
 

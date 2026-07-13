@@ -47,34 +47,51 @@
   const people = $derived(ps.people);
   const stores = $derived(ps.stores);
 
+  const matchesSearch = (m: Match) => !q || m.user.name.toLowerCase().includes(q);
+  const bookMatchesSearch = (row: LocalBook) =>
+    !q || (row.book.title + ' ' + row.book.author).toLowerCase().includes(q);
+
   const peopleInView = $derived(
     sortByDistance(
       people.filter(
         (m) =>
-          (viewBounds == null ||
-            (hasLocation(m) && isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds))) &&
-          (!q || m.user.name.toLowerCase().includes(q))
+          hasLocation(m) &&
+          (viewBounds == null || isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds)) &&
+          matchesSearch(m)
       )
     )
   );
+  // Owner shares no location at all — always shown, regardless of viewport,
+  // in a separate "Location not shared" group (no distance, so no sort).
+  const peopleUnlocated = $derived(people.filter((m) => !hasLocation(m) && matchesSearch(m)));
+
   const storesInView = $derived(
     sortByDistance(
       stores.filter(
         (m) =>
-          (viewBounds == null ||
-            (hasLocation(m) && isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds))) &&
-          (!q || m.user.name.toLowerCase().includes(q))
+          hasLocation(m) &&
+          (viewBounds == null || isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds)) &&
+          matchesSearch(m)
       )
     )
   );
+  const storesUnlocated = $derived(stores.filter((m) => !hasLocation(m) && matchesSearch(m)));
+
   const booksInView = $derived(
     books.filter(
       (row) =>
         bookOwnerLocated(row, viewBounds) &&
-        (!q || (row.book.title + ' ' + row.book.author).toLowerCase().includes(q))
+        !(row.owner.latitude == null || row.owner.longitude == null) &&
+        bookMatchesSearch(row)
+    )
+  );
+  const booksUnlocated = $derived(
+    books.filter(
+      (row) => (row.owner.latitude == null || row.owner.longitude == null) && bookMatchesSearch(row)
     )
   );
   const bookGroups = $derived(groupByIntent(booksInView));
+  const bookGroupsUnlocated = $derived(groupByIntent(booksUnlocated));
   const inViewCount = $derived(
     panel === 'books' ? booksInView.length : panel === 'people' ? peopleInView.length : storesInView.length
   );
@@ -360,8 +377,11 @@
       {query}
       onQueryChange={(v) => (query = v)}
       {bookGroups}
+      {bookGroupsUnlocated}
       {peopleInView}
+      {peopleUnlocated}
       {storesInView}
+      {storesUnlocated}
       {inViewCount}
       {expandedId}
       onToggle={toggleExpanded}

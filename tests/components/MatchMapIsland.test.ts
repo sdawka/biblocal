@@ -71,8 +71,11 @@ function baseProps() {
     query: '',
     onQueryChange: () => {},
     bookGroups: groupByIntent(books),
+    bookGroupsUnlocated: groupByIntent([]),
     peopleInView: [person],
+    peopleUnlocated: [] as Match[],
     storesInView: [store],
+    storesUnlocated: [] as Match[],
     inViewCount: 1,
     expandedId: null,
     onToggle: () => {},
@@ -123,6 +126,37 @@ describe('LocalPanel', () => {
   it('shows the in-view count', () => {
     render(LocalPanel, { props: { ...baseProps(), inViewCount: 3 } });
     expect(screen.getByText(/3 in view/i)).toBeTruthy();
+  });
+
+  it('still shows a person with no shared location under "Location not shared", even with viewport filtering active', () => {
+    const unlocatedPerson = makeMatch({ id: 'no-loc', name: 'Ghost Reader', type: 'person' });
+    render(LocalPanel, {
+      props: {
+        ...baseProps(),
+        // The in-view bucket represents the map-viewport-filtered result —
+        // the unlocated person never appears there once bounds are set.
+        peopleInView: [person],
+        peopleUnlocated: [unlocatedPerson],
+      },
+    });
+    expect(screen.getByText('Jane Reader')).toBeTruthy();
+    expect(screen.getByText('Ghost Reader')).toBeTruthy();
+    expect(screen.getByText('Location not shared')).toBeTruthy();
+  });
+
+  it('still shows a book whose owner has no shared location under "Location not shared" in the Books panel', () => {
+    const unlocatedOwner = makeUser({ id: 'no-loc-owner', name: 'Ghost Owner' });
+    const unlocatedBook = makeBook(unlocatedOwner, 'Invisible Cities');
+    render(LocalPanel, {
+      props: {
+        ...baseProps(),
+        panel: 'books',
+        bookGroupsUnlocated: groupByIntent([unlocatedBook]),
+      },
+    });
+    expect(screen.getByText('Dune')).toBeTruthy();
+    expect(screen.getByText('Invisible Cities')).toBeTruthy();
+    expect(screen.getByText('Location not shared')).toBeTruthy();
   });
 
   it('shows a per-panel empty message when the people list is empty', () => {
