@@ -86,3 +86,15 @@ it('groupByIntent returns fixed order and drops empty groups', () => {
   const groups = groupByIntent(pivotToBooks([{ user: u, facets: emptyFacets, totalScore: 0 }]));
   expect(groups.map((g) => g.intent)).toEqual(['borrowable', 'giftable']);
 });
+
+it('handles equal taste + both distances undefined without NaN', () => {
+  const a = user('a', [book({ title: 'A' })]);
+  const b = user('b', [book({ title: 'B' })]);
+  // Both matches have no distanceKm and taste 0 — comparator must not return NaN.
+  const rows = pivotToBooks([
+    { user: a, facets: emptyFacets, totalScore: 0 },
+    { user: b, facets: emptyFacets, totalScore: 0 },
+  ]);
+  expect(rows).toHaveLength(2);
+  expect(rows.map((r) => r.book.title).sort()).toEqual(['A', 'B']);
+});

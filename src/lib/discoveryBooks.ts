@@ -9,7 +9,8 @@ function compareLocalBooks(a: LocalBook, b: LocalBook): number {
   if (b.tasteScore !== a.tasteScore) return b.tasteScore - a.tasteScore;
   const ad = a.distanceKm ?? Infinity;
   const bd = b.distanceKm ?? Infinity;
-  return ad - bd;
+  if (ad !== bd) return ad - bd;
+  return 0;
 }
 
 /**
