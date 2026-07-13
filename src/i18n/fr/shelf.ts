@@ -101,6 +101,9 @@ export default {
     expandHave: 'Développer la section des livres que je possède',
     collapseSeeking: 'Réduire la section des livres que je recherche',
     expandSeeking: 'Développer la section des livres que je recherche',
+    viewCovers: 'Couvertures',
+    viewDetails: 'Détails',
+    viewToggleGroup: 'Affichage des livres',
   },
   empty: {
     shelfTitle: 'Votre étagère',
@@ -124,6 +127,8 @@ export default {
     removeConfirm: "Retirer de l'étagère ?",
     cancel: 'Annuler',
     remove: 'Retirer',
+    openDetailAria: 'Voir les détails de {title}',
+    closeDetailAria: 'Fermer',
     notes: {
       addNote: 'Ajouter une note',
       noteSingular: 'note',

@@ -13,13 +13,17 @@
     updateNote,
     removeNote,
   } from '../stores/shelf';
+  import { shelfView, setShelfView } from '../stores/shelf-view';
   import BookCard from './BookCard.svelte';
+  import BookSpine from './BookSpine.svelte';
+  import BookDetailSheet from './BookDetailSheet.svelte';
   import type { BookIntent } from '../lib/types';
   import { INTENT_OPTIONS } from '../lib/intents';
   import { useTranslations, type Lang } from '../i18n';
 
   let { lang = 'en' as Lang } = $props();
   const t = $derived(useTranslations(lang).shelf.list);
+  let view = $derived($shelfView);
   // Localized intent options: order from lib, labels from the dict.
   const intentOptions = $derived(
     INTENT_OPTIONS.map((opt) => ({ value: opt.value, label: useTranslations(lang).shelf.intents.labels[opt.value] }))
@@ -54,6 +58,9 @@
 
   let haveExpanded = $state(true);
   let seekingExpanded = $state(true);
+
+  let openBookId = $state<string | null>(null);
+  let openBook = $derived(openBookId ? $shelf[openBookId] : null);
 
   function handleDeleteBook(id: string) {
     removeBook(id);
@@ -118,6 +125,26 @@
         </button>
       {/if}
     </div>
+
+    <div class="filter-row">
+      <span class="filter-label" aria-hidden="true"></span>
+      <div class="segmented" role="group" aria-label={t.viewToggleGroup}>
+        <button
+          type="button"
+          aria-pressed={view === 'covers'}
+          onclick={() => setShelfView('covers')}
+        >
+          {t.viewCovers}
+        </button>
+        <button
+          type="button"
+          aria-pressed={view === 'details'}
+          onclick={() => setShelfView('details')}
+        >
+          {t.viewDetails}
+        </button>
+      </div>
+    </div>
   </div>
 
   {#if filteredBooks.length === 0}
@@ -154,21 +181,31 @@
           <h3 class="serif">{t.booksIHave} <span class="count-tag">{booksIHave.length}</span></h3>
         </button>
         {#if haveExpanded}
-          <div class="grid" id="books-i-have-grid">
-            {#each booksIHave as book, i (book.id)}
-              <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                <BookCard
-                  {book}
-                  {lang}
-                  onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
-                  onDelete={handleDeleteBook}
-                  onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
-                  onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
-                  onDeleteNote={(noteId) => removeNote(book.id, noteId)}
-                />
-              </div>
-            {/each}
-          </div>
+          {#if view === 'covers'}
+            <div class="covers-row" id="books-i-have-grid">
+              {#each booksIHave as book, i (book.id)}
+                <div class="spine-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                </div>
+              {/each}
+            </div>
+          {:else}
+            <div class="grid" id="books-i-have-grid">
+              {#each booksIHave as book, i (book.id)}
+                <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookCard
+                    {book}
+                    {lang}
+                    onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
+                    onDelete={handleDeleteBook}
+                    onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
+                    onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
+                    onDeleteNote={(noteId) => removeNote(book.id, noteId)}
+                  />
+                </div>
+              {/each}
+            </div>
+          {/if}
         {/if}
       </section>
     {/if}
@@ -190,26 +227,52 @@
           <h3 class="serif">{t.booksImSeeking} <span class="count-tag">{booksImSeeking.length}</span></h3>
         </button>
         {#if seekingExpanded}
-          <div class="grid" id="books-seeking-grid">
-            {#each booksImSeeking as book, i (book.id)}
-              <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                <BookCard
-                  {book}
-                  {lang}
-                  onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
-                  onDelete={handleDeleteBook}
-                  onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
-                  onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
-                  onDeleteNote={(noteId) => removeNote(book.id, noteId)}
-                />
-              </div>
-            {/each}
-          </div>
+          {#if view === 'covers'}
+            <div class="covers-row" id="books-seeking-grid">
+              {#each booksImSeeking as book, i (book.id)}
+                <div class="spine-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                </div>
+              {/each}
+            </div>
+          {:else}
+            <div class="grid" id="books-seeking-grid">
+              {#each booksImSeeking as book, i (book.id)}
+                <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookCard
+                    {book}
+                    {lang}
+                    onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
+                    onDelete={handleDeleteBook}
+                    onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
+                    onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
+                    onDeleteNote={(noteId) => removeNote(book.id, noteId)}
+                  />
+                </div>
+              {/each}
+            </div>
+          {/if}
         {/if}
       </section>
     {/if}
   {/if}
 </section>
+
+{#if openBook}
+  <BookDetailSheet
+    book={openBook}
+    {lang}
+    onClose={() => (openBookId = null)}
+    onIntentsChange={(intents) => updateBookIntents(openBook.id, intents)}
+    onDelete={(id) => {
+      handleDeleteBook(id);
+      openBookId = null;
+    }}
+    onAddNote={(text, visibility) => addNote(openBook.id, text, visibility)}
+    onUpdateNote={(noteId, updates) => updateNote(openBook.id, noteId, updates)}
+    onDeleteNote={(noteId) => removeNote(openBook.id, noteId)}
+  />
+{/if}
 
 <style>
   .shelf {
@@ -291,29 +354,6 @@
   /* Ownership sections */
   .shelf-section {
     margin-bottom: var(--s-6);
-  }
-
-  .shelf-section.seeking {
-    position: relative;
-    padding-left: var(--s-5);
-  }
-
-  /* Library-shelf upright: a hairline rule capped by a short accent end-stop
-     at the top — intentional shelf furniture, not a stray highlight bar. */
-  .shelf-section.seeking::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: linear-gradient(
-      180deg,
-      var(--accent) 0,
-      var(--accent) 14px,
-      var(--hairline-strong) 14px,
-      var(--hairline-strong) 100%
-    );
   }
 
   .section-header {
@@ -404,9 +444,58 @@
     }
   }
 
-  /* Each card in a row stretches to a shared height so their ledges line up. */
+  /* Covers view: a single horizontal row of fixed-width spines that scrolls
+     sideways within the normal content column — no wrapping. The row itself
+     is the scroll container: it never exceeds its parent's width, so when
+     the spines' total width overflows, the row scrolls (trackpad, shift+wheel,
+     scrollbar) instead of the page body. */
+  .covers-row {
+    display: flex;
+    width: 100%;
+    gap: 20px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x proximity;
+    padding-block: 0 var(--s-3);
+    scrollbar-width: thin;
+    scrollbar-color: var(--hairline-strong) transparent;
+  }
+
+  .covers-row::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .covers-row::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .covers-row::-webkit-scrollbar-thumb {
+    background: var(--hairline-strong);
+    border-radius: var(--r-full);
+  }
+
+  .covers-row > :global(*) {
+    flex: 0 0 132px;
+    width: 132px;
+    scroll-snap-align: start;
+  }
+
+  /* Spine entrance: mirrors the Details cards' staggered rise (small
+     translateY + fade, capped stagger), keyed by book.id like the cards so
+     re-filtering doesn't re-fire it on items already on screen. */
+  .spine-wrapper {
+    display: flex;
+    opacity: 0;
+    animation: spine-rise var(--dur-3) var(--ease-out) forwards;
+  }
+
+  @keyframes spine-rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Details is a plain card grid — no shelf furniture; each card just rises in. */
   .book-wrapper {
-    position: relative;
     display: flex;
     opacity: 0;
     animation: rise var(--dur-3) var(--ease-out) forwards;
@@ -414,24 +503,6 @@
 
   .book-wrapper > :global(.book-card) {
     flex: 1;
-  }
-
-  /* Shelf plank: a solid wooden board beneath each row. The negative insets
-     pull adjacent boards together so a row reads as one continuous shelf; the
-     lit top lip + darker front face + cast shadow give it physical depth, and
-     the books sit directly on it. */
-  .book-wrapper::after {
-    content: '';
-    position: absolute;
-    left: calc(var(--s-4) / -2);
-    right: calc(var(--s-4) / -2);
-    bottom: -10px;
-    height: 8px;
-    border-radius: 1px 1px 2px 2px;
-    background: var(--shelf-wood);
-    box-shadow:
-      0 4px 9px -5px var(--drop-shadow-color),
-      inset 0 1px 0 var(--surface);
   }
 
   @media (max-width: 600px) {
@@ -447,5 +518,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .book-wrapper { opacity: 1; animation: none; }
+    .spine-wrapper { opacity: 1; animation: none; }
   }
 </style>

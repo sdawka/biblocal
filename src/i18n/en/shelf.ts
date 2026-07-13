@@ -101,6 +101,9 @@ export default {
     expandHave: 'Expand books I have section',
     collapseSeeking: 'Collapse books I am seeking section',
     expandSeeking: 'Expand books I am seeking section',
+    viewCovers: 'Covers',
+    viewDetails: 'Details',
+    viewToggleGroup: 'Book display',
   },
   empty: {
     shelfTitle: 'Your Shelf',
@@ -126,6 +129,9 @@ export default {
     removeConfirm: 'Remove from shelf?',
     cancel: 'Cancel',
     remove: 'Remove',
+    // {title} interpolated
+    openDetailAria: 'View details for {title}',
+    closeDetailAria: 'Close',
     notes: {
       // {n} interpolated
       addNote: 'Add a note',

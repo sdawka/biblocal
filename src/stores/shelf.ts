@@ -1,3 +1,4 @@
+import { atom } from 'nanostores';
 import { persistentAtom } from '@nanostores/persistent';
 import type { Book, BookNote, BookStatus, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
 import { inferTopicsFromSubjects } from './topics';
@@ -21,6 +22,16 @@ export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {
   encode: JSON.stringify,
   decode: safeJsonDecode({}),
 });
+
+// Signals when the initial shelf load has settled (success or failure), so
+// the UI can tell "empty because still loading" apart from "empty because
+// there really are no books." Starts false and is set true by
+// loadBooksFromServer() (success or failure), or client-side the moment a
+// returning user's persisted shelf is seen to be non-empty (see Bookshelf).
+// NOTE: must NOT read shelf.get() here — doing so at module (global) scope
+// triggers nanostores' unmount setTimeout, which Cloudflare Workers forbids
+// in global scope and would 500 every cold SSR render.
+export const shelfHydrated = atom<boolean>(false);
 
 // Legacy single-select filter (deprecated, kept for migration)
 export type ShelfFilter = 'all' | 'lending' | 'discussing' | 'gifting' | 'seeking' | 'private';
@@ -432,7 +443,10 @@ export async function loadBooksFromServer(): Promise<void> {
   // as a different user), bail before set() so a slow response can't overwrite
   // the newer user's freshly-loaded shelf.
   const loadingFor = currentUserId.get();
-  if (!loadingFor) return;
+  if (!loadingFor) {
+    shelfHydrated.set(true);
+    return;
+  }
   // Snapshot local shelf before the request so legacy-only books can be recovered.
   const preLoadSnapshot = shelf.get();
   try {
@@ -489,6 +503,11 @@ export async function loadBooksFromServer(): Promise<void> {
   } catch (e) {
     console.error('Failed to load books from server:', e);
     reportSyncError(LOAD_SYNC_ERROR_MESSAGE);
+  } finally {
+    // Settle hydration on both success and failure so the UI never hangs on
+    // a loading skeleton. Safe even on a stale mid-flight bail: the newer
+    // load for the current user will also finish and set this again.
+    shelfHydrated.set(true);
   }
 }
 

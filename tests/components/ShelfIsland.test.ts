@@ -36,6 +36,7 @@ import {
   addBook,
   loadBooksFromServer,
 } from '../../src/stores/shelf';
+import { shelfView, setShelfView } from '../../src/stores/shelf-view';
 import type { Book } from '../../src/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -84,6 +85,7 @@ describe('ShelfIsland', () => {
   beforeEach(() => {
     shelf.set({});
     activeFilters.set({ visibility: [], ownership: [], intents: [] });
+    setShelfView('details');
     // Restore the default fetch mock after any test that overrides it
     vi.mocked(fetch).mockImplementation(async () =>
       ({ ok: true, json: async () => ({}) } as unknown as Response)
@@ -359,6 +361,71 @@ describe('ShelfIsland', () => {
 
       // But NOT visible — silently filtered out with no hint to the user
       expect(screen.queryByText('Hidden Seek Book')).toBeNull();
+    });
+  });
+
+  // ── Covers view ───────────────────────────────────────────────────────────
+
+  describe('covers view', () => {
+    it('renders a book spine tile after switching to covers view', async () => {
+      shelf.set({
+        'b1': makeStoreBook({ id: 'b1', title: 'The Great Gatsby', author: 'Fitzgerald', ownership: 'have' }),
+      });
+      setShelfView('covers');
+      const { container } = render(ShelfIsland, { props: { lang: 'en' } });
+
+      await waitFor(() => {
+        expect(container.querySelector('[data-book-id="b1"]')).toBeTruthy();
+      });
+    });
+
+    // Regression guard for the "shelf furniture" removal: .covers-row must be
+    // a direct child of its <section class="shelf-section">, with no wrapping
+    // shelf/ledge/bay element between them. That wrapper's full-bleed
+    // `overflow-x: clip` was what swallowed the row's own horizontal scroll,
+    // so its absence (plus the .covers-row class carrying the scroll CSS,
+    // asserted against the component source below) is what makes the row
+    // itself the working scroll container.
+    it('the covers-row renders as a direct child of its section, with no shelf/ledge wrapper', async () => {
+      shelf.set({
+        'b1': makeStoreBook({ id: 'b1', title: 'The Great Gatsby', author: 'Fitzgerald', ownership: 'have' }),
+        'b2': makeStoreBook({ id: 'b2', title: 'Foundation', author: 'Asimov', ownership: 'seeking' }),
+      });
+      setShelfView('covers');
+      const { container } = render(ShelfIsland, { props: { lang: 'en' } });
+
+      await waitFor(() => {
+        expect(container.querySelector('[data-book-id="b1"]')).toBeTruthy();
+      });
+
+      const rows = container.querySelectorAll('.covers-row');
+      expect(rows.length).toBeGreaterThan(0);
+
+      // No shelf/ledge/bay furniture left anywhere in the tree.
+      expect(container.querySelector('.shelf-bay')).toBeNull();
+      expect(container.querySelector('.bay-content')).toBeNull();
+      expect(container.querySelector('.ledge')).toBeNull();
+
+      rows.forEach((row) => {
+        // Direct child of the section (only .section-header is a sibling).
+        expect(row.parentElement?.classList.contains('shelf-section')).toBe(true);
+      });
+    });
+
+    it('the ShelfIsland source defines .covers-row as the scroll container (overflow-x: auto, flex)', async () => {
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+      const src = await fs.readFile(
+        path.resolve(__dirname, '../../src/components/ShelfIsland.svelte'),
+        'utf-8'
+      );
+      const styleBlock = src.slice(src.indexOf('<style>'), src.indexOf('</style>'));
+      const rowRuleMatch = styleBlock.match(/\.covers-row\s*\{[^}]*\}/);
+      expect(rowRuleMatch).toBeTruthy();
+      const rowRule = rowRuleMatch![0];
+      expect(rowRule).toMatch(/display:\s*flex/);
+      expect(rowRule).toMatch(/overflow-x:\s*auto/);
+      expect(rowRule).toMatch(/width:\s*100%/);
     });
   });
 });

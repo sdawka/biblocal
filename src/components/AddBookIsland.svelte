@@ -136,19 +136,35 @@
     doAdd();
   }
 
+  function pulseAndScroll(card: Element) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('highlight-pulse');
+    setTimeout(() => card.classList.remove('highlight-pulse'), 1000);
+  }
+
   function viewExisting() {
     if (!duplicateBook) return;
     const bookId = duplicateBook.id;
     resetForm();
 
-    // Scroll to and highlight the existing book
+    // Scroll to and highlight the existing book. Both BookCard (Details view)
+    // and BookSpine (Covers view) carry [data-book-id], so this works in
+    // either view — but if the book's owning section (books-i-have /
+    // books-seeking) is collapsed, its grid isn't in the DOM at all. Expand
+    // any collapsed section first, then retry the lookup on the next tick.
     setTimeout(() => {
-      const card = document.querySelector(`[data-book-id="${bookId}"]`);
-      if (card) {
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        card.classList.add('highlight-pulse');
-        setTimeout(() => card.classList.remove('highlight-pulse'), 1000);
+      const collapsedHeaders = document.querySelectorAll('.section-header[aria-expanded="false"]');
+      if (collapsedHeaders.length > 0) {
+        collapsedHeaders.forEach((header) => (header as HTMLElement).click());
+        setTimeout(() => {
+          const card = document.querySelector(`[data-book-id="${bookId}"]`);
+          if (card) pulseAndScroll(card);
+        }, 50);
+        return;
       }
+
+      const card = document.querySelector(`[data-book-id="${bookId}"]`);
+      if (card) pulseAndScroll(card);
     }, 100);
   }
 
