@@ -76,6 +76,11 @@
   --shelf-wood-lit: color-mix(in oklch, var(--surface) 80%, var(--accent-tint) 20%);
   --shelf-wood-mid: color-mix(in oklch, var(--hairline-strong) 78%, var(--accent) 22%);
   --shelf-wood-deep: color-mix(in oklch, var(--hairline-strong) 55%, var(--ink) 20%);
+  /* A deeper, more saturated warm mid-tone (heavier accent bias than
+     shelf-wood-mid) for the board's front face + corbels, so the ledge
+     reads as warm hardwood rather than pale grey stone. Still built
+     purely from themed tokens, so it recomputes correctly in dark mode. */
+  --shelf-wood-warm: color-mix(in oklch, var(--hairline-strong) 58%, var(--accent) 42%);
   --shelf-wood: linear-gradient(
     180deg,
     var(--shelf-wood-lit) 0%,
