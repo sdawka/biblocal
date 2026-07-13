@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Journey: Shelf operations
-# Tests: add book (ISBN/manual), intent pills, filter pills, empty state
+# Journey: Biblio (shelf) operations
+# Tests: add book (ISBN/manual), intent pills, filter pills, empty state / add slot
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/helpers.sh"
 
 echo "═══════════════════════════════════════"
-echo "Journey 2: Shelf Operations"
+echo "Journey 2: Biblio Operations"
 echo "═══════════════════════════════════════"
 
 login_test_user
-assert_url "/shelf"
+assert_url "/biblio"
 
-# Test 1: Shelf page structure
-info "Test: Shelf page has required sections"
+# Test 1: Biblio page structure
+info "Test: Biblio page has required sections"
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
 assert_element "Your Shelf"
 # "Open user menu" is the Clerk UserButton label, which only exists in authed
@@ -24,13 +24,15 @@ else
   assert_element "Open user menu"
 fi
 
-# Test 2: Add book section exists
-info "Test: Add book functionality present"
-# Look for ISBN input or add book button
-if echo "$snapshot" | grep -qi "ISBN\|add.*book\|search"; then
-  pass "Add book UI found"
+# Test 2: Add-book slot present
+# The old standalone "Add a book" compose panel is gone. Biblio is now a
+# single Bookshelf island: a "+" add slot (collapsed) that expands the
+# add-book form in place when clicked (see Bookshelf.svelte add-slot).
+info "Test: Add book slot present"
+if echo "$snapshot" | grep -qi "ISBN\|add.*book\|add your first\|search"; then
+  pass "Add book slot found"
 else
-  info "Add book UI may be collapsed or named differently"
+  info "Add book slot may be collapsed or named differently"
 fi
 
 # Test 3: Check for empty state or existing books
@@ -46,6 +48,16 @@ fi
 # Test 4: Add a book via ISBN lookup (if available)
 info "Test: ISBN lookup flow"
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
+
+# The ISBN input lives inside the "+" add slot, which starts collapsed and
+# expands in place when clicked (Bookshelf.svelte). Open it first so the
+# form is present in the snapshot.
+add_slot_ref=$(echo "$snapshot" | grep -i "add a book\|add your first\|+" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
+if [ -n "$add_slot_ref" ]; then
+  agent-browser click "$add_slot_ref" >/dev/null 2>&1
+  sleep 1
+  snapshot=$(agent-browser snapshot -i 2>/dev/null)
+fi
 
 # Look for ISBN input field
 isbn_ref=$(echo "$snapshot" | grep -i "isbn\|search" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
@@ -85,4 +97,4 @@ else
 fi
 
 echo ""
-pass "Shelf journey complete!"
+pass "Biblio journey complete!"
