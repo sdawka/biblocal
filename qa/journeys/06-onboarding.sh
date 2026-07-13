@@ -17,9 +17,9 @@ npm run qa:scenario empty --silent >/dev/null 2>&1 || {
 }
 pass "Empty scenario loaded"
 
-# Navigate to shelf (QA mode auto-logs in)
-info "Test: Fresh user lands on shelf"
-agent-browser open "$BASE_URL/shelf" >/dev/null 2>&1
+# Navigate to biblio (QA mode auto-logs in)
+info "Test: Fresh user lands on biblio"
+agent-browser open "$BASE_URL/biblio" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 sleep 1
 
@@ -87,9 +87,9 @@ else
   info "Could not find city selector"
 fi
 
-# Go back to shelf and add first book
-info "Test: Navigate back to shelf"
-agent-browser open "$BASE_URL/shelf" >/dev/null 2>&1
+# Go back to biblio and add first book
+info "Test: Navigate back to biblio"
+agent-browser open "$BASE_URL/biblio" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 sleep 1
 

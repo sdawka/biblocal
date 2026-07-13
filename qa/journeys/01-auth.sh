@@ -24,8 +24,8 @@ assert_element "Email address"
 assert_element "Continue"
 
 # Test 2: Protected routes redirect to home
-info "Test: /shelf redirects unauthenticated users"
-agent-browser open "$BASE_URL/shelf" >/dev/null 2>&1
+info "Test: /biblio redirects unauthenticated users"
+agent-browser open "$BASE_URL/biblio" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 assert_url "/"
 assert_element "Sign in"
@@ -35,21 +35,21 @@ agent-browser open "$BASE_URL/profile" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 assert_url "/"
 
-info "Test: /matches redirects unauthenticated users"
-agent-browser open "$BASE_URL/matches" >/dev/null 2>&1
+info "Test: /local redirects unauthenticated users"
+agent-browser open "$BASE_URL/local" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 assert_url "/"
 
 # Test 3: Login flow
-info "Test: Login redirects to /shelf"
+info "Test: Login redirects to /biblio"
 login_test_user
-assert_url "/shelf"
+assert_url "/biblio"
 
-# Test 4: Authenticated user on home redirects to shelf
-info "Test: Authenticated user visiting / redirects to /shelf"
+# Test 4: Authenticated user on home redirects to biblio
+info "Test: Authenticated user visiting / redirects to /biblio"
 agent-browser open "$BASE_URL" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
-assert_url "/shelf"
+assert_url "/biblio"
 
 # Test 5: Navigation between protected pages
 info "Test: Can navigate between protected pages"
@@ -60,10 +60,10 @@ agent-browser wait --load networkidle >/dev/null 2>&1
 assert_url "/profile"
 
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
-ref=$(echo "$snapshot" | grep -i "Matches" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
+ref=$(echo "$snapshot" | grep -i "Local" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
 agent-browser click @"$ref" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
-assert_url "/matches"
+assert_url "/local"
 
 # Test 6: Logout
 info "Test: Logout returns to home"

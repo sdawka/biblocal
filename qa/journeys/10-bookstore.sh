@@ -17,9 +17,9 @@ npm run qa:scenario matches --silent >/dev/null 2>&1 || {
 }
 pass "Matches scenario loaded"
 
-# Navigate to matches
-info "Test: Bookstores appear in matches"
-agent-browser open "$BASE_URL/matches" >/dev/null 2>&1
+# Navigate to local
+info "Test: Bookstores appear in local"
+agent-browser open "$BASE_URL/local" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 sleep 2
 

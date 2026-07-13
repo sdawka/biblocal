@@ -19,20 +19,20 @@ pass "Edge scenario loaded"
 
 # Test as main QA user first
 info "Test: Main user loads normally"
-agent-browser open "$BASE_URL/shelf" >/dev/null 2>&1
+agent-browser open "$BASE_URL/biblio" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 sleep 1
 
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
-if echo "$snapshot" | grep -qi "shelf\|dune\|small gods"; then
-  pass "Main QA user shelf loads correctly"
+if echo "$snapshot" | grep -qi "biblio\|dune\|small gods"; then
+  pass "Main QA user biblio loads correctly"
 else
-  info "Shelf content varies"
+  info "Biblio content varies"
 fi
 
-# Check matches - should see edge case users
-info "Test: Matches page with edge case users"
-agent-browser open "$BASE_URL/matches" >/dev/null 2>&1
+# Check local - should see edge case users
+info "Test: Local page with edge case users"
+agent-browser open "$BASE_URL/local" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 sleep 2
 
@@ -97,14 +97,14 @@ fi
 
 # Verify map handles no-location user gracefully
 info "Test: Map handles users without location"
-agent-browser open "$BASE_URL/matches" >/dev/null 2>&1
+agent-browser open "$BASE_URL/local" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 sleep 1
 
 # If page loads without error, the no-location user is handled
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
 if echo "$snapshot" | grep -qi "nearby\|matches"; then
-  pass "Map/matches handles no-location users gracefully"
+  pass "Map/local handles no-location users gracefully"
 fi
 
 echo ""

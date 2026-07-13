@@ -64,9 +64,9 @@ else
   info "Accept/decline buttons not found in current view"
 fi
 
-# Navigate to matches to see connection status
-info "Test: Check connection status on matches"
-agent-browser open "$BASE_URL/matches" >/dev/null 2>&1
+# Navigate to local to see connection status
+info "Test: Check connection status on local"
+agent-browser open "$BASE_URL/local" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 sleep 2
 
@@ -74,7 +74,7 @@ snapshot=$(agent-browser snapshot -i 2>/dev/null)
 
 # Look for match cards
 if echo "$snapshot" | grep -qi "nearby\|match"; then
-  pass "Matches page loaded"
+  pass "Local page loaded"
 fi
 
 # Try to find a match card and expand it

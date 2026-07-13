@@ -55,12 +55,12 @@ Environment variables:
 ### 1. Authentication (`01-auth.sh`)
 - Home page shows login form
 - Protected routes redirect to home when unauthenticated
-- Login flow completes and redirects to `/shelf`
-- Authenticated user on `/` redirects to `/shelf`
+- Login flow completes and redirects to `/biblio`
+- Authenticated user on `/` redirects to `/biblio`
 - Logout returns to home
 
-### 2. Shelf Operations (`02-shelf.sh`)
-- Shelf page structure (header, add book, book grid)
+### 2. Biblio Operations (`02-shelf.sh`)
+- Biblio page structure (header, add book, book grid)
 - Add book via ISBN lookup
 - Book status controls
 - Filter/sort functionality
@@ -73,7 +73,7 @@ Environment variables:
 - Topic picker
 - Save functionality
 
-### 4. Matches (`04-matches.sh`)
+### 4. Local (`04-matches.sh`)
 - Map rendering (Leaflet)
 - Match cards display
 - Match facet types (shelf twin, mentor, etc.)
@@ -95,7 +95,7 @@ Use helpers from `lib/helpers.sh`:
 source "$SCRIPT_DIR/../lib/helpers.sh"
 
 # Assertions
-assert_url "/shelf"
+assert_url "/biblio"
 assert_element "Your Shelf"
 
 # Actions

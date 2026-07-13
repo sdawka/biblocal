@@ -47,15 +47,15 @@ else
   info "Location controls may be in edit mode"
 fi
 
-# Navigate to matches to check map
-info "Test: Map displays on matches page"
-agent-browser open "$BASE_URL/matches" >/dev/null 2>&1
+# Navigate to local to check map
+info "Test: Map displays on local page"
+agent-browser open "$BASE_URL/local" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 sleep 2
 
 # Map is visual - take screenshot
 agent-browser screenshot >/dev/null 2>&1
-pass "Matches page loaded (screenshot captured)"
+pass "Local page loaded (screenshot captured)"
 
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
 
@@ -70,8 +70,8 @@ fi
 # But map should still render
 info "Test: Map container present"
 # Maps don't appear in accessibility tree, but we can check the page loaded
-if echo "$snapshot" | grep -qi "matches\|map\|nearby"; then
-  pass "Matches page structure correct"
+if echo "$snapshot" | grep -qi "local\|map\|nearby"; then
+  pass "Local page structure correct"
 fi
 
 # Load matches scenario for distance testing
@@ -79,7 +79,7 @@ info "Loading matches scenario for distance test..."
 npm run qa:scenario matches --silent >/dev/null 2>&1
 sleep 1
 
-agent-browser open "$BASE_URL/matches" >/dev/null 2>&1
+agent-browser open "$BASE_URL/local" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 sleep 2
 
