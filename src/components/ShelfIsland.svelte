@@ -294,8 +294,26 @@
   }
 
   .shelf-section.seeking {
-    border-left: 3px solid var(--accent);
-    padding-left: var(--s-4);
+    position: relative;
+    padding-left: var(--s-5);
+  }
+
+  /* Library-shelf upright: a hairline rule capped by a short accent end-stop
+     at the top — intentional shelf furniture, not a stray highlight bar. */
+  .shelf-section.seeking::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(
+      180deg,
+      var(--accent) 0,
+      var(--accent) 14px,
+      var(--hairline-strong) 14px,
+      var(--hairline-strong) 100%
+    );
   }
 
   .section-header {
@@ -338,6 +356,19 @@
     color: var(--ink);
   }
 
+  /* Seeking heading gets a small accent tick, echoing the .pill leading dot —
+     carries the status cue into the header, unconditional (no hover gate). */
+  .shelf-section.seeking .section-header h3::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: var(--s-2);
+    border-radius: 50%;
+    background: var(--accent);
+    vertical-align: 0.08em;
+  }
+
   .empty {
     display: flex;
     flex-direction: column;
@@ -359,9 +390,18 @@
 
   .grid {
     display: grid;
-    column-gap: var(--s-3);
+    column-gap: var(--s-4);
     row-gap: var(--s-6);
-    grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  /* Tablet guard: lower the floor so the wider column still wraps cleanly
+     and never forces horizontal scroll. */
+  @media (max-width: 820px) {
+    .grid {
+      column-gap: var(--s-3);
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
   }
 
   /* Each card in a row stretches to a shared height so their ledges line up. */
@@ -383,19 +423,14 @@
   .book-wrapper::after {
     content: '';
     position: absolute;
-    left: calc(var(--s-3) / -2);
-    right: calc(var(--s-3) / -2);
-    bottom: -12px;
-    height: 11px;
-    border-radius: 1px 1px 3px 3px;
-    background: linear-gradient(
-      180deg,
-      var(--surface) 0%,
-      var(--hairline-strong) 42%,
-      var(--hairline) 100%
-    );
+    left: calc(var(--s-4) / -2);
+    right: calc(var(--s-4) / -2);
+    bottom: -10px;
+    height: 8px;
+    border-radius: 1px 1px 2px 2px;
+    background: var(--shelf-wood);
     box-shadow:
-      0 6px 11px -4px var(--drop-shadow-color),
+      0 4px 9px -5px var(--drop-shadow-color),
       inset 0 1px 0 var(--surface);
   }
 

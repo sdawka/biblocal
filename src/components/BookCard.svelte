@@ -231,7 +231,29 @@
   }
 
   .book-card.seeking {
-    border-left: 3px solid var(--accent);
+    /* Neutral edge instead of the gold bar; the quiet wash carries status. */
+    border-left-color: var(--hairline);
+    background: color-mix(in oklch, var(--st-seeking-bg) 40%, var(--surface));
+  }
+
+  /* Corner tick — the load-bearing status cue (survives if the wash doesn't
+     paint), echoing the .pill leading dot. Sits inside the rounded card. */
+  .book-card.seeking::before {
+    content: '';
+    position: absolute;
+    top: var(--s-3);
+    left: var(--s-3);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--st-seeking-fg);
+    z-index: 1;
+  }
+
+  /* Nudge the cover clear of the corner tick so the tick reads as a card pin,
+     not a smudge on the cover. */
+  .book-card.seeking .cover {
+    margin-top: var(--s-2);
   }
 
   .book-card:hover {
