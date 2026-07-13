@@ -250,7 +250,11 @@
       13
     );
 
-    clusterGroup = (L as any).markerClusterGroup({
+    // The ESM leaflet namespace is frozen, so leaflet.markercluster attaches
+    // markerClusterGroup to the mutable default export, not the namespace.
+    const markerClusterGroup =
+      (L as any).markerClusterGroup ?? (L as any).default?.markerClusterGroup;
+    clusterGroup = markerClusterGroup({
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
       maxClusterRadius: 55,
