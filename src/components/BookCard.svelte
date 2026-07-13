@@ -78,7 +78,7 @@
   data-book-id={book.id}
 >
   {#if book.coverUrl}
-    <img src={book.coverUrl} alt="{book.title} cover" class="cover" width="60" height="90" loading="lazy" decoding="async" />
+    <img src={book.coverUrl} alt="{book.title} cover" class="cover" width="52" height="78" loading="lazy" decoding="async" />
   {:else}
     <div class="cover placeholder">
       <span>{book.title.charAt(0)}</span>
@@ -223,8 +223,8 @@
 <style>
   .book-card {
     display: flex;
-    gap: var(--s-4);
-    padding: var(--s-4);
+    gap: var(--s-3);
+    padding: var(--s-3);
     position: relative;
     overflow: hidden;
     touch-action: pan-y;
@@ -241,8 +241,8 @@
   }
 
   .cover {
-    width: 60px;
-    height: 90px;
+    width: 52px;
+    height: 78px;
     object-fit: cover;
     border-radius: var(--r-sm);
     flex-shrink: 0;
@@ -255,7 +255,7 @@
     justify-content: center;
     background: var(--accent-tint);
     font-family: var(--font-display);
-    font-size: 1.75rem;
+    font-size: 1.4rem;
     font-weight: 500;
     color: var(--accent);
   }
@@ -266,30 +266,38 @@
   }
 
   .title {
-    margin: 0 0 var(--s-1);
-    font-size: 1.0625rem;
+    margin: 0 0 2px;
+    font-size: 0.9375rem;
     font-weight: 500;
     color: var(--ink);
-    line-height: 1.3;
+    line-height: 1.28;
     letter-spacing: -0.01em;
   }
 
   .author {
-    margin: 0 0 var(--s-3);
-    font-size: 0.875rem;
+    margin: 0 0 var(--s-2);
+    font-size: 0.8125rem;
   }
 
   .badges {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--s-2);
+    gap: var(--s-1);
   }
 
   .pill-button {
     border: none;
     cursor: pointer;
-    min-height: 44px;
+    min-height: 30px;
     transition: box-shadow var(--dur-1) var(--ease-soft), transform var(--dur-1) var(--ease-spring);
+  }
+
+  /* Touch devices have no hover precision, so keep pills at a full 44px tap
+     target; pointer devices get the compact size above. */
+  @media (hover: none) {
+    .pill-button {
+      min-height: 44px;
+    }
   }
 
   .pill-button:hover {
@@ -409,7 +417,7 @@
   }
 
   .notes {
-    margin-top: var(--s-3);
+    margin-top: var(--s-2);
   }
 
   .notes-toggle {

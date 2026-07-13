@@ -360,8 +360,8 @@
   .grid {
     display: grid;
     column-gap: var(--s-3);
-    row-gap: var(--s-7);
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    row-gap: var(--s-6);
+    grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
   }
 
   /* Each card in a row stretches to a shared height so their ledges line up. */
@@ -376,19 +376,27 @@
     flex: 1;
   }
 
-  /* Shelf ledge: a warm rail floats in the gutter beneath each card. The
-     negative insets pull adjacent ledges together so a row reads as one
-     continuous shelf tier; the shadow grounds the books onto it. */
+  /* Shelf plank: a solid wooden board beneath each row. The negative insets
+     pull adjacent boards together so a row reads as one continuous shelf; the
+     lit top lip + darker front face + cast shadow give it physical depth, and
+     the books sit directly on it. */
   .book-wrapper::after {
     content: '';
     position: absolute;
     left: calc(var(--s-3) / -2);
     right: calc(var(--s-3) / -2);
-    bottom: -11px;
-    height: 6px;
-    border-radius: 2px;
-    background: linear-gradient(180deg, var(--hairline-strong), var(--hairline));
-    box-shadow: var(--shadow-2);
+    bottom: -12px;
+    height: 11px;
+    border-radius: 1px 1px 3px 3px;
+    background: linear-gradient(
+      180deg,
+      var(--surface) 0%,
+      var(--hairline-strong) 42%,
+      var(--hairline) 100%
+    );
+    box-shadow:
+      0 6px 11px -4px var(--drop-shadow-color),
+      inset 0 1px 0 var(--surface);
   }
 
   @media (max-width: 600px) {
