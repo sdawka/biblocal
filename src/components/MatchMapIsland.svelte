@@ -466,7 +466,24 @@
   @media (max-width: 900px) {
     .match-map {
       grid-template-columns: 1fr;
-      grid-template-rows: 320px 1fr;
+      grid-template-rows: 320px auto;
+      /* Let the stacked layout size to its content instead of trying to
+         squeeze both the map and the full panel into one viewport slice. */
+      height: auto;
+      min-height: 0;
+    }
+
+    .cards-panel {
+      /* Bounded so the panel scrolls internally rather than stretching the
+         page — leaves room for the fixed map above plus surrounding chrome. */
+      max-height: 70vh;
+      padding: var(--s-4);
+    }
+
+    .legend {
+      padding: var(--s-2) var(--s-3);
+      bottom: var(--s-3);
+      left: var(--s-3);
     }
   }
 

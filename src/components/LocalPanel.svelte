@@ -343,6 +343,8 @@
   .cards-list {
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
     gap: var(--s-4);
     overflow-y: auto;
     padding-right: var(--s-2);
@@ -365,5 +367,15 @@
     background: var(--accent-tint);
     padding: 0.05rem 0.45rem;
     border-radius: var(--r-full);
+  }
+
+  @media (max-width: 900px) {
+    .panel-head {
+      margin-bottom: var(--s-3);
+      padding-bottom: var(--s-2);
+    }
+    .tabs {
+      margin-bottom: var(--s-2);
+    }
   }
 </style>
