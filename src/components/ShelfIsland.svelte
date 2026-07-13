@@ -15,6 +15,8 @@
   } from '../stores/shelf';
   import { shelfView, setShelfView } from '../stores/shelf-view';
   import BookCard from './BookCard.svelte';
+  import BookSpine from './BookSpine.svelte';
+  import BookDetailSheet from './BookDetailSheet.svelte';
   import type { BookIntent } from '../lib/types';
   import { INTENT_OPTIONS } from '../lib/intents';
   import { useTranslations, type Lang } from '../i18n';
@@ -56,6 +58,9 @@
 
   let haveExpanded = $state(true);
   let seekingExpanded = $state(true);
+
+  let openBookId = $state<string | null>(null);
+  let openBook = $derived(openBookId ? $shelf[openBookId] : null);
 
   function handleDeleteBook(id: string) {
     removeBook(id);
@@ -176,21 +181,29 @@
           <h3 class="serif">{t.booksIHave} <span class="count-tag">{booksIHave.length}</span></h3>
         </button>
         {#if haveExpanded}
-          <div class="grid" id="books-i-have-grid">
-            {#each booksIHave as book, i (book.id)}
-              <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                <BookCard
-                  {book}
-                  {lang}
-                  onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
-                  onDelete={handleDeleteBook}
-                  onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
-                  onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
-                  onDeleteNote={(noteId) => removeNote(book.id, noteId)}
-                />
-              </div>
-            {/each}
-          </div>
+          {#if view === 'covers'}
+            <div class="grid covers" id="books-i-have-grid">
+              {#each booksIHave as book (book.id)}
+                <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+              {/each}
+            </div>
+          {:else}
+            <div class="grid" id="books-i-have-grid">
+              {#each booksIHave as book, i (book.id)}
+                <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookCard
+                    {book}
+                    {lang}
+                    onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
+                    onDelete={handleDeleteBook}
+                    onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
+                    onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
+                    onDeleteNote={(noteId) => removeNote(book.id, noteId)}
+                  />
+                </div>
+              {/each}
+            </div>
+          {/if}
         {/if}
       </section>
     {/if}
@@ -212,26 +225,50 @@
           <h3 class="serif">{t.booksImSeeking} <span class="count-tag">{booksImSeeking.length}</span></h3>
         </button>
         {#if seekingExpanded}
-          <div class="grid" id="books-seeking-grid">
-            {#each booksImSeeking as book, i (book.id)}
-              <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                <BookCard
-                  {book}
-                  {lang}
-                  onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
-                  onDelete={handleDeleteBook}
-                  onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
-                  onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
-                  onDeleteNote={(noteId) => removeNote(book.id, noteId)}
-                />
-              </div>
-            {/each}
-          </div>
+          {#if view === 'covers'}
+            <div class="grid covers" id="books-seeking-grid">
+              {#each booksImSeeking as book (book.id)}
+                <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+              {/each}
+            </div>
+          {:else}
+            <div class="grid" id="books-seeking-grid">
+              {#each booksImSeeking as book, i (book.id)}
+                <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookCard
+                    {book}
+                    {lang}
+                    onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
+                    onDelete={handleDeleteBook}
+                    onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
+                    onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
+                    onDeleteNote={(noteId) => removeNote(book.id, noteId)}
+                  />
+                </div>
+              {/each}
+            </div>
+          {/if}
         {/if}
       </section>
     {/if}
   {/if}
 </section>
+
+{#if openBook}
+  <BookDetailSheet
+    book={openBook}
+    {lang}
+    onClose={() => (openBookId = null)}
+    onIntentsChange={(intents) => updateBookIntents(openBook.id, intents)}
+    onDelete={(id) => {
+      handleDeleteBook(id);
+      openBookId = null;
+    }}
+    onAddNote={(text, visibility) => addNote(openBook.id, text, visibility)}
+    onUpdateNote={(noteId, updates) => updateNote(openBook.id, noteId, updates)}
+    onDeleteNote={(noteId) => removeNote(openBook.id, noteId)}
+  />
+{/if}
 
 <style>
   .shelf {
@@ -423,6 +460,23 @@
     .grid {
       column-gap: var(--s-3);
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+  }
+
+  /* Covers view: fixed-width tiles so rows share a uniform height — a later
+     phase relies on this constant pitch to align ornate shelf ledges. */
+  .grid.covers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 132px);
+    justify-content: start;
+    column-gap: var(--s-4);
+    row-gap: var(--s-6);
+  }
+
+  @media (max-width: 820px) {
+    .grid.covers {
+      column-gap: var(--s-3);
+      grid-template-columns: repeat(auto-fill, 132px);
     }
   }
 

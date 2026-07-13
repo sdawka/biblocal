@@ -36,6 +36,7 @@ import {
   addBook,
   loadBooksFromServer,
 } from '../../src/stores/shelf';
+import { shelfView, setShelfView } from '../../src/stores/shelf-view';
 import type { Book } from '../../src/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -84,6 +85,7 @@ describe('ShelfIsland', () => {
   beforeEach(() => {
     shelf.set({});
     activeFilters.set({ visibility: [], ownership: [], intents: [] });
+    setShelfView('details');
     // Restore the default fetch mock after any test that overrides it
     vi.mocked(fetch).mockImplementation(async () =>
       ({ ok: true, json: async () => ({}) } as unknown as Response)
@@ -359,6 +361,22 @@ describe('ShelfIsland', () => {
 
       // But NOT visible — silently filtered out with no hint to the user
       expect(screen.queryByText('Hidden Seek Book')).toBeNull();
+    });
+  });
+
+  // ── Covers view ───────────────────────────────────────────────────────────
+
+  describe('covers view', () => {
+    it('renders a book spine tile after switching to covers view', async () => {
+      shelf.set({
+        'b1': makeStoreBook({ id: 'b1', title: 'The Great Gatsby', author: 'Fitzgerald', ownership: 'have' }),
+      });
+      setShelfView('covers');
+      const { container } = render(ShelfIsland, { props: { lang: 'en' } });
+
+      await waitFor(() => {
+        expect(container.querySelector('[data-book-id="b1"]')).toBeTruthy();
+      });
     });
   });
 });

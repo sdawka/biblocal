@@ -127,6 +127,8 @@ export default {
     removeConfirm: "Retirer de l'étagère ?",
     cancel: 'Annuler',
     remove: 'Retirer',
+    openDetailAria: 'Voir les détails de {title}',
+    closeDetailAria: 'Fermer',
     notes: {
       addNote: 'Ajouter une note',
       noteSingular: 'note',

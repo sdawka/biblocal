@@ -129,6 +129,9 @@ export default {
     removeConfirm: 'Remove from shelf?',
     cancel: 'Cancel',
     remove: 'Remove',
+    // {title} interpolated
+    openDetailAria: 'View details for {title}',
+    closeDetailAria: 'Close',
     notes: {
       // {n} interpolated
       addNote: 'Add a note',
