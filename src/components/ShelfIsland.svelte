@@ -137,6 +137,7 @@
       </p>
     </div>
   {:else}
+    <div class="bookcase">
     {#if booksIHave.length > 0}
       <section class="shelf-section">
         <button
@@ -208,6 +209,7 @@
         {/if}
       </section>
     {/if}
+    </div>
   {/if}
 </section>
 
@@ -288,32 +290,57 @@
     margin-left: auto;
   }
 
+  /* Bookcase carcass: two wooden side uprights frame the shelves into bays,
+     the books resting on the per-row planks between the posts. Posts are lit
+     from the outside so they read as rounded wood; they tuck the plank ends
+     underneath. All themed tokens → dark mode recomputes. */
+  .bookcase {
+    position: relative;
+    padding-inline: var(--s-4);
+  }
+
+  .bookcase::before,
+  .bookcase::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 12px;
+    z-index: 1;
+    border-radius: 3px;
+    box-shadow: 0 2px 10px -3px var(--drop-shadow-color);
+    pointer-events: none;
+  }
+
+  .bookcase::before {
+    left: 0;
+    background: linear-gradient(90deg, var(--surface), var(--hairline-strong) 55%, var(--hairline));
+  }
+
+  .bookcase::after {
+    right: 0;
+    background: linear-gradient(90deg, var(--hairline), var(--hairline-strong) 45%, var(--surface));
+  }
+
+  @media (max-width: 600px) {
+    .bookcase {
+      padding-inline: var(--s-3);
+    }
+    .bookcase::before,
+    .bookcase::after {
+      width: 7px;
+    }
+  }
+
   /* Ownership sections */
   .shelf-section {
     margin-bottom: var(--s-6);
   }
 
   .shelf-section.seeking {
-    position: relative;
-    padding-left: var(--s-5);
-  }
-
-  /* Library-shelf upright: a hairline rule capped by a short accent end-stop
-     at the top — intentional shelf furniture, not a stray highlight bar. */
-  .shelf-section.seeking::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: linear-gradient(
-      180deg,
-      var(--accent) 0,
-      var(--accent) 14px,
-      var(--hairline-strong) 14px,
-      var(--hairline-strong) 100%
-    );
+    /* Framing now comes from the bookcase uprights; the heading dot + card
+       wash carry the seeking cue. Extra top room reads as a shelf gap. */
+    margin-top: var(--s-6);
   }
 
   .section-header {
