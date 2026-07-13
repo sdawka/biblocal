@@ -3,6 +3,8 @@
   import { Spring } from 'svelte/motion';
   // Self-hosted (bundled) instead of a render-blocking unpkg stylesheet.
   import 'leaflet/dist/leaflet.css';
+  import 'leaflet.markercluster/dist/MarkerCluster.css';
+  import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
   import { discovery } from '../stores/matches';
   import { profile } from '../stores/profile';
   import { loadSeedUsers, usersLoading, usersError } from '../stores/users';
@@ -32,6 +34,7 @@
   $effect(() => usersError.subscribe((v) => (loadError = v)));
   let mapContainer: HTMLDivElement;
   let map: any;
+  let clusterGroup: any;
   // markerId -> { marker, isStore, baseRadius }
   let markerMap = new Map<string, { marker: any; isStore: boolean; baseRadius: number }>();
 
@@ -105,9 +108,10 @@
   async function updateMarkers() {
     if (!map) return;
     const L = await import('leaflet');
+    await import('leaflet.markercluster');
 
     // Clear existing markers
-    markerMap.forEach(({ marker }) => marker.remove());
+    clusterGroup?.clearLayers();
     markerMap.clear();
 
     matchList.forEach((match) => {
@@ -129,8 +133,7 @@
       })
         .bindTooltip(`${isStore ? '🏪 ' : ''}${user.name}${distanceLabel}`, {
           className: isStore ? 'map-tip map-tip-store' : 'map-tip',
-        })
-        .addTo(map);
+        });
 
       // Selecting a card flies + emphasizes its pin; clicking a pin expands the card.
       marker.on('click', () => toggleExpanded(user.id));
@@ -139,6 +142,7 @@
         marker.setStyle({ weight: 2, fillOpacity: expandedId === user.id ? 1 : 0.92 })
       );
 
+      clusterGroup?.addLayer(marker);
       markerMap.set(user.id, { marker, isStore, baseRadius });
       springPinIn(marker, baseRadius);
     });
@@ -166,9 +170,21 @@
     await loadSeedUsers();
 
     const L = await import('leaflet');
+    await import('leaflet.markercluster');
 
     const center = getMapCenter();
-    map = L.map(mapContainer, { zoomControl: true }).setView([center.lat, center.lng], 13);
+    map = L.map(mapContainer, { zoomControl: true, worldCopyJump: true }).setView(
+      [center.lat, center.lng],
+      13
+    );
+
+    clusterGroup = (L as any).markerClusterGroup({
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 55,
+      chunkedLoading: true,
+    });
+    map.addLayer(clusterGroup);
 
     // Use Carto basemap so the map adopts a clean light/dark surface matching the theme.
     const tileUrl = isDark()
@@ -575,4 +591,18 @@
   :global(.leaflet-control-attribution a) {
     color: var(--accent) !important;
   }
+
+  /* Cluster bubbles — on-token, replacing the plugin's default blue. */
+  :global(.marker-cluster) {
+    background: transparent;
+  }
+  :global(.marker-cluster div) {
+    background: var(--accent);
+    color: var(--accent-on);
+    font-family: var(--font-ui);
+    font-weight: 640;
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 30%, transparent), var(--shadow-2);
+    border: none;
+  }
+  :global(.marker-cluster span) { line-height: 30px; }
 </style>
