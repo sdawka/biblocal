@@ -62,8 +62,8 @@ const userId = getUserId(Astro.locals as Parameters<typeof getUserId>[0]);
         <span class="hamburger-line"></span>
       </button>
       <div class="links" id="nav-links">
-        <a href={p('/shelf')} class:list={{ active: currentPath === '/shelf' }}>{t.appNav.shelf}</a>
-        <a href={p('/matches')} class:list={{ active: currentPath === '/matches' }}>{t.appNav.matches}</a>
+        <a href={p('/biblio')} class:list={{ active: currentPath === '/biblio' }}>{t.appNav.shelf}</a>
+        <a href={p('/local')} class:list={{ active: currentPath === '/local' }}>{t.appNav.matches}</a>
         <a href={p('/profile')} class:list={{ active: currentPath === '/profile' }}>{t.appNav.profile}</a>
         <button
           id="theme-toggle"

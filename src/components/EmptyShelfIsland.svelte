@@ -22,7 +22,7 @@
   }
 
   function goToExplore() {
-    window.location.href = '/matches';
+    window.location.href = '/local';
   }
 </script>
 

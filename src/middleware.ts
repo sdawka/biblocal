@@ -26,7 +26,7 @@ const clerkAuthMiddleware = clerkMiddleware((auth, context) => {
 
   // Signed-in users on a home page → redirect to the shelf (same locale).
   if (userId && (url.pathname === '/' || url.pathname === '/fr')) {
-    return context.redirect(isFr ? '/fr/shelf' : '/shelf');
+    return context.redirect(isFr ? '/fr/biblio' : '/biblio');
   }
 
   // Protected routes: require auth, bouncing to the same-locale home.

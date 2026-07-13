@@ -20,7 +20,7 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
   {isQaMode ? (
     <main>
       <div class="header-row rise">
-        <a href={p('/matches')} class="back-link">{t.nav.backToMatches}</a>
+        <a href={p('/local')} class="back-link">{t.nav.backToMatches}</a>
       </div>
       <div class="rise rise-1">
         <StoreDetailIsland storeId={storeId} lang={lang} client:load />
@@ -34,7 +34,7 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
       <Show when="signed-in">
         <main>
           <div class="header-row rise">
-            <a href={p('/matches')} class="back-link">{t.nav.backToMatches}</a>
+            <a href={p('/local')} class="back-link">{t.nav.backToMatches}</a>
             <UserButton />
           </div>
           <div class="rise rise-1">

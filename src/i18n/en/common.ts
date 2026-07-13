@@ -16,8 +16,8 @@ export default {
   langSwitch: { label: 'Language', en: 'English', fr: 'Français' },
   dismiss: 'Dismiss',
   appNav: {
-    shelf: 'Shelf',
-    matches: 'Matches',
+    shelf: 'Biblio',
+    matches: 'Local',
     profile: 'Profile',
     logout: 'Log out',
     theme: 'Theme',
