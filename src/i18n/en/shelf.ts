@@ -4,7 +4,7 @@
 export default {
   page: {
     eyebrow: 'Your library',
-    title: 'Your Shelf',
+    title: 'Biblio',
     metaTitle: 'Your Shelf | biblocal',
     zoneTitle: 'Add a book',
     importSummary: 'Import from Goodreads',

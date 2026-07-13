@@ -359,13 +359,36 @@
 
   .grid {
     display: grid;
-    gap: var(--s-4);
+    column-gap: var(--s-3);
+    row-gap: var(--s-7);
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   }
 
+  /* Each card in a row stretches to a shared height so their ledges line up. */
   .book-wrapper {
+    position: relative;
+    display: flex;
     opacity: 0;
     animation: rise var(--dur-3) var(--ease-out) forwards;
+  }
+
+  .book-wrapper > :global(.book-card) {
+    flex: 1;
+  }
+
+  /* Shelf ledge: a warm rail floats in the gutter beneath each card. The
+     negative insets pull adjacent ledges together so a row reads as one
+     continuous shelf tier; the shadow grounds the books onto it. */
+  .book-wrapper::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--s-3) / -2);
+    right: calc(var(--s-3) / -2);
+    bottom: -11px;
+    height: 6px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--hairline-strong), var(--hairline));
+    box-shadow: var(--shadow-2);
   }
 
   @media (max-width: 600px) {
