@@ -184,7 +184,7 @@
         {#if haveExpanded}
           {#if view === 'covers'}
             <Shelf>
-              <div class="grid covers" id="books-i-have-grid">
+              <div class="covers-row" id="books-i-have-grid">
                 {#each booksIHave as book (book.id)}
                   <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
                 {/each}
@@ -230,7 +230,7 @@
         {#if seekingExpanded}
           {#if view === 'covers'}
             <Shelf>
-              <div class="grid covers" id="books-seeking-grid">
+              <div class="covers-row" id="books-seeking-grid">
                 {#each booksImSeeking as book (book.id)}
                   <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
                 {/each}
@@ -477,23 +477,24 @@
     }
   }
 
-  /* Covers view: fixed-width tiles so rows share a uniform height — Shelf.svelte
-     relies on this constant row pitch to align its ornate ledges. row-gap is
-     pinned to a fixed 32px (not var(--s-6)) so the real pitch can never drift
-     from Shelf.svelte's --shelf-pitch: 230px at a non-16px root font size. */
-  .grid.covers {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, 132px);
-    justify-content: start;
-    column-gap: var(--s-4);
-    row-gap: 32px;
+  /* Covers view: a single horizontal row of fixed-width spines that scrolls
+     sideways, like a real bookshelf — no wrapping, no row pitch to keep in
+     sync with Shelf.svelte. Shelf.svelte renders one static ledge board
+     under this row; the row scrolls over it independently. */
+  .covers-row {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x proximity;
+    padding-block: 0 4px;
+    scrollbar-width: thin;
   }
 
-  @media (max-width: 820px) {
-    .grid.covers {
-      column-gap: var(--s-3);
-      grid-template-columns: repeat(auto-fill, 132px);
-    }
+  .covers-row > :global(*) {
+    flex: 0 0 132px;
+    width: 132px;
+    scroll-snap-align: start;
   }
 
   /* Details is a plain card grid — no shelf furniture; each card just rises in. */
