@@ -3,7 +3,8 @@ import { shelf } from './shelf';
 import { profile } from './profile';
 import { seedUsers } from './users';
 import { calculateMatches, calculateDiscovery } from '../lib/matching';
-import type { Match } from '../lib/types';
+import { pivotToBooks } from '../lib/discoveryBooks';
+import type { Match, LocalBook } from '../lib/types';
 
 export const matches = computed(
   [shelf, profile, seedUsers],
@@ -35,4 +36,10 @@ export const discovery = computed(
 
     return calculateDiscovery(myBooks, myTopics, users);
   }
+);
+
+// Book-first view of discovery: existing person-keyed matches pivoted into one
+// row per (sharable book x intent). Powers the Local page's Books feed.
+export const discoveryBooks = computed(discovery, (m: Match[]): LocalBook[] =>
+  pivotToBooks(m),
 );
