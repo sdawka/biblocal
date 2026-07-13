@@ -5,28 +5,79 @@
   import 'leaflet/dist/leaflet.css';
   import 'leaflet.markercluster/dist/MarkerCluster.css';
   import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-  import { discovery } from '../stores/matches';
+  import { discovery, discoveryBooks } from '../stores/matches';
   import { profile } from '../stores/profile';
   import { loadSeedUsers, usersLoading, usersError } from '../stores/users';
-  import type { Match } from '../lib/types';
+  import type { Match, LocalBook } from '../lib/types';
   import { CITY_COORDINATES, formatDistance } from '../lib/geo';
-  import MatchCardIsland from './MatchCardIsland.svelte';
+  import LocalPanel from './LocalPanel.svelte';
+  import { groupByIntent } from '../lib/discoveryBooks';
+  import {
+    splitDiscovery,
+    sortByDistance,
+    bookOwnerLocated,
+    isWithinBounds,
+    hasLocation,
+    type MapBounds,
+  } from '../lib/localHub';
   import { useTranslations, type Lang } from '../i18n';
 
   let { lang = 'en' as Lang }: { lang?: Lang } = $props();
   const t = $derived(useTranslations(lang).matches.map);
 
   let matchList = $state<Match[]>([]);
+  let books = $state<LocalBook[]>([]);
 
-  // People with coordinates get map pins; people who haven't shared a location
-  // still appear, in a separate list below the map.
-  const hasLocation = (m: Match) =>
-    m.user.latitude != null && m.user.longitude != null;
-  let locatedList = $derived(matchList.filter(hasLocation));
-  let unlocatedList = $derived(matchList.filter((m) => !hasLocation(m)));
+  type Panel = 'books' | 'people' | 'bookstores';
+  let panel = $state<Panel>('people');
+  let query = $state('');
+  let viewBounds = $state<MapBounds | null>(null);
+
   let loadingUsers = $state(usersLoading.get());
   let loadError = $state<string | null>(usersError.get());
   let expandedId = $state<string | null>(null);
+
+  // Panel derivations: three filtered + sorted lists synced to the current
+  // map viewport (viewBounds === null before the map reports its first
+  // bounds, so nothing is filtered out yet).
+  const q = $derived(query.trim().toLowerCase());
+  // `$derived` destructuring isn't reactive-safe in Svelte 5 — derive the
+  // split object once, then read each field via its own `$derived`.
+  let ps = $derived(splitDiscovery(matchList));
+  const people = $derived(ps.people);
+  const stores = $derived(ps.stores);
+
+  const peopleInView = $derived(
+    sortByDistance(
+      people.filter(
+        (m) =>
+          (viewBounds == null ||
+            (hasLocation(m) && isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds))) &&
+          (!q || m.user.name.toLowerCase().includes(q))
+      )
+    )
+  );
+  const storesInView = $derived(
+    sortByDistance(
+      stores.filter(
+        (m) =>
+          (viewBounds == null ||
+            (hasLocation(m) && isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds))) &&
+          (!q || m.user.name.toLowerCase().includes(q))
+      )
+    )
+  );
+  const booksInView = $derived(
+    books.filter(
+      (row) =>
+        bookOwnerLocated(row, viewBounds) &&
+        (!q || (row.book.title + ' ' + row.book.author).toLowerCase().includes(q))
+    )
+  );
+  const bookGroups = $derived(groupByIntent(booksInView));
+  const inViewCount = $derived(
+    panel === 'books' ? booksInView.length : panel === 'people' ? peopleInView.length : storesInView.length
+  );
 
   // Track the seed-user fetch so the panel can tell loading/error apart from a
   // genuinely empty match list.
@@ -135,8 +186,12 @@
           className: isStore ? 'map-tip map-tip-store' : 'map-tip',
         });
 
-      // Selecting a card flies + emphasizes its pin; clicking a pin expands the card.
-      marker.on('click', () => toggleExpanded(user.id));
+      // Selecting a card flies + emphasizes its pin; clicking a pin expands
+      // the card AND switches the panel so the pin's row is visible there.
+      marker.on('click', () => {
+        panel = isStore ? 'bookstores' : 'people';
+        toggleExpanded(user.id);
+      });
       marker.on('mouseover', () => marker.setStyle({ weight: 3, fillOpacity: 1 }));
       marker.on('mouseout', () =>
         marker.setStyle({ weight: 2, fillOpacity: expandedId === user.id ? 1 : 0.92 })
@@ -232,9 +287,27 @@
       matchList = m;
       if (map) updateMarkers();
     });
+    const unsubBooks = discoveryBooks.subscribe((b) => (books = b));
+
+    // Keep the panel's lists synced to what's actually visible on the map:
+    // read the initial bounds now, then re-read (debounced) on every pan/zoom.
+    const readBounds = (): MapBounds => {
+      const b = map.getBounds();
+      return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
+    };
+    viewBounds = readBounds();
+    let moveTimer: ReturnType<typeof setTimeout> | undefined;
+    map.on('moveend', () => {
+      clearTimeout(moveTimer);
+      moveTimer = setTimeout(() => {
+        viewBounds = readBounds();
+      }, 150);
+    });
 
     return () => {
       unsubMatches();
+      unsubBooks();
+      clearTimeout(moveTimer);
       themeObserver.disconnect();
       map?.remove();
     };
@@ -252,6 +325,16 @@
     expandedId = expandedId === id ? null : id;
     applySelectionStyles();
     if (expandedId) focusMarker(expandedId);
+  }
+
+  // Jump from a book row to its owner: select the right panel (bookstore vs
+  // person), expand that owner's card, and pan/emphasize their pin.
+  function focusFromRow(ownerId: string) {
+    const owned = matchList.find((m) => m.user.id === ownerId);
+    panel = owned?.user.type === 'bookstore' ? 'bookstores' : 'people';
+    expandedId = ownerId;
+    applySelectionStyles();
+    focusMarker(ownerId);
   }
 </script>
 
@@ -271,60 +354,23 @@
   </div>
 
   <div class="cards-panel card">
-    <div class="panel-head">
-      <span class="eyebrow">{t.withinReach}</span>
-      <h2 class="serif">{t.nearby} <span class="count">{locatedList.length}</span></h2>
-    </div>
-
-    {#if loadingUsers && matchList.length === 0}
-      <div class="panel-state" aria-live="polite">
-        <div class="skeleton-list">
-          <div class="skeleton-card"></div>
-          <div class="skeleton-card"></div>
-          <div class="skeleton-card"></div>
-        </div>
-        <p class="state-note">{t.loading}</p>
-      </div>
-    {:else if loadError && matchList.length === 0}
-      <div class="panel-state error" role="alert">
-        <p>{t.errorTitle}</p>
-        <p class="state-note">{loadError}</p>
-      </div>
-    {:else if matchList.length === 0}
-      <div class="empty">
-        <p>{t.empty}</p>
-      </div>
-    {:else}
-      <div class="cards-list">
-        {#each locatedList as match, i (match.user.id)}
-          <div class="card-slot rise" style={`animation-delay:${Math.min(i * 60, 360)}ms`}>
-            <MatchCardIsland
-              {match}
-              {lang}
-              expanded={expandedId === match.user.id}
-              onToggle={() => toggleExpanded(match.user.id)}
-            />
-          </div>
-        {/each}
-
-        {#if unlocatedList.length > 0}
-          <div class="group-head">
-            <span class="eyebrow">{t.locationNotShared}</span>
-            <span class="count">{unlocatedList.length}</span>
-          </div>
-          {#each unlocatedList as match, i (match.user.id)}
-            <div class="card-slot rise" style={`animation-delay:${Math.min(i * 60, 360)}ms`}>
-              <MatchCardIsland
-                {match}
-                {lang}
-                expanded={expandedId === match.user.id}
-                onToggle={() => toggleExpanded(match.user.id)}
-              />
-            </div>
-          {/each}
-        {/if}
-      </div>
-    {/if}
+    <LocalPanel
+      {panel}
+      onPanelChange={(p) => (panel = p)}
+      {query}
+      onQueryChange={(v) => (query = v)}
+      {bookGroups}
+      {peopleInView}
+      {storesInView}
+      {inViewCount}
+      {expandedId}
+      onToggle={toggleExpanded}
+      onOwner={focusFromRow}
+      loading={loadingUsers}
+      error={loadError}
+      hasAnyData={matchList.length > 0}
+      {lang}
+    />
   </div>
 </div>
 
@@ -396,124 +442,6 @@
     padding: var(--s-5);
     box-shadow: var(--shadow-1);
   }
-
-  .panel-head {
-    margin-bottom: var(--s-4);
-    padding-bottom: var(--s-3);
-    border-bottom: 1px solid var(--hairline);
-  }
-  .panel-head .eyebrow { display: block; margin-bottom: var(--s-1); }
-
-  .cards-panel h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--ink);
-    display: flex;
-    align-items: baseline;
-    gap: var(--s-2);
-  }
-  .count {
-    font-family: var(--font-ui);
-    font-size: 0.8125rem;
-    font-weight: 590;
-    color: var(--accent);
-    background: var(--accent-tint);
-    padding: 0.1rem 0.55rem;
-    border-radius: var(--r-full);
-  }
-
-  .empty {
-    padding: var(--s-8) var(--s-6);
-    text-align: center;
-    font-family: var(--font-ui);
-    color: var(--ink-muted);
-    background: var(--surface-sunken);
-    border: 1px solid var(--hairline);
-    border-radius: var(--r-md);
-  }
-  .empty p { margin: 0; }
-  .empty::before {
-    content: '🔍';
-    display: block;
-    font-size: 1.5rem;
-    margin-bottom: var(--s-2);
-    opacity: 0.7;
-  }
-
-  /* Loading / error panel states (distinct from the empty state). */
-  .panel-state {
-    padding: var(--s-4) 0;
-    text-align: center;
-    font-family: var(--font-ui);
-    color: var(--ink-muted);
-  }
-  .panel-state.error p:first-child {
-    color: var(--ink);
-    font-weight: 590;
-  }
-  .state-note {
-    margin: var(--s-3) 0 0;
-    font-size: 0.85rem;
-    color: var(--ink-faint);
-  }
-  .panel-state.error .state-note {
-    color: var(--danger);
-  }
-
-  .skeleton-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-4);
-  }
-  .skeleton-card {
-    height: 96px;
-    border-radius: var(--r-md);
-    background: var(--surface-sunken);
-    border: 1px solid var(--hairline);
-    overflow: hidden;
-    position: relative;
-  }
-  .skeleton-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--hairline),
-      transparent
-    );
-    transform: translateX(-100%);
-    animation: shimmer 1.4s var(--ease-out) infinite;
-  }
-  @keyframes shimmer {
-    to { transform: translateX(100%); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .skeleton-card::after { animation: none; }
-  }
-
-  .cards-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-4);
-    overflow-y: auto;
-    padding-right: var(--s-2);
-  }
-
-  .card-slot { display: block; }
-
-  /* Sub-header that separates location-less people from the pinned ones. */
-  .group-head {
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-    margin: var(--s-2) 0 calc(-1 * var(--s-1));
-    padding-top: var(--s-3);
-    border-top: 1px solid var(--hairline);
-  }
-  .group-head .eyebrow { margin: 0; }
 
   @media (max-width: 900px) {
     .match-map {
