@@ -67,8 +67,8 @@
 
   .shelf-row {
     padding-bottom: var(--s-3);
-    border-bottom: 2px solid var(--hairline-strong);
-    box-shadow: 0 2px 0 var(--hairline);
+    border-bottom: 1px solid var(--hairline-strong);
+    box-shadow: 0 1px 0 var(--hairline);
   }
 
   .add-slot {

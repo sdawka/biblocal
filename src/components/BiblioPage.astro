@@ -17,7 +17,7 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 ---
 
 <Layout lang={lang} title={t.page.metaTitle}>
-  <main>
+  <main class="wide">
       <div class="header-row rise">
         <div class="header-text">
           <p class="eyebrow">{t.page.eyebrow}</p>
@@ -35,6 +35,16 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 </Layout>
 
 <style>
+  /* Biblio gets its own wider column so the shelf breathes into the page
+     margins; only the side gutter grows, vertical rhythm stays site-wide.
+     Astro scopes this, so it never leaks to other routes. */
+  main.wide {
+    max-width: var(--maxw-shelf);
+    padding-inline: clamp(var(--s-5), 5vw, var(--s-8));
+  }
+
+  /* Header spans the wide column so the eyebrow + H1 stay left-aligned with
+     the filter bar and shelf below; the UserButton rides the far right. */
   .header-row {
     display: flex;
     justify-content: space-between;

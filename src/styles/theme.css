@@ -70,6 +70,15 @@
   --glass-bg: oklch(0.992 0.006 82 / 0.72);
   --drop-shadow-color: oklch(0.28 0.025 55 / 0.28);
 
+  /* Shelf furniture — plank ledge + upright share one wood recipe.
+     Built from themed tokens, so dark mode recomputes for free. */
+  --shelf-wood: linear-gradient(
+    180deg,
+    var(--surface) 0%,
+    var(--hairline-strong) 55%,
+    var(--hairline) 100%
+  );
+
   /* Radii */
   --r-sm: 8px;
   --r-md: 12px;
@@ -83,6 +92,7 @@
   --s-10: 4rem; --s-12: 6rem;
 
   --maxw: 1120px;
+  --maxw-shelf: 1360px;   /* dedicated wider Biblio column */
 
   color-scheme: light;
 }
