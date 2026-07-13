@@ -245,7 +245,9 @@
     await import('leaflet.markercluster');
 
     const center = getMapCenter();
-    map = L.map(mapContainer, { zoomControl: true, worldCopyJump: true }).setView(
+    // maxZoom must be on the map itself: leaflet.markercluster reads it from the
+    // map (not the tile layer) and throws "Map has no maxZoom specified" without it.
+    map = L.map(mapContainer, { zoomControl: true, worldCopyJump: true, maxZoom: 20 }).setView(
       [center.lat, center.lng],
       13
     );
