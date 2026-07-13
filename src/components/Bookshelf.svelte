@@ -20,6 +20,9 @@
   $effect(() => {
     const unsub = shelf.subscribe((s) => {
       isEmpty = Object.keys(s).length === 0;
+      // Returning user with a populated localStorage shelf: mark hydrated
+      // immediately (client-side) so we never flash the loading skeleton.
+      if (!isEmpty) shelfHydrated.set(true);
     });
     return unsub;
   });

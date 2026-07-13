@@ -25,11 +25,13 @@ export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {
 
 // Signals when the initial shelf load has settled (success or failure), so
 // the UI can tell "empty because still loading" apart from "empty because
-// there really are no books." Returning users whose localStorage shelf was
-// already populated at startup don't need to wait for the network at all —
-// hydrated starts true for them. Reset to false whenever the shelf is reset
-// for a user switch/logout, so the next loadBooksFromServer() re-arms it.
-export const shelfHydrated = atom<boolean>(Object.keys(shelf.get()).length > 0);
+// there really are no books." Starts false and is set true by
+// loadBooksFromServer() (success or failure), or client-side the moment a
+// returning user's persisted shelf is seen to be non-empty (see Bookshelf).
+// NOTE: must NOT read shelf.get() here — doing so at module (global) scope
+// triggers nanostores' unmount setTimeout, which Cloudflare Workers forbids
+// in global scope and would 500 every cold SSR render.
+export const shelfHydrated = atom<boolean>(false);
 
 // Legacy single-select filter (deprecated, kept for migration)
 export type ShelfFilter = 'all' | 'lending' | 'discussing' | 'gifting' | 'seeking' | 'private';
