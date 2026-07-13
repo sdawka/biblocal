@@ -28,6 +28,26 @@ vi.stubGlobal('fetch', vi.fn(() =>
   })
 ));
 
+// jsdom doesn't implement matchMedia; components that check
+// prefers-reduced-motion / prefers-color-scheme (e.g. MatchMapIsland) need a
+// stub so they can be imported/mounted in tests. Some test files run under a
+// non-jsdom (node) environment, where `window` doesn't exist at all — skip.
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
+
 // Reset stores between tests
 beforeEach(() => {
   localStorage.clear();

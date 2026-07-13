@@ -8,6 +8,19 @@ export default {
     title: 'À proximité',
     addStore: '+ Ajouter une librairie',
   },
+  views: {
+    books: 'Livres',
+    people: 'Personnes',
+    map: 'Carte',
+  },
+  groups: {
+    borrowable: 'À emprunter',
+    discussable: 'À discuter',
+    giftable: 'Gratuit / à donner',
+  },
+  empty: {
+    books: 'Aucun livre à proximité',
+  },
   map: {
     legend: 'Légende',
     you: 'Vous',

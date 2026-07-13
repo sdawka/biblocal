@@ -9,6 +9,19 @@ export default {
     title: 'Nearby',
     addStore: '+ Add a bookstore',
   },
+  views: {
+    books: 'Books',
+    people: 'People',
+    map: 'Map',
+  },
+  groups: {
+    borrowable: 'To borrow',
+    discussable: 'To discuss',
+    giftable: 'Free & giftable',
+  },
+  empty: {
+    books: 'No books nearby yet',
+  },
   map: {
     legend: 'Legend',
     you: 'You',
