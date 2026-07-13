@@ -118,3 +118,19 @@ export interface ConnectionRequest {
   fromUser?: UserProfile;
   toUser?: UserProfile;
 }
+
+// A single discoverable book row: one owned, visible book a nearby person is
+// sharing under one intent. Derived (not stored) — see src/lib/discoveryBooks.ts.
+export interface LocalBook {
+  book: Book;
+  owner: UserProfile;
+  intent: BookIntent;
+  distanceKm?: number;
+  tasteScore: number; // owner's match score; drives taste-fit ordering
+  isTasteMatch: boolean; // this specific title matched one of your facets
+}
+
+export interface LocalBookGroup {
+  intent: BookIntent;
+  books: LocalBook[];
+}
