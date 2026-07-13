@@ -185,8 +185,10 @@
           {#if view === 'covers'}
             <Shelf>
               <div class="covers-row" id="books-i-have-grid">
-                {#each booksIHave as book (book.id)}
-                  <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                {#each booksIHave as book, i (book.id)}
+                  <div class="spine-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                    <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                  </div>
                 {/each}
               </div>
             </Shelf>
@@ -231,8 +233,10 @@
           {#if view === 'covers'}
             <Shelf>
               <div class="covers-row" id="books-seeking-grid">
-                {#each booksImSeeking as book (book.id)}
-                  <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                {#each booksImSeeking as book, i (book.id)}
+                  <div class="spine-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                    <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                  </div>
                 {/each}
               </div>
             </Shelf>
@@ -497,6 +501,20 @@
     scroll-snap-align: start;
   }
 
+  /* Spine entrance: mirrors the Details cards' staggered rise (small
+     translateY + fade, capped stagger), keyed by book.id like the cards so
+     re-filtering doesn't re-fire it on items already on screen. */
+  .spine-wrapper {
+    display: flex;
+    opacity: 0;
+    animation: spine-rise var(--dur-3) var(--ease-out) forwards;
+  }
+
+  @keyframes spine-rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
   /* Details is a plain card grid — no shelf furniture; each card just rises in. */
   .book-wrapper {
     display: flex;
@@ -521,5 +539,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .book-wrapper { opacity: 1; animation: none; }
+    .spine-wrapper { opacity: 1; animation: none; }
   }
 </style>

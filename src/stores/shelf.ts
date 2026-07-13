@@ -1,3 +1,4 @@
+import { atom } from 'nanostores';
 import { persistentAtom } from '@nanostores/persistent';
 import type { Book, BookNote, BookStatus, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
 import { inferTopicsFromSubjects } from './topics';
@@ -21,6 +22,14 @@ export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {
   encode: JSON.stringify,
   decode: safeJsonDecode({}),
 });
+
+// Signals when the initial shelf load has settled (success or failure), so
+// the UI can tell "empty because still loading" apart from "empty because
+// there really are no books." Returning users whose localStorage shelf was
+// already populated at startup don't need to wait for the network at all —
+// hydrated starts true for them. Reset to false whenever the shelf is reset
+// for a user switch/logout, so the next loadBooksFromServer() re-arms it.
+export const shelfHydrated = atom<boolean>(Object.keys(shelf.get()).length > 0);
 
 // Legacy single-select filter (deprecated, kept for migration)
 export type ShelfFilter = 'all' | 'lending' | 'discussing' | 'gifting' | 'seeking' | 'private';
@@ -432,7 +441,10 @@ export async function loadBooksFromServer(): Promise<void> {
   // as a different user), bail before set() so a slow response can't overwrite
   // the newer user's freshly-loaded shelf.
   const loadingFor = currentUserId.get();
-  if (!loadingFor) return;
+  if (!loadingFor) {
+    shelfHydrated.set(true);
+    return;
+  }
   // Snapshot local shelf before the request so legacy-only books can be recovered.
   const preLoadSnapshot = shelf.get();
   try {
@@ -489,6 +501,11 @@ export async function loadBooksFromServer(): Promise<void> {
   } catch (e) {
     console.error('Failed to load books from server:', e);
     reportSyncError(LOAD_SYNC_ERROR_MESSAGE);
+  } finally {
+    // Settle hydration on both success and failure so the UI never hangs on
+    // a loading skeleton. Safe even on a stale mid-flight bail: the newer
+    // load for the current user will also finish and set this again.
+    shelfHydrated.set(true);
   }
 }
 

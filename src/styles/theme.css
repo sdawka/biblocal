@@ -71,16 +71,20 @@
   --drop-shadow-color: oklch(0.28 0.025 55 / 0.28);
 
   /* Shelf furniture — plank ledge + upright share one wood recipe.
-     Built from themed tokens, so dark mode recomputes for free. */
+     Built from themed tokens (with a warm accent-tint bias so the board
+     reads as wood rather than pale stone), so dark mode recomputes for free. */
+  --shelf-wood-lit: color-mix(in oklch, var(--surface) 80%, var(--accent-tint) 20%);
+  --shelf-wood-mid: color-mix(in oklch, var(--hairline-strong) 78%, var(--accent) 22%);
+  --shelf-wood-deep: color-mix(in oklch, var(--hairline-strong) 55%, var(--ink) 20%);
   --shelf-wood: linear-gradient(
     180deg,
-    var(--surface) 0%,
-    var(--hairline-strong) 55%,
-    var(--hairline) 100%
+    var(--shelf-wood-lit) 0%,
+    var(--shelf-wood-mid) 55%,
+    var(--shelf-wood-deep) 100%
   );
   /* Solid wood tone for SVG fills (corbels etc.) where a gradient can't be
      used as a `fill` value directly. */
-  --shelf-wood-solid: var(--hairline-strong);
+  --shelf-wood-solid: var(--shelf-wood-mid);
 
   /* Radii */
   --r-sm: 8px;

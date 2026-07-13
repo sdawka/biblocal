@@ -12,8 +12,9 @@ export async function onUserChange(userId: string | null): Promise<void> {
       // Mirror onLogout: reset in-memory atoms before loading the new user's
       // data so the previous user's shelf/profile are not treated as
       // "local-only" and uploaded under the new user's credentials.
-      const { shelf } = await import('./shelf');
+      const { shelf, shelfHydrated } = await import('./shelf');
       shelf.set({});
+      shelfHydrated.set(false);
       const { profile, DEFAULT_PROFILE } = await import('./profile');
       profile.set(DEFAULT_PROFILE);
       const { connectionRequests } = await import('./connections');
@@ -36,8 +37,9 @@ export async function onLogout(): Promise<void> {
   // clearUserData() only wipes localStorage; reset the in-memory atoms too so
   // the previous user's shelf/profile don't linger until a page reload. Dynamic
   // import avoids a circular dependency (shelf/profile import from auth).
-  const { shelf } = await import('./shelf');
+  const { shelf, shelfHydrated } = await import('./shelf');
   const { profile, DEFAULT_PROFILE } = await import('./profile');
   shelf.set({});
+  shelfHydrated.set(false);
   profile.set(DEFAULT_PROFILE);
 }
