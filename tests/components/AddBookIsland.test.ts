@@ -321,7 +321,7 @@ describe('AddBookIsland', () => {
   describe('API failure surfacing', () => {
     // Error surfacing is handled at the page level: a failed sync calls
     // reportSyncError() → syncError store → SyncErrorToast (mounted on
-    // ShelfPage.astro via client:load). The component itself does not show an
+    // BiblioPage.astro via client:load). The component itself does not show an
     // inline error; the two assertions below verify the contract that makes the
     // page-level toast appear.
     it('rolls back the optimistic store entry when /api/books POST returns non-ok', async () => {
