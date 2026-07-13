@@ -123,4 +123,13 @@
     flex: 1;
     min-width: 0;
   }
+
+  /* BookDetail's .delete-confirm is `position:absolute; inset:0` scoped to
+     .book-detail, which here is only the text column — so the confirm
+     overlay would leave the cover thumbnail un-dimmed. Re-anchor it to the
+     whole card (.book-card is already position:relative; overflow:hidden). */
+  .book-card :global(.delete-confirm) {
+    position: absolute;
+    inset: 0;
+  }
 </style>

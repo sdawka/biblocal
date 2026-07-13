@@ -10,6 +10,14 @@ vi.mock('../../src/i18n', () => ({
       card: {
         openDetailAria: 'View details for {title}',
         closeDetailAria: 'Close',
+        seeking: 'Seeking',
+      },
+      intents: {
+        labels: {
+          borrowable: 'Lending',
+          discussable: 'Discussion',
+          giftable: 'Gifting',
+        },
       },
     },
   }),
@@ -83,5 +91,37 @@ describe('BookSpine', () => {
 
     expect(container.querySelector('.peek-dots .dot[data-status="borrowable"]')).toBeTruthy();
     expect(container.querySelector('.peek-dots .dot[data-status="discussable"]')).toBeTruthy();
+  });
+
+  it('aria-label is just the title when there is no status to report', () => {
+    const book = makeBook({ title: 'Dune', ownership: 'have', intents: [] });
+    const { container } = render(BookSpine, { props: { book, lang: 'en', onOpen: vi.fn() } });
+
+    const spine = container.querySelector('.spine');
+    expect(spine?.getAttribute('aria-label')).toBe('View details for Dune');
+  });
+
+  it('aria-label folds in the seeking status', () => {
+    const book = makeBook({ title: 'Dune', ownership: 'seeking', intents: [] });
+    const { container } = render(BookSpine, { props: { book, lang: 'en', onOpen: vi.fn() } });
+
+    const spine = container.querySelector('.spine');
+    expect(spine?.getAttribute('aria-label')).toBe('View details for Dune — Seeking');
+  });
+
+  it('aria-label folds in intent labels', () => {
+    const book = makeBook({ title: 'Dune', ownership: 'have', intents: ['borrowable', 'discussable'] });
+    const { container } = render(BookSpine, { props: { book, lang: 'en', onOpen: vi.fn() } });
+
+    const spine = container.querySelector('.spine');
+    expect(spine?.getAttribute('aria-label')).toBe('View details for Dune — Lending, Discussion');
+  });
+
+  it('aria-label folds in both seeking and intent labels', () => {
+    const book = makeBook({ title: 'Dune', ownership: 'seeking', intents: ['giftable'] });
+    const { container } = render(BookSpine, { props: { book, lang: 'en', onOpen: vi.fn() } });
+
+    const spine = container.querySelector('.spine');
+    expect(spine?.getAttribute('aria-label')).toBe('View details for Dune — Seeking · Gifting');
   });
 });

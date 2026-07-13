@@ -11,6 +11,19 @@
   let { book, lang = 'en' as Lang, onOpen }: Props = $props();
 
   const t = $derived(useTranslations(lang).shelf.card);
+  const intentLabels = $derived(useTranslations(lang).shelf.intents.labels);
+
+  // Sighted users see seeking/intent status via the edge tick + peek dots;
+  // fold the same status into the accessible name, mirroring BookDetail.
+  const statusSuffix = $derived.by(() => {
+    const parts: string[] = [];
+    if (book.ownership === 'seeking') parts.push(t.seeking);
+    if (book.intents.length > 0) {
+      parts.push(book.intents.map((intent) => intentLabels[intent]).join(', '));
+    }
+    return parts.length > 0 ? ` — ${parts.join(' · ')}` : '';
+  });
+  const openLabel = $derived(t.openDetailAria.replace('{title}', book.title) + statusSuffix);
 </script>
 
 <button
@@ -19,7 +32,7 @@
   class:seeking={book.ownership === 'seeking'}
   data-book-id={book.id}
   onclick={() => onOpen(book.id)}
-  aria-label={t.openDetailAria.replace('{title}', book.title)}
+  aria-label={openLabel}
   aria-haspopup="dialog"
 >
   {#if book.coverUrl}

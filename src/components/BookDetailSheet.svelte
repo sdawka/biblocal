@@ -204,6 +204,15 @@
     border-color: var(--accent);
   }
 
+  /* Touch devices have no hover precision, so enlarge the close control to a
+     full 44px tap target; pointer devices keep the compact 32px size above. */
+  @media (hover: none) {
+    .close-btn {
+      width: 44px;
+      height: 44px;
+    }
+  }
+
   .sheet-body {
     padding: var(--s-4);
     overflow-y: auto;

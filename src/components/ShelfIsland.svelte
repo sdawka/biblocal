@@ -357,9 +357,14 @@
     margin-bottom: var(--s-6);
   }
 
+  /* No inline padding here: this section is the containing block that
+     Shelf.svelte's full-bleed `margin-inline: calc(50% - min(1600px,100vw)/2)`
+     breaks out from. Any inline padding on it (vs. the zero padding on the
+     "Have" section) shifts its content box and makes the seeking shelf bay
+     break out asymmetrically. The heading inset lives on .section-header
+     instead, which doesn't contain the <Shelf>. */
   .shelf-section.seeking {
     position: relative;
-    padding-left: var(--s-5);
   }
 
   /* Library-shelf upright: a hairline rule capped by a short accent end-stop
@@ -378,6 +383,10 @@
       var(--hairline-strong) 14px,
       var(--hairline-strong) 100%
     );
+  }
+
+  .shelf-section.seeking .section-header {
+    padding-left: var(--s-5);
   }
 
   .section-header {
@@ -469,13 +478,15 @@
   }
 
   /* Covers view: fixed-width tiles so rows share a uniform height — Shelf.svelte
-     relies on this constant row pitch to align its ornate ledges. */
+     relies on this constant row pitch to align its ornate ledges. row-gap is
+     pinned to a fixed 32px (not var(--s-6)) so the real pitch can never drift
+     from Shelf.svelte's --shelf-pitch: 230px at a non-16px root font size. */
   .grid.covers {
     display: grid;
     grid-template-columns: repeat(auto-fill, 132px);
     justify-content: start;
     column-gap: var(--s-4);
-    row-gap: var(--s-6);
+    row-gap: 32px;
   }
 
   @media (max-width: 820px) {
