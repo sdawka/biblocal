@@ -7,6 +7,7 @@ import { reportSyncError } from './sync-status';
 
 const SYNC_ERROR_MESSAGE = 'Could not save your change. Please try again.';
 const LOAD_SYNC_ERROR_MESSAGE = 'Could not load your shelf from the server. Please try again.';
+const COVER_SYNC_ERROR_MESSAGE = 'Could not update the cover. Please try again.';
 
 function safeJsonDecode<T>(defaultValue: T) {
   return (str: string): T => {
@@ -335,6 +336,62 @@ export function removeBook(id: string) {
   delete next[id];
   shelf.set(next);
   syncRemoveBook(id, prior);
+}
+
+// ─── Custom covers ───────────────────────────────────────────────────────────
+// Cover changes are NOT optimistic: the server owns the delivery URL, so the
+// store is updated only after a 2xx response. Callers show their own
+// in-progress state (the detail sheet disables its buttons while awaiting).
+
+function applyCoverResult(id: string, coverUrl: string | undefined, fetchedCoverUrl?: string | null): void {
+  const current = shelf.get();
+  const book = current[id];
+  if (!book) return;
+  const next: Book = { ...book, coverUrl };
+  if (fetchedCoverUrl !== undefined) {
+    next.fetchedCoverUrl = fetchedCoverUrl ?? undefined;
+  }
+  shelf.set({ ...current, [id]: next });
+}
+
+export async function uploadCover(id: string, file: File): Promise<boolean> {
+  if (!shelf.get()[id] || !currentUserId.get()) return false;
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`/api/books/${id}/cover`, { method: 'POST', body: form });
+    if (!res.ok) {
+      console.error('Failed to upload cover:', await res.text());
+      reportSyncError(COVER_SYNC_ERROR_MESSAGE);
+      return false;
+    }
+    const data = await res.json() as { coverUrl: string; fetchedCoverUrl: string | null };
+    applyCoverResult(id, data.coverUrl, data.fetchedCoverUrl);
+    return true;
+  } catch (e) {
+    console.error('Failed to upload cover:', e);
+    reportSyncError(COVER_SYNC_ERROR_MESSAGE);
+    return false;
+  }
+}
+
+export async function resetCover(id: string): Promise<boolean> {
+  if (!shelf.get()[id] || !currentUserId.get()) return false;
+  try {
+    const res = await fetch(`/api/books/${id}/cover`, { method: 'DELETE' });
+    if (!res.ok) {
+      console.error('Failed to reset cover:', await res.text());
+      reportSyncError(COVER_SYNC_ERROR_MESSAGE);
+      return false;
+    }
+    const data = await res.json() as { coverUrl: string | null };
+    applyCoverResult(id, data.coverUrl ?? undefined);
+    return true;
+  } catch (e) {
+    console.error('Failed to reset cover:', e);
+    reportSyncError(COVER_SYNC_ERROR_MESSAGE);
+    return false;
+  }
 }
 
 // ─── Book notes ──────────────────────────────────────────────────────────────
