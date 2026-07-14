@@ -18,6 +18,7 @@
     "seed:qa": "wrangler d1 execute biblocal-qa-db --env qa --file=scripts/seed-qa.sql",
     "qa:scenario": "bash scripts/qa-scenario.sh",
     "generate-types": "wrangler types",
+    "check:svelte": "svelte-check --threshold error",
     "seed:stores": "curl -X POST http://localhost:4321/api/seed-stores"
   },
   "dependencies": {
@@ -49,6 +50,7 @@
     "drizzle-kit": "^0.31.10",
     "jsdom": "^29.1.1",
     "playwright": "^1.60.0",
+    "svelte-check": "^4.7.2",
     "vitest": "^4.1.5"
   },
   "overrides": {
