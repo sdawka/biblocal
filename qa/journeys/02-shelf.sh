@@ -116,7 +116,7 @@ if [ -n "$card_ref" ]; then
   agent-browser click "$card_ref" >/dev/null 2>&1
   sleep 1
   snapshot=$(agent-browser snapshot -i 2>/dev/null)
-  if echo "$snapshot" | grep -qi "change cover"; then
+  if echo "$snapshot" | grep -qi "change cover\|upload a custom cover"; then
     pass "Edit modal opens from details-view card with cover controls"
   else
     info "Modal opened but cover controls not detected"
