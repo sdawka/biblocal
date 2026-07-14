@@ -104,6 +104,10 @@ export default {
     viewCovers: 'Couvertures',
     viewDetails: 'Détails',
     viewToggleGroup: 'Affichage des livres',
+    filterButton: 'Filtres',
+    filterPopoverLabel: 'Filtrer les livres',
+    // {n} interpolated
+    filterActiveAria: '{n} filtres actifs',
   },
   empty: {
     shelfTitle: 'Votre étagère',

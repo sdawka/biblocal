@@ -65,6 +65,14 @@ function makeStoreBook(overrides: Partial<Book> = {}): Book {
  * here because Vite's ESM transform in the test environment captures the
  * original stub rather than the replaced global.
  */
+/**
+ * Filter chips live inside FilterPopover, closed by default. Open it before
+ * asserting/interacting with any filter group.
+ */
+function openFilterPopover() {
+  fireEvent.click(screen.getByRole('button', { name: /^Filters/ }));
+}
+
 function setupDeferredFetch(serverBooks: unknown[] = []) {
   let release!: () => void;
   const gate = new Promise<void>((r) => { release = r; });
@@ -117,6 +125,7 @@ describe('ShelfIsland', () => {
       render(ShelfIsland, { props: { lang: 'en' } });
 
       // Filter to "am seeking" — our only book is "have", so nothing passes
+      openFilterPopover();
       const ownershipGroup = screen.getByRole('group', { name: 'Filter by ownership' });
       fireEvent.click(within(ownershipGroup).getByRole('button', { name: /am seeking/ }));
 
@@ -315,6 +324,7 @@ describe('ShelfIsland', () => {
       expect(screen.getByText('I Want This')).toBeTruthy();
 
       // Activate the "am seeking" filter chip
+      openFilterPopover();
       const ownershipGroup = screen.getByRole('group', { name: 'Filter by ownership' });
       fireEvent.click(within(ownershipGroup).getByRole('button', { name: /am seeking/ }));
 
@@ -338,6 +348,7 @@ describe('ShelfIsland', () => {
       render(ShelfIsland, { props: { lang: 'en' } });
 
       // Activate the "have" filter
+      openFilterPopover();
       const ownershipGroup = screen.getByRole('group', { name: 'Filter by ownership' });
       fireEvent.click(within(ownershipGroup).getByRole('button', { name: /^have/i }));
 
@@ -361,6 +372,7 @@ describe('ShelfIsland', () => {
       shelf.set({ 'seed': makeStoreBook({ id: 'seed', title: 'Seed Book', ownership: 'have' }) });
       render(ShelfIsland, { props: { lang: 'en' } });
 
+      openFilterPopover();
       const ownershipGroup = screen.getByRole('group', { name: 'Filter by ownership' });
       fireEvent.click(within(ownershipGroup).getByRole('button', { name: /^have/i }));
 

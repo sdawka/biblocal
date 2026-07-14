@@ -104,6 +104,10 @@ export default {
     viewCovers: 'Covers',
     viewDetails: 'Details',
     viewToggleGroup: 'Book display',
+    filterButton: 'Filters',
+    filterPopoverLabel: 'Filter books',
+    // {n} interpolated
+    filterActiveAria: '{n} filters active',
   },
   empty: {
     shelfTitle: 'Your Shelf',
