@@ -398,6 +398,7 @@ interface ServerBook {
   author: string;
   isbn: string | null;
   coverUrl: string | null;
+  fetchedCoverUrl: string | null;
   status: string;
   // New three-dimension model
   visibility: string | null;
@@ -473,6 +474,7 @@ export async function loadBooksFromServer(): Promise<void> {
         // Legacy status kept for migration
         status: b.status as BookStatus,
         coverUrl: b.coverUrl || undefined,
+        fetchedCoverUrl: b.fetchedCoverUrl || undefined,
         subjects: b.subjects ? safeJsonDecode<string[]>([])(b.subjects) : undefined,
         notes: (b.notes ?? []).map((n) => ({
           id: n.id,
