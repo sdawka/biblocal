@@ -207,7 +207,7 @@
                   <span>{book.title.charAt(0)}</span>
                 </div>
               {/if}
-              <BookDetail {book} readonly />
+              <BookDetail {book} {lang} readonly />
             </article>
           {/each}
         </div>
