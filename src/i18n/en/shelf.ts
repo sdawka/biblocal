@@ -136,6 +136,15 @@ export default {
     // {title} interpolated
     openDetailAria: 'View details for {title}',
     closeDetailAria: 'Close',
+    changeCover: 'Change cover',
+    resetCover: 'Use original cover',
+    uploadingCover: 'Uploading…',
+    // {title} interpolated
+    changeCoverAria: 'Upload a custom cover for {title}',
+    editDetails: 'Edit title & author',
+    editTitleLabel: 'Title',
+    editAuthorLabel: 'Author',
+    save: 'Save',
     notes: {
       // {n} interpolated
       addNote: 'Add a note',

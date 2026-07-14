@@ -4,6 +4,11 @@
     activeFilters,
     bookMatchesFilters,
     updateBookIntents,
+    updateBook,
+    updateBookOwnership,
+    updateBookVisibility,
+    uploadCover,
+    resetCover,
     removeBook,
     addNote,
     updateNote,
@@ -157,6 +162,11 @@
     {lang}
     onClose={() => (openBookId = null)}
     onIntentsChange={(intents) => updateBookIntents(openBook.id, intents)}
+    onOwnershipChange={(ownership) => updateBookOwnership(openBook.id, ownership)}
+    onVisibilityChange={(visibility) => updateBookVisibility(openBook.id, visibility)}
+    onUpdateDetails={(updates) => updateBook(openBook.id, updates)}
+    onUploadCover={(file) => uploadCover(openBook.id, file)}
+    onResetCover={() => resetCover(openBook.id)}
     onDelete={(id) => {
       handleDeleteBook(id);
       openBookId = null;

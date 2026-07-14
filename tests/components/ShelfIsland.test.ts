@@ -273,9 +273,12 @@ describe('ShelfIsland', () => {
   });
 
   // ── Intent change from the detail sheet ─────────────────────────────────────
+  // Since Task 7, the sheet renders ALL intent options as aria-pressed toggle
+  // pills (not just the active ones), so a book with only "borrowable" active
+  // still shows "Discussion" and "Gifting" pills, both pressed=false.
 
   describe('intent change from detail sheet', () => {
-    it('clicking an active intent pill removes it from the book and issues a PATCH', async () => {
+    it('clicking an active intent pill (aria-pressed=true) removes it from the book and issues a PATCH', async () => {
       const book = addBook({
         title: 'Lendable Book',
         author: 'Author',
@@ -291,10 +294,12 @@ describe('ShelfIsland', () => {
       const card = await screen.findByRole('button', { name: /^View details for Lendable Book/ });
       fireEvent.click(card);
 
-      // The "borrowable" intent is rendered inside the sheet as a pill-button labeled "Lending"
-      const lendingPill = await screen.findByRole('button', {
-        name: /Remove Lending intent from Lendable Book/,
-      });
+      // All three intent options render as toggle pills; "Lending" starts pressed.
+      const lendingPill = await screen.findByRole('button', { name: 'Lending' });
+      expect(lendingPill.getAttribute('aria-pressed')).toBe('true');
+      const discussionPill = screen.getByRole('button', { name: 'Discussion' });
+      expect(discussionPill.getAttribute('aria-pressed')).toBe('false');
+
       fireEvent.click(lendingPill);
 
       // Store should now have no intents
@@ -307,6 +312,81 @@ describe('ShelfIsland', () => {
         `/api/books/${book.id}`,
         expect.objectContaining({ method: 'PATCH' }),
       );
+    });
+
+    it('clicking an inactive intent pill (aria-pressed=false) adds it to the book', async () => {
+      const book = addBook({
+        title: 'Discussable Book',
+        author: 'Author',
+        addedVia: 'manual',
+        ownership: 'have',
+        intents: [],
+      });
+      render(ShelfIsland, { props: { lang: 'en' } });
+
+      await tick();
+
+      const card = await screen.findByRole('button', { name: /^View details for Discussable Book/ });
+      fireEvent.click(card);
+
+      const giftingPill = await screen.findByRole('button', { name: 'Gifting' });
+      expect(giftingPill.getAttribute('aria-pressed')).toBe('false');
+      fireEvent.click(giftingPill);
+
+      await waitFor(() => {
+        expect(shelf.get()[book.id].intents).toEqual(['giftable']);
+      });
+    });
+  });
+
+  // ── Ownership / visibility toggles from the detail sheet ────────────────────
+
+  describe('ownership and visibility change from detail sheet', () => {
+    it('flipping the ownership segmented control updates the book and issues a PATCH', async () => {
+      const book = addBook({
+        title: 'Owned Book',
+        author: 'Author',
+        addedVia: 'manual',
+        ownership: 'have',
+      });
+      render(ShelfIsland, { props: { lang: 'en' } });
+      await tick();
+
+      const card = await screen.findByRole('button', { name: /^View details for Owned Book/ });
+      fireEvent.click(card);
+
+      const ownershipGroup = await screen.findByRole('group', { name: 'Ownership' });
+      fireEvent.click(within(ownershipGroup).getByRole('button', { name: 'am seeking' }));
+
+      await waitFor(() => {
+        expect(shelf.get()[book.id].ownership).toBe('seeking');
+      });
+      expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+        `/api/books/${book.id}`,
+        expect.objectContaining({ method: 'PATCH' }),
+      );
+    });
+
+    it('flipping the visibility segmented control updates the book', async () => {
+      const book = addBook({
+        title: 'Visible Book',
+        author: 'Author',
+        addedVia: 'manual',
+        ownership: 'have',
+        visibility: 'visible',
+      });
+      render(ShelfIsland, { props: { lang: 'en' } });
+      await tick();
+
+      const card = await screen.findByRole('button', { name: /^View details for Visible Book/ });
+      fireEvent.click(card);
+
+      const visibilityGroup = await screen.findByRole('group', { name: 'Visibility' });
+      fireEvent.click(within(visibilityGroup).getByRole('button', { name: 'Private' }));
+
+      await waitFor(() => {
+        expect(shelf.get()[book.id].visibility).toBe('private');
+      });
     });
   });
 

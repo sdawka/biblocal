@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Book, BookIntent, BookVisibility, BookOwnership } from '../lib/types';
   import { useTranslations, type Lang } from '../i18n';
+  import { isHostedCoverUrl } from '../lib/coverImages';
   import BookDetail from './BookDetail.svelte';
 
   interface Props {
@@ -14,6 +15,9 @@
     onAddNote?: (text: string, visibility: BookVisibility) => void;
     onUpdateNote?: (noteId: string, updates: { text?: string; visibility?: BookVisibility }) => void;
     onDeleteNote?: (noteId: string) => void;
+    onUpdateDetails?: (updates: { title: string; author: string }) => void;
+    onUploadCover?: (file: File) => Promise<boolean>;
+    onResetCover?: () => Promise<boolean>;
   }
 
   let {
@@ -27,6 +31,9 @@
     onAddNote,
     onUpdateNote,
     onDeleteNote,
+    onUpdateDetails,
+    onUploadCover,
+    onResetCover,
   }: Props = $props();
 
   const t = $derived(useTranslations(lang).shelf.card);
@@ -34,6 +41,27 @@
   let dialogRef: HTMLDivElement | null = $state(null);
   let closeBtnRef: HTMLButtonElement | null = $state(null);
   let previousActiveElement: Element | null = null;
+
+  let fileInputRef: HTMLInputElement | null = $state(null);
+  let uploading = $state(false);
+  const canReset = $derived(!!book.fetchedCoverUrl && isHostedCoverUrl(book.coverUrl));
+
+  async function handleFileChange(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || !onUploadCover) return;
+    uploading = true;
+    await onUploadCover(file);
+    uploading = false;
+  }
+
+  async function handleResetCover() {
+    if (!onResetCover) return;
+    uploading = true;
+    await onResetCover();
+    uploading = false;
+  }
 
   // Focus trap and restoration, following the ScannerIsland pattern.
   $effect(() => {
@@ -89,13 +117,37 @@
 >
   <div class="sheet-panel glass">
     <div class="sheet-header">
-      {#if book.coverUrl}
-        <img class="sheet-cover" src={book.coverUrl} alt="" width="60" height="90" loading="lazy" decoding="async" />
-      {:else}
-        <div class="sheet-cover placeholder">
-          <span>{book.title.charAt(0)}</span>
-        </div>
-      {/if}
+      <div class="cover-block">
+        {#if book.coverUrl}
+          <img class="sheet-cover" src={book.coverUrl} alt="" width="60" height="90" loading="lazy" decoding="async" />
+        {:else}
+          <div class="sheet-cover placeholder">
+            <span>{book.title.charAt(0)}</span>
+          </div>
+        {/if}
+        {#if onUploadCover}
+          <input
+            type="file"
+            accept="image/*"
+            class="visually-hidden-input"
+            bind:this={fileInputRef}
+            onchange={handleFileChange}
+          />
+          <button
+            class="btn btn-outline btn-sm"
+            onclick={() => fileInputRef?.click()}
+            disabled={uploading}
+            aria-label={t.changeCoverAria.replace('{title}', book.title)}
+          >
+            {uploading ? t.uploadingCover : t.changeCover}
+          </button>
+          {#if canReset && onResetCover}
+            <button class="btn btn-plain btn-sm" onclick={handleResetCover} disabled={uploading}>
+              {t.resetCover}
+            </button>
+          {/if}
+        {/if}
+      </div>
       <h2 id="book-detail-sheet-title" class="visually-hidden">{book.title}</h2>
       <button
         class="close-btn"
@@ -120,6 +172,7 @@
         {onAddNote}
         {onUpdateNote}
         {onDeleteNote}
+        {onUpdateDetails}
       />
     </div>
   </div>
@@ -158,6 +211,22 @@
     gap: var(--s-3);
     padding: var(--s-4) var(--s-4) 0;
     flex-shrink: 0;
+  }
+
+  .cover-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-2);
+    flex-shrink: 0;
+  }
+
+  .visually-hidden-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .sheet-cover {
