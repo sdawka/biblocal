@@ -107,6 +107,22 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
+    // Hosted cover URLs (Cloudflare Images) may only be set by the cover upload
+    // endpoint, which verifies ownership of the underlying asset. Allowing a
+    // client to PATCH coverUrl to an arbitrary imagedelivery.net URL would let
+    // them redirect later delete-on-change/delete-on-reset cleanup at a
+    // victim's hosted image. Echoing back the unchanged value is fine (mobile
+    // client round-trips full book objects).
+    if (
+      typeof updates.coverUrl === 'string' &&
+      isHostedCoverUrl(updates.coverUrl) &&
+      updates.coverUrl !== existing[0].coverUrl
+    ) {
+      return new Response(
+        JSON.stringify({ error: 'coverUrl cannot point at hosted images; use the cover upload endpoint' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     const allowedFields = ['title', 'author', 'isbn', 'coverUrl', 'status', 'visibility', 'ownership', 'notes'];
     const filtered: Record<string, unknown> = { updatedAt: new Date() };

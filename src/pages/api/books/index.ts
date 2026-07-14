@@ -16,6 +16,7 @@ import {
   VALID_STATUS,
   VALID_ADDED_VIA,
 } from '../../../lib/validation';
+import { isHostedCoverUrl } from '../../../lib/coverImages';
 
 type Env = { DB: D1Database };
 
@@ -148,6 +149,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    // Hosted cover URLs are only ever produced by the cover upload endpoint,
+    // which owns the corresponding Cloudflare Images asset. A client-supplied
+    // hosted URL here could later be used to trigger delete-on-change/delete
+    // cleanup against an image the caller doesn't own.
+    if (isHostedCoverUrl(body.coverUrl)) {
+      return new Response(
+        JSON.stringify({ error: 'coverUrl cannot point at hosted images; use the cover upload endpoint' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     // Validate enum fields: default when omitted, reject when present-but-invalid.
