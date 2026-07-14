@@ -80,6 +80,28 @@ describe('uploadCover', () => {
     expect(ok).toBe(false);
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  it('returns false without fetching when there is no logged-in user', async () => {
+    _mockUserId = null;
+    vi.stubGlobal('fetch', vi.fn());
+    const ok = await uploadCover('b1', new File(['x'], 'c.png', { type: 'image/png' }));
+    expect(ok).toBe(false);
+    expect(fetch).not.toHaveBeenCalled();
+    _mockUserId = 'test-user-123';
+  });
+
+  it('sends the file under the "file" form field', async () => {
+    mockFetchOnce(200, {
+      coverUrl: 'https://imagedelivery.net/h/img1/public',
+      fetchedCoverUrl: 'https://covers.openlibrary.org/b/id/1-M.jpg',
+    });
+    const file = new File(['x'], 'cover.png', { type: 'image/png' });
+
+    await uploadCover('b1', file);
+
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    expect(((init as RequestInit).body as FormData).get('file')).toBe(file);
+  });
 });
 
 describe('resetCover', () => {
@@ -111,5 +133,12 @@ describe('resetCover', () => {
     const ok = await resetCover('b1');
     expect(ok).toBe(false);
     expect(reportSyncError).toHaveBeenCalled();
+  });
+
+  it('returns false without fetching when the book is missing', async () => {
+    vi.stubGlobal('fetch', vi.fn());
+    const ok = await resetCover('nope');
+    expect(ok).toBe(false);
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
