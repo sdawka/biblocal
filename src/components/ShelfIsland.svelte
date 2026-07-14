@@ -193,15 +193,7 @@
             <div class="grid" id="books-i-have-grid">
               {#each booksIHave as book, i (book.id)}
                 <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                  <BookCard
-                    {book}
-                    {lang}
-                    onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
-                    onDelete={handleDeleteBook}
-                    onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
-                    onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
-                    onDeleteNote={(noteId) => removeNote(book.id, noteId)}
-                  />
+                  <BookCard {book} {lang} onOpen={(id) => (openBookId = id)} />
                 </div>
               {/each}
             </div>
@@ -239,15 +231,7 @@
             <div class="grid" id="books-seeking-grid">
               {#each booksImSeeking as book, i (book.id)}
                 <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                  <BookCard
-                    {book}
-                    {lang}
-                    onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
-                    onDelete={handleDeleteBook}
-                    onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
-                    onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
-                    onDeleteNote={(noteId) => removeNote(book.id, noteId)}
-                  />
+                  <BookCard {book} {lang} onOpen={(id) => (openBookId = id)} />
                 </div>
               {/each}
             </div>
@@ -430,17 +414,15 @@
 
   .grid {
     display: grid;
-    column-gap: var(--s-4);
-    row-gap: var(--s-6);
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--s-3);
+    /* Fixed tracks: every card the same size, matching the covers view's
+       uniform spines. */
+    grid-template-columns: repeat(auto-fill, 232px);
   }
 
-  /* Tablet guard: lower the floor so the wider column still wraps cleanly
-     and never forces horizontal scroll. */
-  @media (max-width: 820px) {
+  @media (max-width: 560px) {
     .grid {
-      column-gap: var(--s-3);
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     }
   }
 

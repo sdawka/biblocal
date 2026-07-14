@@ -192,7 +192,10 @@ describe('ShelfIsland', () => {
   // ── Initial render from pre-seeded store ──────────────────────────────────
 
   describe('initial render from pre-seeded store', () => {
-    it('renders three books with correct section headers, intent pills, and status badges', () => {
+    // Details-view cards are non-editing buttons that open the detail sheet
+    // (inline pills/badges moved into the sheet — see Task 7); status is
+    // folded into each card's accessible name instead.
+    it('renders three books with correct section headers and status folded into each card aria-label', () => {
       shelf.set({
         'b1': makeStoreBook({ id: 'b1', title: 'The Great Gatsby', author: 'Fitzgerald', ownership: 'have', intents: ['borrowable'] }),
         'b2': makeStoreBook({ id: 'b2', title: 'Brave New World', author: 'Huxley', ownership: 'have', visibility: 'private' }),
@@ -210,20 +213,22 @@ describe('ShelfIsland', () => {
       expect(screen.getByRole('button', { name: /Collapse books I have/ })).toBeTruthy();
       expect(screen.getByRole('button', { name: /Collapse books I am seeking/ })).toBeTruthy();
 
-      // Gatsby has borrowable intent → rendered as a removable pill-button
-      expect(screen.getByRole('button', { name: /Remove Lending intent from The Great Gatsby/ })).toBeTruthy();
+      // Gatsby has borrowable intent → folded into the card's aria-label
+      expect(screen.getByRole('button', { name: 'View details for The Great Gatsby — Lending' })).toBeTruthy();
 
-      // Brave New World is private → "Private" badge visible
-      expect(screen.getByText('Private')).toBeTruthy();
+      // Brave New World is private → folded into the card's aria-label
+      expect(screen.getByRole('button', { name: 'View details for Brave New World — Private' })).toBeTruthy();
 
-      // Foundation is seeking → "Seeking" badge visible
-      expect(screen.getByText('Seeking')).toBeTruthy();
+      // Foundation is seeking → folded into the card's aria-label
+      expect(screen.getByRole('button', { name: 'View details for Foundation — Seeking' })).toBeTruthy();
     });
   });
 
-  // ── Delete from UI ────────────────────────────────────────────────────────
+  // ── Delete from the detail sheet ────────────────────────────────────────────
+  // Details-view cards no longer carry inline edit controls (Task 5); clicking
+  // a card opens the shared BookDetailSheet, which still hosts delete/intents.
 
-  describe('delete from UI', () => {
+  describe('delete from detail sheet', () => {
     it('confirming delete removes book from DOM and store, and issues a DELETE request', async () => {
       const book = addBook({ title: 'Deletable Book', author: 'Author', addedVia: 'manual', ownership: 'have' });
       render(ShelfIsland, { props: { lang: 'en' } });
@@ -232,10 +237,14 @@ describe('ShelfIsland', () => {
         expect(screen.getByText('Deletable Book')).toBeTruthy();
       });
 
-      // Step 1: click the X button on the card
-      fireEvent.click(screen.getByRole('button', { name: 'Delete Deletable Book from shelf' }));
+      // Step 1: open the sheet by clicking the card
+      fireEvent.click(screen.getByRole('button', { name: 'View details for Deletable Book' }));
 
-      // Step 2: confirmation dialog appears — click Remove
+      // Step 2: click the X button inside the sheet
+      const deleteBtn = await screen.findByRole('button', { name: 'Delete Deletable Book from shelf' });
+      fireEvent.click(deleteBtn);
+
+      // Step 3: confirmation dialog appears — click Remove
       await waitFor(() => {
         expect(screen.getByText('Remove from shelf?')).toBeTruthy();
       });
@@ -254,9 +263,9 @@ describe('ShelfIsland', () => {
     });
   });
 
-  // ── Intent change from card UI ────────────────────────────────────────────
+  // ── Intent change from the detail sheet ─────────────────────────────────────
 
-  describe('intent change from card UI', () => {
+  describe('intent change from detail sheet', () => {
     it('clicking an active intent pill removes it from the book and issues a PATCH', async () => {
       const book = addBook({
         title: 'Lendable Book',
@@ -269,7 +278,11 @@ describe('ShelfIsland', () => {
 
       await tick(); // let the component settle
 
-      // The "borrowable" intent is rendered as a pill-button labeled "Lending"
+      // Open the sheet by clicking the card
+      const card = await screen.findByRole('button', { name: /^View details for Lendable Book/ });
+      fireEvent.click(card);
+
+      // The "borrowable" intent is rendered inside the sheet as a pill-button labeled "Lending"
       const lendingPill = await screen.findByRole('button', {
         name: /Remove Lending intent from Lendable Book/,
       });
