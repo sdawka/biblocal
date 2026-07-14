@@ -16,6 +16,10 @@ interface CallOptions {
   method?: string;
   url?: string;
   body?: unknown;
+  /** Raw body (e.g. FormData or a string); takes precedence over `body`. */
+  rawBody?: BodyInit;
+  /** Extra request headers, merged after any body-derived defaults. */
+  headers?: Record<string, string>;
   locals?: Locals;
   params?: Record<string, string>;
 }
@@ -29,15 +33,30 @@ export async function callApi(
   handler: APIRoute,
   options: CallOptions = {},
 ): Promise<CallResult> {
-  const { method = 'GET', url = 'http://localhost/api/test', body, locals = {}, params = {} } = options;
+  const {
+    method = 'GET',
+    url = 'http://localhost/api/test',
+    body,
+    rawBody,
+    headers,
+    locals = {},
+    params = {},
+  } = options;
 
   const init: RequestInit = { method };
-  if (body !== undefined) {
+  if (rawBody !== undefined) {
+    init.body = rawBody;
+  } else if (body !== undefined) {
     init.body = JSON.stringify(body);
     init.headers = { 'Content-Type': 'application/json' };
   }
 
   const request = new Request(url, init);
+  if (headers) {
+    for (const [name, value] of Object.entries(headers)) {
+      request.headers.set(name, value);
+    }
+  }
 
   const response = await handler({
     request,
