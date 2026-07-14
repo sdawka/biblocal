@@ -40,6 +40,7 @@ export interface Book {
   status?: BookStatus;
   notes?: BookNote[];
   coverUrl?: string;
+  fetchedCoverUrl?: string;
   subjects?: string[];
   addedVia: 'scan' | 'manual' | 'goodreads';
   addedAt: number;

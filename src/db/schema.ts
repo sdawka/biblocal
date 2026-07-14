@@ -54,6 +54,9 @@ export const books = sqliteTable('books', {
   author: text('author').notNull(),
   isbn: text('isbn'),
   coverUrl: text('cover_url'),
+  // Original externally-fetched cover (OpenLibrary); lets a custom uploaded
+  // cover be reset without re-querying the lookup service.
+  fetchedCoverUrl: text('fetched_cover_url'),
   // Legacy status column - kept for migration period
   status: text('status').notNull().default('visible'),
   // New three-dimension model

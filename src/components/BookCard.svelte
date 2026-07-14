@@ -1,99 +1,89 @@
 <script lang="ts">
-  import type { Book, BookIntent, BookVisibility, BookOwnership } from '../lib/types';
-  import type { Lang } from '../i18n';
-  import BookDetail from './BookDetail.svelte';
+  import type { Book } from '../lib/types';
+  import { useTranslations, type Lang } from '../i18n';
 
   interface Props {
     book: Book;
     lang?: Lang;
-    onIntentsChange?: (intents: BookIntent[]) => void;
-    onVisibilityChange?: (visibility: BookVisibility) => void;
-    onOwnershipChange?: (ownership: BookOwnership) => void;
-    onDelete?: (id: string) => void;
-    onAddNote?: (text: string, visibility: BookVisibility) => void;
-    onUpdateNote?: (noteId: string, updates: { text?: string; visibility?: BookVisibility }) => void;
-    onDeleteNote?: (noteId: string) => void;
-    readonly?: boolean;
+    onOpen: (id: string) => void;
   }
 
-  let {
-    book,
-    lang = 'en' as Lang,
-    onIntentsChange,
-    onVisibilityChange,
-    onOwnershipChange,
-    onDelete,
-    onAddNote,
-    onUpdateNote,
-    onDeleteNote,
-    readonly = false,
-  }: Props = $props();
+  let { book, lang = 'en' as Lang, onOpen }: Props = $props();
+
+  const t = $derived(useTranslations(lang).shelf.card);
+  const intentLabels = $derived(useTranslations(lang).shelf.intents.labels);
+
+  // Mirror BookSpine: fold visual status (edge tick, dots, lock) into the
+  // accessible name so the button reads the same as the card looks.
+  const statusSuffix = $derived.by(() => {
+    const parts: string[] = [];
+    if (book.ownership === 'seeking') parts.push(t.seeking);
+    if (book.visibility === 'private') parts.push(t.private);
+    if (book.intents.length > 0) {
+      parts.push(book.intents.map((intent) => intentLabels[intent]).join(', '));
+    }
+    return parts.length > 0 ? ` — ${parts.join(' · ')}` : '';
+  });
+  const openLabel = $derived(t.openDetailAria.replace('{title}', book.title) + statusSuffix);
 </script>
 
-<article
+<button
   class="book-card card"
   class:seeking={book.ownership === 'seeking'}
   data-book-id={book.id}
+  onclick={() => onOpen(book.id)}
+  aria-label={openLabel}
+  aria-haspopup="dialog"
 >
   {#if book.coverUrl}
-    <img src={book.coverUrl} alt="{book.title} cover" class="cover" width="52" height="78" loading="lazy" decoding="async" />
+    <img src={book.coverUrl} alt="" class="cover" width="52" height="78" loading="lazy" decoding="async" />
   {:else}
-    <div class="cover placeholder">
+    <span class="cover placeholder" aria-hidden="true">
       <span>{book.title.charAt(0)}</span>
-    </div>
+    </span>
   {/if}
 
-  <BookDetail
-    {book}
-    {lang}
-    {onIntentsChange}
-    {onVisibilityChange}
-    {onOwnershipChange}
-    {onDelete}
-    {onAddNote}
-    {onUpdateNote}
-    {onDeleteNote}
-    {readonly}
-  />
-</article>
+  <span class="info">
+    <span class="title serif">{book.title}</span>
+    <span class="author muted">{book.author}</span>
+    <span class="meta" aria-hidden="true">
+      {#if book.ownership === 'seeking'}
+        <span class="dot" data-status="seeking"></span>
+      {/if}
+      {#each book.intents as intent}
+        <span class="dot" data-status={intent}></span>
+      {/each}
+      {#if book.visibility === 'private'}
+        <svg class="lock" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.5" y="5.5" width="7" height="5" rx="1" />
+          <path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" />
+        </svg>
+      {/if}
+    </span>
+  </span>
+</button>
 
 <style>
   .book-card {
     display: flex;
+    align-items: flex-start;
     gap: var(--s-3);
+    width: 100%;
+    height: 102px; /* 78px cover + 2 × var(--s-3) padding: every card identical */
     padding: var(--s-3);
-    position: relative;
+    text-align: left;
+    cursor: pointer;
     overflow: hidden;
     touch-action: pan-y;
   }
 
   .book-card.seeking {
-    /* Neutral edge instead of the gold bar; the quiet wash carries status. */
     border-left-color: var(--hairline);
     background: color-mix(in oklch, var(--st-seeking-bg) 40%, var(--surface));
   }
 
-  /* Corner tick — the load-bearing status cue (survives if the wash doesn't
-     paint), echoing the .pill leading dot. Sits inside the rounded card. */
-  .book-card.seeking::before {
-    content: '';
-    position: absolute;
-    top: var(--s-3);
-    left: var(--s-3);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--st-seeking-fg);
-    z-index: 1;
-  }
-
-  /* Nudge the cover clear of the corner tick so the tick reads as a card pin,
-     not a smudge on the cover. */
-  .book-card.seeking .cover {
-    margin-top: var(--s-2);
-  }
-
-  .book-card:hover {
+  .book-card:hover,
+  .book-card:focus-visible {
     transform: translateY(-2px);
     box-shadow: var(--shadow-2);
     border-color: var(--hairline-strong);
@@ -119,17 +109,60 @@
     color: var(--accent);
   }
 
-  .book-card :global(.book-detail) {
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     flex: 1;
     min-width: 0;
   }
 
-  /* BookDetail's .delete-confirm is `position:absolute; inset:0` scoped to
-     .book-detail, which here is only the text column — so the confirm
-     overlay would leave the cover thumbnail un-dimmed. Re-anchor it to the
-     whole card (.book-card is already position:relative; overflow:hidden). */
-  .book-card :global(.delete-confirm) {
-    position: absolute;
-    inset: 0;
+  .title {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.28;
+    letter-spacing: -0.01em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .author {
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: auto;
+    color: var(--ink-faint);
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  .dot[data-status='borrowable'] { background: var(--st-borrowable-fg); }
+  .dot[data-status='discussable'] { background: var(--st-discussable-fg); }
+  .dot[data-status='giftable'] { background: var(--st-giftable-fg); }
+  .dot[data-status='seeking'] { background: var(--st-seeking-fg); }
+
+  .lock {
+    display: block;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .book-card:hover,
+    .book-card:focus-visible {
+      transform: none;
+    }
   }
 </style>

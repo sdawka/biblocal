@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Book, BookIntent, BookVisibility, BookOwnership } from '../lib/types';
   import { useTranslations, type Lang } from '../i18n';
+  import { INTENT_OPTIONS } from '../lib/intents';
 
   interface Props {
     book: Book;
@@ -12,6 +13,7 @@
     onAddNote?: (text: string, visibility: BookVisibility) => void;
     onUpdateNote?: (noteId: string, updates: { text?: string; visibility?: BookVisibility }) => void;
     onDeleteNote?: (noteId: string) => void;
+    onUpdateDetails?: (updates: { title: string; author: string }) => void;
     readonly?: boolean;
   }
 
@@ -25,13 +27,33 @@
     onAddNote,
     onUpdateNote,
     onDeleteNote,
+    onUpdateDetails,
     readonly = false,
   }: Props = $props();
 
   const t = $derived(useTranslations(lang).shelf.card);
   const intentLabels = $derived(useTranslations(lang).shelf.intents.labels);
+  const ta = $derived(useTranslations(lang).shelf.add);
 
   let showDeleteConfirm = $state(false);
+
+  let editingDetails = $state(false);
+  let draftTitle = $state('');
+  let draftAuthor = $state('');
+
+  function startEditDetails() {
+    draftTitle = book.title;
+    draftAuthor = book.author;
+    editingDetails = true;
+  }
+
+  function saveDetails() {
+    const title = draftTitle.trim();
+    const author = draftAuthor.trim();
+    if (!title || !author) return;
+    onUpdateDetails?.({ title, author });
+    editingDetails = false;
+  }
 
   function handleDeleteClick() {
     showDeleteConfirm = true;
@@ -74,8 +96,34 @@
 
 <div class="book-detail">
   <div class="info">
-    <h3 class="title serif">{book.title}</h3>
-    <p class="author muted">{book.author}</p>
+    {#if editingDetails}
+      <div class="details-edit">
+        <label class="details-field">
+          <span class="details-label">{t.editTitleLabel}</span>
+          <input class="input" bind:value={draftTitle} />
+        </label>
+        <label class="details-field">
+          <span class="details-label">{t.editAuthorLabel}</span>
+          <input class="input" bind:value={draftAuthor} />
+        </label>
+        <div class="details-actions">
+          <button class="btn btn-outline btn-sm" onclick={() => (editingDetails = false)}>{t.cancel}</button>
+          <button class="btn btn-filled btn-sm" onclick={saveDetails} disabled={!draftTitle.trim() || !draftAuthor.trim()}>{t.save}</button>
+        </div>
+      </div>
+    {:else}
+      <h3 class="title serif">
+        {book.title}
+        {#if !readonly && onUpdateDetails}
+          <button class="edit-details" onclick={startEditDetails} aria-label={t.editDetails}>
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 2.5l1.5 1.5L5 10.5l-2 .5.5-2z" />
+            </svg>
+          </button>
+        {/if}
+      </h3>
+      <p class="author muted">{book.author}</p>
+    {/if}
 
     <div class="badges">
       {#if book.ownership === 'seeking'}
@@ -84,26 +132,47 @@
       {#if book.visibility === 'private'}
         <span class="pill" data-status="private">{t.private}</span>
       {/if}
-      {#each book.intents as intent}
-        {#if readonly}
+      {#if readonly || !onIntentsChange}
+        {#each book.intents as intent}
           <span class="pill" data-status={intent}>{intentLabels[intent]}</span>
-        {:else}
+        {/each}
+      {:else}
+        {#each INTENT_OPTIONS as opt}
           <button
             class="pill pill-button"
-            data-status={intent}
-            onclick={() => toggleIntent(intent)}
-            aria-label={t.removeIntentAria.replace('{label}', intentLabels[intent]).replace('{title}', book.title)}
+            class:pill-off={!book.intents.includes(opt.value)}
+            data-status={opt.value}
+            aria-pressed={book.intents.includes(opt.value)}
+            onclick={() => toggleIntent(opt.value)}
           >
-            {intentLabels[intent]}
-            <span class="pill-x" aria-hidden="true">
-              <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-                <path d="M2 2l6 6M8 2l-6 6" />
-              </svg>
-            </span>
+            {intentLabels[opt.value]}
           </button>
-        {/if}
-      {/each}
+        {/each}
+      {/if}
     </div>
+
+    {#if !readonly && (onOwnershipChange || onVisibilityChange)}
+      <div class="dimensions">
+        {#if onOwnershipChange}
+          <div class="dimension-row">
+            <span class="dimension-label">{ta.ownership.prompt}</span>
+            <div class="segmented segmented-sm" role="group" aria-label={ta.ownership.groupLabel}>
+              <button type="button" aria-pressed={book.ownership === 'have'} onclick={() => onOwnershipChange?.('have')}>{ta.ownership.have}</button>
+              <button type="button" aria-pressed={book.ownership === 'seeking'} onclick={() => onOwnershipChange?.('seeking')}>{ta.ownership.seeking}</button>
+            </div>
+          </div>
+        {/if}
+        {#if onVisibilityChange}
+          <div class="dimension-row">
+            <span class="dimension-label">{ta.visibility.prompt}</span>
+            <div class="segmented segmented-sm" role="group" aria-label={ta.visibility.groupLabel}>
+              <button type="button" aria-pressed={book.visibility === 'visible'} onclick={() => onVisibilityChange?.('visible')}>{ta.visibility.visible}</button>
+              <button type="button" aria-pressed={book.visibility === 'private'} onclick={() => onVisibilityChange?.('private')}>{ta.visibility.private}</button>
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
 
     {#if book.addedVia === 'scan'}
       <span class="verified" title={t.addedViaScan} aria-label={t.addedViaScan}>
@@ -260,10 +329,79 @@
     transform: scale(0.94);
   }
 
-  .pill-x {
+  .edit-details {
     display: inline-flex;
     align-items: center;
-    opacity: 0.7;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-left: var(--s-1);
+    color: var(--ink-muted);
+    background: none;
+    border: none;
+    border-radius: var(--r-full);
+    cursor: pointer;
+    vertical-align: middle;
+    transition: color var(--dur-1) var(--ease-soft);
+  }
+
+  .edit-details:hover {
+    color: var(--accent);
+  }
+
+  .details-edit {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    margin-bottom: var(--s-2);
+  }
+
+  .details-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .details-label {
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 590;
+    color: var(--ink-muted);
+  }
+
+  .details-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--s-2);
+  }
+
+  .pill-off {
+    opacity: 0.45;
+  }
+
+  .pill-off:hover {
+    opacity: 1;
+  }
+
+  .dimensions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    margin-top: var(--s-3);
+  }
+
+  .dimension-row {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+
+  .dimension-label {
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 590;
+    color: var(--ink-muted);
+    min-width: 3rem;
   }
 
   .verified {

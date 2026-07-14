@@ -4,10 +4,11 @@
     activeFilters,
     bookMatchesFilters,
     updateBookIntents,
-    toggleOwnershipFilter,
-    toggleIntentFilter,
-    toggleVisibilityFilter,
-    clearAllFilters,
+    updateBook,
+    updateBookOwnership,
+    updateBookVisibility,
+    uploadCover,
+    resetCover,
     removeBook,
     addNote,
     updateNote,
@@ -17,18 +18,12 @@
   import BookCard from './BookCard.svelte';
   import BookSpine from './BookSpine.svelte';
   import BookDetailSheet from './BookDetailSheet.svelte';
-  import type { BookIntent } from '../lib/types';
-  import { INTENT_OPTIONS } from '../lib/intents';
+  import FilterPopover from './FilterPopover.svelte';
   import { useTranslations, type Lang } from '../i18n';
 
   let { lang = 'en' as Lang } = $props();
   const t = $derived(useTranslations(lang).shelf.list);
   let view = $derived($shelfView);
-  // Localized intent options: order from lib, labels from the dict.
-  const intentOptions = $derived(
-    INTENT_OPTIONS.map((opt) => ({ value: opt.value, label: useTranslations(lang).shelf.intents.labels[opt.value] }))
-  );
-  const intentPrompt = $derived(useTranslations(lang).shelf.intents.prompt);
 
   let filters = $derived($activeFilters);
   let allBooks = $derived(Object.values($shelf));
@@ -38,23 +33,6 @@
   let booksIHave = $derived(filteredBooks.filter(b => b.ownership === 'have'));
   let booksImSeeking = $derived(filteredBooks.filter(b => b.ownership === 'seeking'));
   let totalBooks = $derived(allBooks.length);
-  let showClear = $derived(
-    filters.visibility.length > 0 || filters.ownership.length > 0 || filters.intents.length > 0
-  );
-
-  let ownershipCounts = $derived({
-    have: allBooks.filter(b => b.ownership === 'have').length,
-    seeking: allBooks.filter(b => b.ownership === 'seeking').length,
-  });
-
-  let intentCounts = $derived(
-    INTENT_OPTIONS.reduce((acc, opt) => {
-      acc[opt.value] = allBooks.filter(b => b.intents.includes(opt.value)).length;
-      return acc;
-    }, {} as Record<BookIntent, number>)
-  );
-
-  let privateCount = $derived(allBooks.filter(b => b.visibility === 'private').length);
 
   let haveExpanded = $state(true);
   let seekingExpanded = $state(true);
@@ -68,82 +46,18 @@
 </script>
 
 <section class="shelf">
-  <div class="header">
+  <div class="toolbar">
     <h2 class="serif">{t.title} <span class="count-tag">{totalBooks} {t.countSuffix}</span></h2>
-  </div>
-
-  <div class="filter-groups card">
-    <div class="filter-row">
-      <span class="filter-label">{t.filterOwnershipLabel}</span>
-      <div class="chip-group" role="group" aria-label={t.filterOwnershipGroup}>
-        <button
-          class="chip"
-          aria-pressed={filters.ownership.includes('have')}
-          onclick={() => toggleOwnershipFilter('have')}
-        >
-          {t.have} {#if ownershipCounts.have > 0}<span class="count">{ownershipCounts.have}</span>{/if}
-        </button>
-        <button
-          class="chip"
-          aria-pressed={filters.ownership.includes('seeking')}
-          onclick={() => toggleOwnershipFilter('seeking')}
-        >
-          {t.seeking} {#if ownershipCounts.seeking > 0}<span class="count">{ownershipCounts.seeking}</span>{/if}
-        </button>
-      </div>
-    </div>
-
-    <div class="filter-row">
-      <span class="filter-label">{intentPrompt}</span>
-      <div class="chip-group" role="group" aria-label={t.filterIntentGroup}>
-        {#each intentOptions as opt}
-          <button
-            class="chip"
-            aria-pressed={filters.intents.includes(opt.value)}
-            onclick={() => toggleIntentFilter(opt.value)}
-          >
-            {opt.label} {#if intentCounts[opt.value] > 0}<span class="count">{intentCounts[opt.value]}</span>{/if}
-          </button>
-        {/each}
-      </div>
-    </div>
-
-    <div class="filter-row">
-      <span class="filter-label" aria-hidden="true"></span>
-      <div class="chip-group" role="group" aria-label={t.filterVisibilityGroup}>
-        <button
-          class="chip"
-          aria-pressed={filters.visibility.includes('private')}
-          onclick={() => toggleVisibilityFilter('private')}
-        >
-          {t.privateOnly} {#if privateCount > 0}<span class="count">{privateCount}</span>{/if}
-        </button>
-      </div>
-      {#if showClear}
-        <button class="btn btn-plain btn-sm clear-link" onclick={() => clearAllFilters()}>
-          {t.clearFilters}
-        </button>
-      {/if}
-    </div>
-
-    <div class="filter-row">
-      <span class="filter-label" aria-hidden="true"></span>
+    <div class="toolbar-controls">
       <div class="segmented" role="group" aria-label={t.viewToggleGroup}>
-        <button
-          type="button"
-          aria-pressed={view === 'covers'}
-          onclick={() => setShelfView('covers')}
-        >
+        <button type="button" aria-pressed={view === 'covers'} onclick={() => setShelfView('covers')}>
           {t.viewCovers}
         </button>
-        <button
-          type="button"
-          aria-pressed={view === 'details'}
-          onclick={() => setShelfView('details')}
-        >
+        <button type="button" aria-pressed={view === 'details'} onclick={() => setShelfView('details')}>
           {t.viewDetails}
         </button>
       </div>
+      <FilterPopover {lang} />
     </div>
   </div>
 
@@ -193,15 +107,7 @@
             <div class="grid" id="books-i-have-grid">
               {#each booksIHave as book, i (book.id)}
                 <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                  <BookCard
-                    {book}
-                    {lang}
-                    onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
-                    onDelete={handleDeleteBook}
-                    onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
-                    onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
-                    onDeleteNote={(noteId) => removeNote(book.id, noteId)}
-                  />
+                  <BookCard {book} {lang} onOpen={(id) => (openBookId = id)} />
                 </div>
               {/each}
             </div>
@@ -239,15 +145,7 @@
             <div class="grid" id="books-seeking-grid">
               {#each booksImSeeking as book, i (book.id)}
                 <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                  <BookCard
-                    {book}
-                    {lang}
-                    onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
-                    onDelete={handleDeleteBook}
-                    onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
-                    onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
-                    onDeleteNote={(noteId) => removeNote(book.id, noteId)}
-                  />
+                  <BookCard {book} {lang} onOpen={(id) => (openBookId = id)} />
                 </div>
               {/each}
             </div>
@@ -264,6 +162,11 @@
     {lang}
     onClose={() => (openBookId = null)}
     onIntentsChange={(intents) => updateBookIntents(openBook.id, intents)}
+    onOwnershipChange={(ownership) => updateBookOwnership(openBook.id, ownership)}
+    onVisibilityChange={(visibility) => updateBookVisibility(openBook.id, visibility)}
+    onUpdateDetails={(updates) => updateBook(openBook.id, updates)}
+    onUploadCover={(file) => uploadCover(openBook.id, file)}
+    onResetCover={() => resetCover(openBook.id)}
     onDelete={(id) => {
       handleDeleteBook(id);
       openBookId = null;
@@ -279,8 +182,19 @@
     margin-top: var(--s-7);
   }
 
-  .header {
-    margin-bottom: var(--s-4);
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-bottom: var(--s-5);
+  }
+
+  .toolbar-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
   }
 
   h2 {
@@ -296,59 +210,6 @@
     font-weight: 590;
     color: var(--ink-faint);
     letter-spacing: 0;
-  }
-
-  /* Filter groups */
-  .filter-groups {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-4);
-    margin-bottom: var(--s-6);
-  }
-
-  .filter-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--s-3);
-  }
-
-  .filter-label {
-    font-family: var(--font-ui);
-    font-size: 0.8125rem;
-    font-weight: 590;
-    color: var(--ink-muted);
-    min-width: 3rem;
-  }
-
-  .chip-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2);
-  }
-
-  .count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.2rem;
-    height: 1.2rem;
-    padding: 0 0.3rem;
-    margin-left: 0.3rem;
-    font-size: 0.7rem;
-    font-weight: 640;
-    background: var(--surface-sunken);
-    color: var(--ink-muted);
-    border-radius: var(--r-full);
-  }
-
-  .chip[aria-pressed="true"] .count {
-    background: var(--accent-tint);
-    color: var(--accent);
-  }
-
-  .clear-link {
-    margin-left: auto;
   }
 
   /* Ownership sections */
@@ -430,17 +291,15 @@
 
   .grid {
     display: grid;
-    column-gap: var(--s-4);
-    row-gap: var(--s-6);
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--s-3);
+    /* Fixed tracks: every card the same size, matching the covers view's
+       uniform spines. */
+    grid-template-columns: repeat(auto-fill, 232px);
   }
 
-  /* Tablet guard: lower the floor so the wider column still wraps cleanly
-     and never forces horizontal scroll. */
-  @media (max-width: 820px) {
+  @media (max-width: 560px) {
     .grid {
-      column-gap: var(--s-3);
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     }
   }
 
@@ -503,17 +362,6 @@
 
   .book-wrapper > :global(.book-card) {
     flex: 1;
-  }
-
-  @media (max-width: 600px) {
-    .filter-row {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .clear-link {
-      margin-left: 0;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

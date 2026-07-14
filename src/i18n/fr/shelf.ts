@@ -104,6 +104,10 @@ export default {
     viewCovers: 'Couvertures',
     viewDetails: 'Détails',
     viewToggleGroup: 'Affichage des livres',
+    filterButton: 'Filtres',
+    filterPopoverLabel: 'Filtrer les livres',
+    // {n} interpolated
+    filterActiveAria: '{n} filtres actifs',
   },
   empty: {
     shelfTitle: 'Votre étagère',
@@ -129,6 +133,15 @@ export default {
     remove: 'Retirer',
     openDetailAria: 'Voir les détails de {title}',
     closeDetailAria: 'Fermer',
+    changeCover: 'Changer la couverture',
+    resetCover: "Rétablir la couverture d'origine",
+    uploadingCover: 'Envoi…',
+    // {title} interpolated
+    changeCoverAria: 'Téléverser une couverture pour {title}',
+    editDetails: "Modifier le titre et l'auteur",
+    editTitleLabel: 'Titre',
+    editAuthorLabel: 'Auteur',
+    save: 'Enregistrer',
     notes: {
       addNote: 'Ajouter une note',
       noteSingular: 'note',

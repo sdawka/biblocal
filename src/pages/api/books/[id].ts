@@ -14,8 +14,13 @@ import {
   VALID_INTENTS,
   VALID_STATUS,
 } from '../../../lib/validation';
+import { isHostedCoverUrl, hostedImageIdFromUrl } from '../../../lib/coverImages';
 
 type Env = { DB: D1Database };
+
+type ImagesEnv = {
+  IMAGES?: { hosted: { image(id: string): { delete(): Promise<boolean> } } };
+};
 
 // PATCH /api/books/:id - update book (owner only)
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
@@ -99,6 +104,22 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     if (updates.subjects !== undefined && !Array.isArray(updates.subjects)) {
       return new Response(
         JSON.stringify({ error: 'subjects must be an array' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    // Hosted cover URLs (Cloudflare Images) may only be set by the cover upload
+    // endpoint, which verifies ownership of the underlying asset. Allowing a
+    // client to PATCH coverUrl to an arbitrary imagedelivery.net URL would let
+    // them redirect later delete-on-change/delete-on-reset cleanup at a
+    // victim's hosted image. Echoing back the unchanged value is fine (mobile
+    // client round-trips full book objects).
+    if (
+      typeof updates.coverUrl === 'string' &&
+      isHostedCoverUrl(updates.coverUrl) &&
+      updates.coverUrl !== existing[0].coverUrl
+    ) {
+      return new Response(
+        JSON.stringify({ error: 'coverUrl cannot point at hosted images; use the cover upload endpoint' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -194,6 +215,20 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
       db.delete(bookNotes).where(and(eq(bookNotes.bookId, bookId), eq(bookNotes.userId, userId))),
       db.delete(books).where(and(eq(books.id, bookId), eq(books.userId, userId))),
     ]);
+
+    // Best-effort: free the hosted cover's storage. Never fails the delete.
+    const coverUrl = existing[0].coverUrl;
+    if (coverUrl && isHostedCoverUrl(coverUrl)) {
+      const images = (env as ImagesEnv).IMAGES;
+      const imageId = hostedImageIdFromUrl(coverUrl);
+      if (images && imageId) {
+        try {
+          await images.hosted.image(imageId).delete();
+        } catch (err) {
+          console.error('Hosted cover cleanup failed:', err);
+        }
+      }
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

@@ -22,6 +22,9 @@
 			"migrations_dir": "drizzle"
 		}
 	],
+	"images": {
+		"binding": "IMAGES"
+	},
 	"env": {
 		"qa": {
 			"name": "biblocal-qa",
@@ -38,7 +41,10 @@
 					"database_id": "44e7e517-033b-40ea-a540-ca66ee777ea1",
 					"migrations_dir": "drizzle"
 				}
-			]
+			],
+			"images": {
+				"binding": "IMAGES"
+			}
 		}
 	}
 }
