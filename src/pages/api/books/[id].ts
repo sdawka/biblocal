@@ -14,8 +14,13 @@ import {
   VALID_INTENTS,
   VALID_STATUS,
 } from '../../../lib/validation';
+import { isHostedCoverUrl, hostedImageIdFromUrl } from '../../../lib/coverImages';
 
 type Env = { DB: D1Database };
+
+type ImagesEnv = {
+  IMAGES?: { hosted: { image(id: string): { delete(): Promise<boolean> } } };
+};
 
 // PATCH /api/books/:id - update book (owner only)
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
@@ -194,6 +199,20 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
       db.delete(bookNotes).where(and(eq(bookNotes.bookId, bookId), eq(bookNotes.userId, userId))),
       db.delete(books).where(and(eq(books.id, bookId), eq(books.userId, userId))),
     ]);
+
+    // Best-effort: free the hosted cover's storage. Never fails the delete.
+    const coverUrl = existing[0].coverUrl;
+    if (coverUrl && isHostedCoverUrl(coverUrl)) {
+      const images = (env as ImagesEnv).IMAGES;
+      const imageId = hostedImageIdFromUrl(coverUrl);
+      if (images && imageId) {
+        try {
+          await images.hosted.image(imageId).delete();
+        } catch (err) {
+          console.error('Hosted cover cleanup failed:', err);
+        }
+      }
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
