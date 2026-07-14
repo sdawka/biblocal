@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Book } from '../lib/types';
   import { useTranslations, type Lang } from '../i18n';
+  import BookCardShell from './BookCardShell.svelte';
 
   interface Props {
     book: Book;
@@ -27,22 +28,14 @@
   const openLabel = $derived(t.openDetailAria.replace('{title}', book.title) + statusSuffix);
 </script>
 
-<button
-  class="book-card card"
-  class:seeking={book.ownership === 'seeking'}
-  data-book-id={book.id}
-  onclick={() => onOpen(book.id)}
-  aria-label={openLabel}
-  aria-haspopup="dialog"
+<BookCardShell
+  bookId={book.id}
+  title={book.title}
+  coverUrl={book.coverUrl}
+  seeking={book.ownership === 'seeking'}
+  onOpen={() => onOpen(book.id)}
+  ariaLabel={openLabel}
 >
-  {#if book.coverUrl}
-    <img src={book.coverUrl} alt="" class="cover" width="52" height="78" loading="lazy" decoding="async" />
-  {:else}
-    <span class="cover placeholder" aria-hidden="true">
-      <span>{book.title.charAt(0)}</span>
-    </span>
-  {/if}
-
   <span class="info">
     <span class="title serif">{book.title}</span>
     <span class="author muted">{book.author}</span>
@@ -61,54 +54,9 @@
       {/if}
     </span>
   </span>
-</button>
+</BookCardShell>
 
 <style>
-  .book-card {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--s-3);
-    width: 100%;
-    height: 102px; /* 78px cover + 2 × var(--s-3) padding: every card identical */
-    padding: var(--s-3);
-    text-align: left;
-    cursor: pointer;
-    overflow: hidden;
-    touch-action: pan-y;
-  }
-
-  .book-card.seeking {
-    border-left-color: var(--hairline);
-    background: color-mix(in oklch, var(--st-seeking-bg) 40%, var(--surface));
-  }
-
-  .book-card:hover,
-  .book-card:focus-visible {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-2);
-    border-color: var(--hairline-strong);
-  }
-
-  .cover {
-    width: 52px;
-    height: 78px;
-    object-fit: cover;
-    border-radius: var(--r-sm);
-    flex-shrink: 0;
-    box-shadow: var(--shadow-2);
-  }
-
-  .cover.placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--accent-tint);
-    font-family: var(--font-display);
-    font-size: 1.4rem;
-    font-weight: 500;
-    color: var(--accent);
-  }
-
   .info {
     display: flex;
     flex-direction: column;
@@ -157,12 +105,5 @@
 
   .lock {
     display: block;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .book-card:hover,
-    .book-card:focus-visible {
-      transform: none;
-    }
   }
 </style>
