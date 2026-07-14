@@ -39,6 +39,18 @@ export default {
     empty: 'Add some books to find matches!',
     locationNotShared: 'Location not shared',
   },
+  hub: {
+    panelBooks: 'Books',
+    panelPeople: 'People',
+    panelStores: 'Bookstores',
+    inView: 'in view',
+    search: 'Search title, author, or name',
+    loading: 'Finding what’s nearby…',
+    errorTitle: "Couldn't load nearby matches.",
+    emptyBooks: 'No books in view. Try panning or zooming out.',
+    emptyPeople: 'No people in view. Try panning or zooming out.',
+    emptyStores: 'No bookstores in view. Try panning or zooming out.',
+  },
   card: {
     facets: {
       shelfTwin: 'Shelf Twin',

@@ -252,5 +252,246 @@
         "addedAt": 1714900000000
       }
     ]
+  },
+  {
+    "id": "seed-natalie",
+    "name": "Natalie",
+    "city": "New York",
+    "radiusKm": 8,
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "locationPrecision": "approximate",
+    "topics": {
+      "curated": ["literary fiction", "essays", "urbanism"],
+      "freeform": ["subway reading", "borough hopping"],
+      "inferred": ["sociology", "memoir"]
+    },
+    "contactMethod": "email",
+    "contactValue": "natalie@example.com",
+    "contactVisibility": "on-request",
+    "shelf": [
+      {
+        "id": "natalie-1",
+        "isbn": "9780374533557",
+        "title": "Thinking, Fast and Slow",
+        "author": "Daniel Kahneman",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["borrowable", "discussable"],
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "natalie-2",
+        "isbn": "9780679731726",
+        "title": "The Remains of the Day",
+        "author": "Kazuo Ishiguro",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["giftable"],
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      }
+    ]
+  },
+  {
+    "id": "seed-oliver",
+    "name": "Oliver",
+    "city": "London",
+    "radiusKm": 6,
+    "latitude": 51.5074,
+    "longitude": -0.1278,
+    "locationPrecision": "approximate",
+    "topics": {
+      "curated": ["history", "politics", "literary fiction"],
+      "freeform": ["secondhand bookshops", "walking tours"],
+      "inferred": ["biography", "philosophy"]
+    },
+    "contactVisibility": "hidden",
+    "shelf": [
+      {
+        "id": "oliver-1",
+        "isbn": "9780140449150",
+        "title": "The Prince",
+        "author": "Niccolò Machiavelli",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["discussable"],
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "oliver-2",
+        "isbn": "9780300078152",
+        "title": "Seeing Like a State",
+        "author": "James C. Scott",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["borrowable"],
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      }
+    ]
+  },
+  {
+    "id": "seed-camille",
+    "name": "Camille",
+    "city": "Paris",
+    "radiusKm": 5,
+    "latitude": 48.8566,
+    "longitude": 2.3522,
+    "locationPrecision": "approximate",
+    "topics": {
+      "curated": ["philosophy", "poetry", "literary fiction"],
+      "freeform": ["Left Bank cafes", "existentialism"],
+      "inferred": ["french literature", "aesthetics"]
+    },
+    "contactMethod": "social",
+    "contactValue": "@camille_lit",
+    "contactVisibility": "public",
+    "shelf": [
+      {
+        "id": "camille-1",
+        "isbn": "9780140286809",
+        "title": "Collected Fictions",
+        "author": "Jorge Luis Borges",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["discussable"],
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "camille-2",
+        "isbn": "9780061148521",
+        "title": "The Unbearable Lightness of Being",
+        "author": "Milan Kundera",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["borrowable"],
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      }
+    ]
+  },
+  {
+    "id": "seed-hugo",
+    "name": "Hugo",
+    "city": "Lyon",
+    "radiusKm": 7,
+    "latitude": 45.7640,
+    "longitude": 4.8357,
+    "locationPrecision": "approximate",
+    "topics": {
+      "curated": ["ecology", "science fiction", "systems thinking"],
+      "freeform": ["silk-weaving history", "traboules"],
+      "inferred": ["urbanism", "anthropology"]
+    },
+    "contactMethod": "email",
+    "contactValue": "hugo@example.com",
+    "contactVisibility": "on-request",
+    "shelf": [
+      {
+        "id": "hugo-1",
+        "isbn": "9780061054884",
+        "title": "The Dispossessed",
+        "author": "Ursula K. Le Guin",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["borrowable", "discussable"],
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "hugo-2",
+        "isbn": "9781603580557",
+        "title": "Thinking in Systems",
+        "author": "Donella Meadows",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["giftable"],
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      }
+    ]
+  },
+  {
+    "id": "seed-yuki",
+    "name": "Yuki",
+    "city": "Tokyo",
+    "radiusKm": 6,
+    "latitude": 35.6762,
+    "longitude": 139.6503,
+    "locationPrecision": "approximate",
+    "topics": {
+      "curated": ["science fiction", "mathematics", "design"],
+      "freeform": ["train reading", "minimalism"],
+      "inferred": ["technology", "philosophy"]
+    },
+    "contactVisibility": "hidden",
+    "shelf": [
+      {
+        "id": "yuki-1",
+        "isbn": "9780465026562",
+        "title": "Gödel, Escher, Bach",
+        "author": "Douglas Hofstadter",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["discussable"],
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "yuki-2",
+        "isbn": "9780441172719",
+        "title": "Dune",
+        "author": "Frank Herbert",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["borrowable"],
+        "addedVia": "scan",
+        "addedAt": 1714900000000
+      }
+    ]
+  },
+  {
+    "id": "seed-store-shakespeare",
+    "name": "Shakespeare and Company",
+    "city": "Paris",
+    "type": "bookstore",
+    "address": "37 Rue de la Bûcherie",
+    "neighborhood": "Latin Quarter",
+    "website": "https://shakespeareandcompany.com",
+    "specialties": ["literary fiction", "poetry", "english-language", "first editions"],
+    "latitude": 48.8523,
+    "longitude": 2.3469,
+    "locationPrecision": "exact",
+    "radiusKm": 5,
+    "topics": { "curated": [], "freeform": [], "inferred": [] },
+    "contactVisibility": "hidden",
+    "shelf": [
+      {
+        "id": "store-shakespeare-1",
+        "isbn": "9780156439619",
+        "title": "If on a winter's night a traveler",
+        "author": "Italo Calvino",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["borrowable"],
+        "addedVia": "manual",
+        "addedAt": 1714900000000
+      },
+      {
+        "id": "store-shakespeare-2",
+        "isbn": "9780060883287",
+        "title": "One Hundred Years of Solitude",
+        "author": "Gabriel García Márquez",
+        "visibility": "visible",
+        "ownership": "have",
+        "intents": ["giftable"],
+        "addedVia": "manual",
+        "addedAt": 1714900000000
+      }
+    ]
   }
 ]

@@ -38,6 +38,18 @@ export default {
     empty: 'Ajoutez quelques livres pour trouver des correspondances !',
     locationNotShared: 'Position non partagée',
   },
+  hub: {
+    panelBooks: 'Livres',
+    panelPeople: 'Personnes',
+    panelStores: 'Librairies',
+    inView: 'en vue',
+    search: 'Rechercher par titre, auteur ou nom',
+    loading: 'Recherche de ce qui est à proximité…',
+    errorTitle: 'Impossible de charger les correspondances à proximité.',
+    emptyBooks: 'Aucun livre en vue. Essayez de déplacer ou de dézoomer la carte.',
+    emptyPeople: 'Aucune personne en vue. Essayez de déplacer ou de dézoomer la carte.',
+    emptyStores: 'Aucune librairie en vue. Essayez de déplacer ou de dézoomer la carte.',
+  },
   card: {
     facets: {
       shelfTwin: 'Étagère jumelle',

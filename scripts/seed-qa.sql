@@ -101,6 +101,48 @@ VALUES (
 );
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- THE GLOBAL READERS — spread across cities so the map demonstrates
+-- world → country → city clustering when zoomed out.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+INSERT INTO users (id, email, name, city, radius_km, latitude, longitude, location_precision, topics_curated, topics_freeform, borrow_style, current_obsessions, type, created_at, updated_at)
+VALUES
+  ('user-natalie', 'natalie@test.com', 'Natalie Ferrante', 'New York', 8, 40.7128, -74.0060, 'approximate',
+   '["literary fiction", "essays", "urbanism"]',
+   '["subway reading", "borough hopping"]',
+   'return within a season, dog-ears tolerated',
+   'sociology of cities, memoir as evidence',
+   'person', unixepoch(), unixepoch()),
+
+  ('user-oliver', 'oliver@test.com', 'Oliver Bramwell', 'London', 6, 51.5074, -0.1278, 'approximate',
+   '["history", "politics", "literary fiction"]',
+   '["secondhand bookshops", "walking tours"]',
+   'meet at the pub, return when finished',
+   'Machiavelli rehabilitated, empire and its footnotes',
+   'person', unixepoch(), unixepoch()),
+
+  ('user-camille', 'camille@test.com', 'Camille Rousseau', 'Paris', 5, 48.8566, 2.3522, 'approximate',
+   '["philosophy", "poetry", "literary fiction"]',
+   '["Left Bank cafes", "existentialism"]',
+   'discuss over coffee before lending',
+   'Borges labyrinths, Kundera''s lightness',
+   'person', unixepoch(), unixepoch()),
+
+  ('user-hugo', 'hugo@test.com', 'Hugo Lambert', 'Lyon', 7, 45.7640, 4.8357, 'approximate',
+   '["ecology", "science fiction", "systems thinking"]',
+   '["silk-weaving history", "traboules"]',
+   'happy to gift, no rush on returns',
+   'Le Guin''s ambiguous utopias, leverage points',
+   'person', unixepoch(), unixepoch()),
+
+  ('user-yuki', 'yuki@test.com', 'Yuki Tanaka', 'Tokyo', 6, 35.6762, 139.6503, 'approximate',
+   '["science fiction", "mathematics", "design"]',
+   '["train reading", "minimalism"]',
+   'precise returns appreciated',
+   'strange loops, the spice and its ecology',
+   'person', unixepoch(), unixepoch());
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- THE BOOKS (Sam's Shelf)
 -- ═══════════════════════════════════════════════════════════════════════════
 
@@ -307,6 +349,96 @@ VALUES
    'manual', unixepoch(), unixepoch());
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- NATALIE'S SHELF (New York)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+INSERT INTO books (id, user_id, title, author, isbn, visibility, ownership, intents, cover_url, subjects, notes, added_via, created_at, updated_at)
+VALUES
+  ('book-nat-thinking', 'user-natalie', 'Thinking, Fast and Slow', 'Daniel Kahneman', '9780374533557', 'visible', 'have', '["borrowable", "discussable"]',
+   'https://covers.openlibrary.org/b/isbn/0374533555-M.jpg',
+   '["psychology", "economics", "decision-making"]',
+   'System 1 blames System 2 for this note',
+   'manual', unixepoch(), unixepoch()),
+
+  ('book-nat-remains', 'user-natalie', 'The Remains of the Day', 'Kazuo Ishiguro', '9780679731726', 'visible', 'have', '["giftable"]',
+   'https://covers.openlibrary.org/b/isbn/0679731725-M.jpg',
+   '["literary fiction", "British literature", "memory"]',
+   'Ready for a new reader',
+   'manual', unixepoch(), unixepoch());
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- OLIVER'S SHELF (London)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+INSERT INTO books (id, user_id, title, author, isbn, visibility, ownership, intents, cover_url, subjects, notes, added_via, created_at, updated_at)
+VALUES
+  ('book-oli-prince', 'user-oliver', 'The Prince', 'Niccolò Machiavelli', '9780140449150', 'visible', 'have', '["discussable"]',
+   'https://covers.openlibrary.org/b/isbn/0140449159-M.jpg',
+   '["philosophy", "politics", "history"]',
+   'Misunderstood on both sides of the Atlantic',
+   'manual', unixepoch(), unixepoch()),
+
+  ('book-oli-seeing', 'user-oliver', 'Seeing Like a State', 'James C. Scott', '9780300078152', 'visible', 'have', '["borrowable"]',
+   'https://covers.openlibrary.org/b/isbn/0300078153-M.jpg',
+   '["politics", "systems thinking", "history"]',
+   'Why high modernism fails, told properly',
+   'manual', unixepoch(), unixepoch());
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- CAMILLE'S SHELF (Paris)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+INSERT INTO books (id, user_id, title, author, isbn, visibility, ownership, intents, cover_url, subjects, notes, added_via, created_at, updated_at)
+VALUES
+  ('book-cam-borges', 'user-camille', 'Collected Fictions', 'Jorge Luis Borges', '9780140286809', 'visible', 'have', '["discussable"]',
+   'https://covers.openlibrary.org/b/isbn/0140286802-M.jpg',
+   '["literary fiction", "philosophy", "labyrinths"]',
+   'Every corridor leads to another footnote',
+   'manual', unixepoch(), unixepoch()),
+
+  ('book-cam-lightness', 'user-camille', 'The Unbearable Lightness of Being', 'Milan Kundera', '9780061148521', 'visible', 'have', '["borrowable"]',
+   'https://covers.openlibrary.org/b/isbn/0061148520-M.jpg',
+   '["literary fiction", "philosophy", "love"]',
+   'Einmal ist keinmal, still true in French',
+   'manual', unixepoch(), unixepoch());
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- HUGO'S SHELF (Lyon)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+INSERT INTO books (id, user_id, title, author, isbn, visibility, ownership, intents, cover_url, subjects, notes, added_via, created_at, updated_at)
+VALUES
+  ('book-hugo-dispossessed', 'user-hugo', 'The Dispossessed', 'Ursula K. Le Guin', '9780061054884', 'visible', 'have', '["borrowable", "discussable"]',
+   'https://covers.openlibrary.org/b/isbn/0061054887-M.jpg',
+   '["science fiction", "philosophy", "anarchism"]',
+   'The ambiguous utopia, read on the funicular',
+   'manual', unixepoch(), unixepoch()),
+
+  ('book-hugo-thinking-systems', 'user-hugo', 'Thinking in Systems', 'Donella Meadows', '9781603580557', 'visible', 'have', '["giftable"]',
+   'https://covers.openlibrary.org/b/isbn/1603580557-M.jpg',
+   '["systems thinking", "ecology", "economics"]',
+   'Leverage points for changing complex systems',
+   'manual', unixepoch(), unixepoch());
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- YUKI'S SHELF (Tokyo)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+INSERT INTO books (id, user_id, title, author, isbn, visibility, ownership, intents, cover_url, subjects, notes, added_via, created_at, updated_at)
+VALUES
+  ('book-yuki-geb', 'user-yuki', 'Gödel, Escher, Bach', 'Douglas Hofstadter', '9780465026562', 'visible', 'have', '["discussable"]',
+   'https://covers.openlibrary.org/b/isbn/0465026567-M.jpg',
+   '["philosophy", "mathematics", "consciousness"]',
+   'The ant fugue, translated in my head anyway',
+   'manual', unixepoch(), unixepoch()),
+
+  ('book-yuki-dune', 'user-yuki', 'Dune', 'Frank Herbert', '9780441172719', 'visible', 'have', '["borrowable"]',
+   'https://covers.openlibrary.org/b/isbn/0441172717-M.jpg',
+   '["science fiction", "ecology", "politics"]',
+   'The spice must flow, but so must this book',
+   'manual', unixepoch(), unixepoch());
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- THE BOOKSTORES (Montreal vibes)
 -- ═══════════════════════════════════════════════════════════════════════════
 
@@ -331,6 +463,30 @@ VALUES
    '262 Avenue du Mont-Royal E', 'Plateau Mont-Royal',
    '["philosophy", "poetry", "essays", "Quebecois literature", "francophone"]',
    unixepoch(), unixepoch());
+
+-- Bookstore abroad, with lat/lng so it plots on the global map (the Montreal
+-- stores above rely on city-name grouping only).
+INSERT INTO users (id, email, name, city, type, address, neighborhood, specialties, latitude, longitude, location_precision, created_at, updated_at)
+VALUES
+  ('store-shakespeare', 'shakespeare@test.com', 'Shakespeare and Company', 'Paris', 'bookstore',
+   '37 Rue de la Bûcherie', 'Latin Quarter',
+   '["literary fiction", "poetry", "english-language", "first editions"]',
+   48.8523, 2.3469, 'exact',
+   unixepoch(), unixepoch());
+
+INSERT INTO books (id, user_id, title, author, isbn, visibility, ownership, intents, cover_url, subjects, notes, added_via, created_at, updated_at)
+VALUES
+  ('book-store-shakespeare-calvino', 'store-shakespeare', 'If on a winter''s night a traveler', 'Italo Calvino', '9780156439619', 'visible', 'have', '["borrowable"]',
+   'https://covers.openlibrary.org/b/isbn/0156439611-M.jpg',
+   '["literary fiction", "metafiction", "postmodern"]',
+   'A shop copy, well-thumbed by design',
+   'manual', unixepoch(), unixepoch()),
+
+  ('book-store-shakespeare-solitude', 'store-shakespeare', 'One Hundred Years of Solitude', 'Gabriel García Márquez', '9780060883287', 'visible', 'have', '["giftable"]',
+   'https://covers.openlibrary.org/b/isbn/0060883286-M.jpg',
+   '["literary fiction", "magical realism", "family saga"]',
+   'Free shelf, by the door',
+   'manual', unixepoch(), unixepoch());
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- BOOK NOTES — things people liked about their books (mixed private/public)
