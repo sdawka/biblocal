@@ -11,7 +11,8 @@
   let { lang = 'en' as Lang }: { lang?: Lang } = $props();
   const t = $derived(useTranslations(lang).matches.requests);
 
-  let incoming = $state<ConnectionRequest[]>([]);
+  // readonly: mirrors the nanostore's readonly array; never mutated here.
+  let incoming = $state<readonly ConnectionRequest[]>([]);
   let responding = $state<string | null>(null);
   // requestId -> error message for a failed accept/decline.
   let respondErrors = $state<Record<string, string>>({});

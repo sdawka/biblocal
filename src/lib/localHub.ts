@@ -20,7 +20,7 @@ export function hasLocation(m: { user: UserProfile }): boolean {
   return m.user.latitude != null && m.user.longitude != null;
 }
 
-export function splitDiscovery(matches: Match[]): { people: Match[]; stores: Match[] } {
+export function splitDiscovery(matches: readonly Match[]): { people: Match[]; stores: Match[] } {
   const people: Match[] = [];
   const stores: Match[] = [];
   for (const m of matches) {
@@ -37,6 +37,6 @@ export function bookOwnerLocated(row: LocalBook, b: MapBounds | null): boolean {
   return isWithinBounds(latitude, longitude, b);
 }
 
-export function sortByDistance<T extends { distanceKm?: number }>(items: T[]): T[] {
+export function sortByDistance<T extends { distanceKm?: number }>(items: readonly T[]): T[] {
   return [...items].sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
 }

@@ -29,7 +29,6 @@
     title: string;
     author: string;
     coverUrl?: string;
-    status: string;
     // Matches the shape actually returned by GET /api/stores/[id] — needed
     // for the readonly BookDetail badges (seeking / private / intents).
     visibility: BookVisibility;
@@ -38,6 +37,8 @@
   }
 
   let store = $state<StoreData | null>(null);
+  // Derived in script (not {@const}) so TS narrows the null check in the template.
+  const websiteUrl = $derived(store ? safeExternalUrl(store.website) : null);
   let books = $state<BookData[]>([]);
   let canEdit = $state(false);
   let loading = $state(true);
@@ -53,10 +54,10 @@
     try {
       const res = await fetch(`/api/stores/${storeId}`);
       if (!res.ok) {
-        const data = await res.json();
+        const data: { error?: string } = await res.json();
         throw new Error(data.error || t.detail.errorLoadFailed);
       }
-      const data = await res.json();
+      const data: { store: StoreData; books: BookData[]; canEdit: boolean } = await res.json();
       store = data.store;
       books = data.books;
       canEdit = data.canEdit;
@@ -86,11 +87,11 @@
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data: { error?: string } = await res.json();
         throw new Error(data.error || t.detail.errorAddBookFailed);
       }
 
-      const data = await res.json();
+      const data: { book: BookData } = await res.json();
       books = [...books, data.book];
       newBookTitle = '';
       newBookAuthor = '';
@@ -125,8 +126,7 @@
       {#if store.address}
         <p class="address muted">📍 {store.address}</p>
       {/if}
-      {#if safeExternalUrl(store.website)}
-        {@const websiteUrl = safeExternalUrl(store.website)}
+      {#if websiteUrl}
         <p class="website">
           <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
             {websiteUrl.replace(/^https?:\/\//, '')} →

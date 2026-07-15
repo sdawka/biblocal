@@ -73,11 +73,11 @@
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data: { error?: string } = await res.json();
         throw new Error(data.error || t.form.errorAddFailed);
       }
 
-      const data = await res.json();
+      const data: { id: string } = await res.json();
       success = true;
 
       if (onSuccess) {

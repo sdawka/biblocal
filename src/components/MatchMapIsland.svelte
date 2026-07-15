@@ -25,8 +25,9 @@
   let { lang = 'en' as Lang }: { lang?: Lang } = $props();
   const t = $derived(useTranslations(lang).matches.map);
 
-  let matchList = $state<Match[]>([]);
-  let books = $state<LocalBook[]>([]);
+  // readonly: mirror the nanostores' readonly arrays; never mutated here.
+  let matchList = $state<readonly Match[]>([]);
+  let books = $state<readonly LocalBook[]>([]);
 
   type Panel = 'books' | 'people' | 'bookstores';
   let panel = $state<Panel>('people');
@@ -238,11 +239,29 @@
     });
   }
 
-  onMount(async () => {
+  // onMount ignores a cleanup function returned from an async callback, so the
+  // map/init teardown is registered via `mapCleanup` and run from a sync onMount
+  // return instead (previously the teardown never ran on unmount).
+  let mapDestroyed = false;
+  let mapCleanup: (() => void) | null = null;
+
+  onMount(() => {
+    initMap();
+    return () => {
+      mapDestroyed = true;
+      mapCleanup?.();
+    };
+  });
+
+  async function initMap() {
     await loadSeedUsers();
 
     const L = await import('leaflet');
     await import('leaflet.markercluster');
+
+    // The component may have unmounted while the awaits above were pending;
+    // bail before creating the map so nothing leaks.
+    if (mapDestroyed) return;
 
     const center = getMapCenter();
     // maxZoom must be on the map itself: leaflet.markercluster reads it from the
@@ -327,14 +346,14 @@
       }, 150);
     });
 
-    return () => {
+    mapCleanup = () => {
       unsubMatches();
       unsubBooks();
       clearTimeout(moveTimer);
       themeObserver.disconnect();
       map?.remove();
     };
-  });
+  }
 
   // Pan to and emphasize a pin when its card is selected.
   async function focusMarker(id: string) {

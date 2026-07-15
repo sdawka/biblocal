@@ -3,8 +3,14 @@
   import { useTranslations, type Lang } from '../i18n';
   import { INTENT_OPTIONS } from '../lib/intents';
 
+  // Store pages (GET /api/stores/[id]) return books without provenance fields;
+  // this sheet only reads addedVia (for the scanned badge), so accept books
+  // where addedVia/addedAt are absent.
+  type DetailBook = Omit<Book, 'addedVia' | 'addedAt'> &
+    Partial<Pick<Book, 'addedVia' | 'addedAt'>>;
+
   interface Props {
-    book: Book;
+    book: DetailBook;
     lang?: Lang;
     onIntentsChange?: (intents: BookIntent[]) => void;
     onVisibilityChange?: (visibility: BookVisibility) => void;

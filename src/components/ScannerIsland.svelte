@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Quagga from '@ericblade/quagga2';
+  import Quagga, { type QuaggaJSCodeReader } from '@ericblade/quagga2';
   import { isBookEan13 } from '../lib/openLibrary';
   import { useTranslations, type Lang } from '../i18n';
 
@@ -22,7 +22,7 @@
 
   // ISBNs are 13-digit EAN only. Dropping ean_8 stops the scanner from locking
   // onto short, non-book codes.
-  const BARCODE_READERS = ['ean_reader'];
+  const BARCODE_READERS: QuaggaJSCodeReader[] = ['ean_reader'];
 
   // A book's back cover usually has two barcodes and a single frame can misread,
   // so accept a code only after it reads cleanly on consecutive frames.
@@ -36,7 +36,7 @@
   $effect(() => {
     mounted = true;
     if (videoRef) {
-      initScanner();
+      initScanner(videoRef);
     }
     return () => {
       mounted = false;
@@ -87,12 +87,14 @@
     }
   }
 
-  async function initScanner() {
+  // Takes the container as a parameter so TS sees a non-null element (the
+  // $effect only calls this once `videoRef` is bound).
+  async function initScanner(target: HTMLDivElement) {
     try {
       await Quagga.init({
         inputStream: {
           type: 'LiveStream',
-          target: videoRef,
+          target,
           constraints: {
             facingMode: 'environment',
             width: { ideal: 1280 },
