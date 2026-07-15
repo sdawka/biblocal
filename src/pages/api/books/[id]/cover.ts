@@ -9,6 +9,9 @@ import { getUserId } from '../../../../lib/auth';
 import { isHostedCoverUrl, hostedImageIdFromUrl, pickCoverVariant } from '../../../../lib/coverImages';
 
 const MAX_COVER_BYTES = 10 * 1024 * 1024;
+// Multipart framing (boundaries, part headers) around a max-size file; a
+// Content-Length above this can never contain an acceptable image.
+const MAX_BODY_BYTES = MAX_COVER_BYTES + 64 * 1024;
 
 // Structural type for the hosted-images namespace (June 2026 Images binding),
 // independent of the generated worker types' version.
@@ -59,6 +62,13 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       .limit(1);
     if (existing.length === 0) return json({ error: 'Book not found' }, 404);
 
+    // Reject oversized uploads before parsing: platform formData() failures on
+    // huge bodies would otherwise surface as a generic 400 instead of 413.
+    const contentLength = Number(request.headers.get('content-length'));
+    if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+      return json({ error: 'Image too large (max 10 MB)' }, 413);
+    }
+
     const form = await request.formData().catch(() => null);
     const file = form?.get('file');
     if (!(file instanceof File)) return json({ error: 'file field required' }, 400);
@@ -80,10 +90,18 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     const fetchedCoverUrl =
       prev.fetchedCoverUrl ?? (prev.coverUrl && !isHostedCoverUrl(prev.coverUrl) ? prev.coverUrl : null);
 
-    await db
-      .update(books)
-      .set({ coverUrl, fetchedCoverUrl, updatedAt: new Date() })
-      .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+    try {
+      await db
+        .update(books)
+        .set({ coverUrl, fetchedCoverUrl, updatedAt: new Date() })
+        .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+    } catch (e) {
+      // The DB never saw the new URL, so the fresh upload would leak as an
+      // orphan on the Images account. Best-effort cleanup, then fail.
+      console.error('Cover DB update failed, removing uploaded image:', e);
+      await images.hosted.image(uploaded.id).delete().catch(() => {});
+      return json({ error: 'Server error' }, 500);
+    }
 
     if (prev.coverUrl && isHostedCoverUrl(prev.coverUrl)) {
       await deleteHostedImage(images, prev.coverUrl);
