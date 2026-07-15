@@ -44,6 +44,18 @@
 
   let fileInputRef: HTMLInputElement | null = $state(null);
   let uploading = $state(false);
+
+  // Explicit transient-state reset keyed on the book id: if the sheet ever
+  // switches books while open (e.g. a future next/prev affordance), a stale
+  // "Uploading…" flag must not leak onto the next book. Draft editing state
+  // resets the same way inside BookDetail.
+  // svelte-ignore state_referenced_locally -- intentionally captures the initial id
+  let sheetBookId = book.id;
+  $effect(() => {
+    if (book.id === sheetBookId) return;
+    sheetBookId = book.id;
+    uploading = false;
+  });
   const canReset = $derived(!!book.fetchedCoverUrl && isHostedCoverUrl(book.coverUrl));
 
   async function handleFileChange(event: Event) {

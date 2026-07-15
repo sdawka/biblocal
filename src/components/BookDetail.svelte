@@ -81,6 +81,24 @@
   let draftText = $state('');
   let draftVisibility = $state<BookVisibility>('private');
 
+  // Explicit draft-state reset keyed on the book id. The detail sheet keeps
+  // one BookDetail instance alive while open, so if it ever switches books in
+  // place (e.g. a future next/prev affordance) stale drafts must not leak
+  // across books. Same-id updates (intent toggles, note saves) keep drafts.
+  // svelte-ignore state_referenced_locally -- intentionally captures the initial id
+  let draftsBookId = book.id;
+  $effect(() => {
+    if (book.id === draftsBookId) return;
+    draftsBookId = book.id;
+    editingDetails = false;
+    draftTitle = '';
+    draftAuthor = '';
+    showDeleteConfirm = false;
+    notesOpen = false;
+    draftText = '';
+    draftVisibility = 'private';
+  });
+
   function submitNote() {
     const text = draftText.trim();
     if (!text) return;
@@ -94,7 +112,7 @@
   }
 </script>
 
-<div class="book-detail">
+<div class="book-detail" class:has-delete={!readonly && !!onDelete}>
   <div class="info">
     {#if editingDetails}
       <div class="details-edit">
@@ -286,6 +304,12 @@
     min-width: 0;
   }
 
+  /* Reserve room for the absolutely-positioned delete control so long titles
+     wrap short of it instead of running underneath (28px button + gap). */
+  .has-delete .info {
+    padding-right: calc(28px + var(--s-2));
+  }
+
   .title {
     margin: 0 0 2px;
     font-size: 0.9375rem;
@@ -293,6 +317,7 @@
     color: var(--ink);
     line-height: 1.28;
     letter-spacing: -0.01em;
+    overflow-wrap: break-word;
   }
 
   .author {
@@ -439,15 +464,15 @@
   }
 
   /* Touch devices have no hover, so the delete control is always shown and
-     enlarged to a proper 44px tap target. .info reserves space on the right so
-     the button never sits on top of the title. */
+     enlarged to a proper 44px tap target. .info reserves matching space on the
+     right so the button never sits on top of the title. */
   @media (hover: none) {
     .delete-btn {
       opacity: 1;
       width: 44px;
       height: 44px;
     }
-    .info {
+    .has-delete .info {
       padding-right: calc(44px + var(--s-2));
     }
   }

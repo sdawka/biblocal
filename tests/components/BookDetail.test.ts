@@ -253,4 +253,43 @@ describe('BookDetail', () => {
       expect(screen.getByText('Dune')).toBeTruthy();
     });
   });
+
+  describe('draft-state reset on book switch', () => {
+    it('closes an open edit form when the component switches to a different book id', async () => {
+      const { rerender } = render(BookDetail, {
+        props: { book: makeBook({ id: 'book-1', title: 'Dune' }), lang: 'en', onUpdateDetails: vi.fn() },
+      });
+
+      await fireEvent.click(screen.getByLabelText('Edit title & author'));
+      expect(screen.getByLabelText('Title')).toBeTruthy();
+
+      await rerender({
+        book: makeBook({ id: 'book-2', title: 'Solaris', author: 'Stanisław Lem' }),
+        lang: 'en',
+        onUpdateDetails: vi.fn(),
+      });
+
+      expect(screen.queryByLabelText('Title')).toBeNull();
+      expect(screen.getByText('Solaris')).toBeTruthy();
+    });
+
+    it('keeps an in-progress draft when the same book is updated in place (same id)', async () => {
+      const { rerender } = render(BookDetail, {
+        props: { book: makeBook({ id: 'book-1', title: 'Dune' }), lang: 'en', onUpdateDetails: vi.fn() },
+      });
+
+      await fireEvent.click(screen.getByLabelText('Edit title & author'));
+      const titleInput = screen.getByLabelText('Title') as HTMLInputElement;
+      await fireEvent.input(titleInput, { target: { value: 'Dune Messiah' } });
+
+      // Same id, new object — e.g. an intent toggle synced from the store.
+      await rerender({
+        book: makeBook({ id: 'book-1', title: 'Dune', intents: ['borrowable'] }),
+        lang: 'en',
+        onUpdateDetails: vi.fn(),
+      });
+
+      expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('Dune Messiah');
+    });
+  });
 });

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import BookCardShell from './BookCardShell.svelte';
   import BookDetail from './BookDetail.svelte';
   import { safeExternalUrl } from '../lib/url';
   import { useTranslations, type Lang } from '../i18n';
@@ -199,16 +200,18 @@
       {:else}
         <div class="books-grid">
           {#each books as book (book.id)}
-            <article class="book-card card" class:seeking={book.ownership === 'seeking'} data-book-id={book.id}>
-              {#if book.coverUrl}
-                <img src={book.coverUrl} alt="{book.title} cover" class="cover" width="52" height="78" loading="lazy" decoding="async" />
-              {:else}
-                <div class="cover placeholder">
-                  <span>{book.title.charAt(0)}</span>
-                </div>
-              {/if}
+            <!-- Read-only card: store pages show other people's books, so there
+                 is no click-to-open detail sheet here (that contract belongs to
+                 the owner-only Biblio shelf). -->
+            <BookCardShell
+              bookId={book.id}
+              title={book.title}
+              coverUrl={book.coverUrl}
+              coverAlt="{book.title} cover"
+              seeking={book.ownership === 'seeking'}
+            >
               <BookDetail {book} {lang} readonly />
-            </article>
+            </BookCardShell>
           {/each}
         </div>
       {/if}
@@ -359,66 +362,9 @@
     gap: var(--s-4);
   }
 
-  /* Read-only book card: store pages show other people's books, so there is
-     no click-to-open detail sheet here (that contract now belongs to the
-     owner-only Biblio shelf) — just the cover + BookDetail's badges/notes. */
-  .book-card {
-    display: flex;
-    gap: var(--s-3);
-    padding: var(--s-3);
-    position: relative;
-    overflow: hidden;
-    touch-action: pan-y;
-  }
-
-  .book-card.seeking {
-    border-left-color: var(--hairline);
-    background: color-mix(in oklch, var(--st-seeking-bg) 40%, var(--surface));
-  }
-
-  .book-card.seeking::before {
-    content: '';
-    position: absolute;
-    top: var(--s-3);
-    left: var(--s-3);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--st-seeking-fg);
-    z-index: 1;
-  }
-
-  .book-card.seeking .cover {
-    margin-top: var(--s-2);
-  }
-
-  .book-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-2);
-    border-color: var(--hairline-strong);
-  }
-
-  .cover {
-    width: 52px;
-    height: 78px;
-    object-fit: cover;
-    border-radius: var(--r-sm);
-    flex-shrink: 0;
-    box-shadow: var(--shadow-2);
-  }
-
-  .cover.placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--accent-tint);
-    font-family: var(--font-display);
-    font-size: 1.4rem;
-    font-weight: 500;
-    color: var(--accent);
-  }
-
-  .book-card :global(.book-detail) {
+  /* BookCardShell owns the card surface; the readonly BookDetail inside it
+     just needs to fill the remaining row space. */
+  .books-grid :global(.book-detail) {
     flex: 1;
     min-width: 0;
   }
