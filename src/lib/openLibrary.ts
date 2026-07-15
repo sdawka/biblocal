@@ -1,4 +1,15 @@
-import type { Book } from './types';
+/**
+ * Shape fetchByIsbn actually produces: isbn/title/author are always set
+ * (author falls back to 'Unknown Author'); cover and subjects only when
+ * Open Library has them.
+ */
+export interface FetchedBook {
+  isbn: string;
+  title: string;
+  author: string;
+  coverUrl?: string;
+  subjects?: string[];
+}
 
 interface OpenLibraryBook {
   title: string;
@@ -13,7 +24,7 @@ interface OpenLibraryAuthor {
 
 const CACHE_KEY = 'biblocal:isbn-cache:v1';
 
-function getCache(): Record<string, Partial<Book>> {
+function getCache(): Record<string, FetchedBook> {
   // src/lib must be SSR-safe: localStorage doesn't exist on the server.
   if (typeof localStorage === 'undefined') return {};
   try {
@@ -24,7 +35,7 @@ function getCache(): Record<string, Partial<Book>> {
   }
 }
 
-function setCache(isbn: string, book: Partial<Book>): void {
+function setCache(isbn: string, book: FetchedBook): void {
   // src/lib must be SSR-safe: localStorage doesn't exist on the server.
   if (typeof localStorage === 'undefined') return;
   try {
@@ -49,7 +60,7 @@ async function fetchAuthorName(authorKey: string): Promise<string> {
   }
 }
 
-export async function fetchByIsbn(isbn: string): Promise<Partial<Book> | null> {
+export async function fetchByIsbn(isbn: string): Promise<FetchedBook | null> {
   const cleanIsbn = isbn.replace(/[-\s]/g, '');
 
   const cached = getCache()[cleanIsbn];
@@ -67,7 +78,7 @@ export async function fetchByIsbn(isbn: string): Promise<Partial<Book> | null> {
       ? await Promise.all(data.authors.slice(0, 3).map((a) => fetchAuthorName(a.key)))
       : [];
 
-    const book: Partial<Book> = {
+    const book: FetchedBook = {
       isbn: cleanIsbn,
       title: data.title,
       author: authorNames.join(', ') || 'Unknown Author',
