@@ -25,7 +25,7 @@
 <section class="facets-section" aria-labelledby="facets-title">
   <div class="section-inner">
     <header class="section-head">
-      <p class="eyebrow"><span class="rule"></span><span class="num">02</span> — {t.eyebrow}</p>
+      <p class="eyebrow"><span class="rule"></span><span class="num">03</span> — {t.eyebrow}</p>
       <h2 id="facets-title" class="section-title">
         {t.titleLead}<em>{t.titleAccent}</em>
       </h2>

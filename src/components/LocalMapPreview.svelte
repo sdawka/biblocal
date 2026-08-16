@@ -17,7 +17,7 @@
 <section class="local-section" aria-labelledby="local-title">
   <div class="section-content">
     <div class="text-content">
-      <p class="eyebrow"><span class="rule"></span><span class="num">03</span>&nbsp;— {t.eyebrow}</p>
+      <p class="eyebrow"><span class="rule"></span><span class="num">02</span>&nbsp;— {t.eyebrow}</p>
 
       <h2 id="local-title" class="section-title">
         {t.titleLines[0]}<br />
@@ -51,7 +51,7 @@
               <div class="point-glow"></div>
               <div class="point-dot"></div>
               <div class="point-label">
-                <span class="label-name">{point.label}</span>
+                <span class="label-name">{point.type === 'you' ? t.legendYou : point.label}</span>
                 {#if point.books > 0}
                   <span class="label-books">{point.books} {t.books}</span>
                 {/if}
