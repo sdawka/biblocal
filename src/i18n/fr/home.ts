@@ -2,25 +2,25 @@ export default {
   meta: {
     title: 'biblocal : prêter, emprunter et discuter de livres entre voisins',
     description:
-      'Construisez une étagère vivante, puis rencontrez près de chez vous des lecteurs qui partagent vos goûts. Prêtez, empruntez, discutez et découvrez des livres avec les gens de votre quartier.',
+      'Construisez une étagère vivante et mettez-la en circulation : prêtez, empruntez, donnez et discutez de livres avec les lecteurs de votre quartier. Les bonnes idées voyagent à pied.',
   },
   hero: {
-    eyebrow: 'Le réseau local des lecteurs',
+    eyebrow: 'Les idées veulent circuler',
     titleLines: ['Vous êtes ce que', 'vous lisez.'],
-    titleAccent: 'Eux aussi.',
+    titleAccent: 'Faites tourner.',
     lede:
-      'Construisez une étagère vivante. Puis rencontrez autour de vous les gens qui lisent comme vous : pour prêter, emprunter, et vraiment parler des livres.',
+      "Les livres, c'est ainsi que les idées circulent. Ouvrez votre étagère, prêtez-en quelques-uns, et votre rue devient une bibliothèque. Pour ceux qui aiment les idées (et les gens).",
     start: 'Commencer votre étagère',
     how: 'Comment ça marche',
     meta: ['Prêter', 'Emprunter', 'Discuter', 'Offrir', 'Chercher'],
     scroll: 'Continuez à lire',
   },
   shelf: {
-    eyebrow: 'Votre étagère',
-    titleLead: 'Votre étagère dit aux gens ',
-    titleAccent: 'qui vous êtes.',
+    eyebrow: 'Votre annexe',
+    titleLead: 'Chaque étagère est une annexe de ',
+    titleAccent: 'la bibliothèque.',
     desc:
-      "Chaque étagère est une annexe de la bibliothèque du quartier. Ajoutez vos livres, indiquez ce que vous partagez. C'est ainsi que les correspondances vous trouvent.",
+      "Une étagère, c'est une infrastructure en sommeil, pas de l'encombrement. Ajoutez vos livres, indiquez ce que vous partagez. C'est ainsi que vos livres trouvent leur prochain lecteur.",
     scanHint:
       "Visez avec votre téléphone le code-barres au dos de n'importe quel livre. Il apparaît.",
     caption: 'Survolez une couverture pour voir les annotations',
@@ -40,14 +40,14 @@ export default {
     },
   },
   facets: {
-    eyebrow: 'Trouvez vos semblables',
-    titleLead: 'Cinq façons de vous trouver ',
-    titleAccent: 'les bonnes personnes.',
+    eyebrow: 'Les fréquentations de vos livres',
+    titleLead: 'Cinq façons dont votre étagère ',
+    titleAccent: 'recoupe les leurs.',
     lede:
-      'Pas seulement qui est à côté. Qui comprend vraiment la référence. Chaque signal pèse ; ensemble, ils trouvent les lecteurs qui valent le détour.',
+      'Les idées de votre étagère circulent déjà tout près. Là où les étagères se recoupent, les conversations ne sont jamais loin.',
     exampleLabel: 'Exemple',
-    note: 'Plus de points, plus forte la connexion. Aussi simple que ça.',
-    strength: 'Force de connexion {n} sur 3',
+    note: "Plus de points, plus d'étagère en commun. C'est tout l'algorithme.",
+    strength: 'Étagère en commun {n} sur 3',
     items: {
       shelfTwin: {
         name: "Jumeau d'étagère",
@@ -77,16 +77,16 @@ export default {
     },
   },
   midCta: {
-    kicker: 'Votre étagère est déjà une présentation',
-    titleLead: 'Arrêtez de lire seul. ',
-    titleAccent: 'Rencontrez-les.',
+    kicker: "La suite d'un bon livre, c'est de le prêter",
+    titleLead: 'Lâchez vos livres ',
+    titleAccent: 'dans la nature.',
   },
   map: {
     eyebrow: 'Juste à côté',
-    titleLines: ['Les gens qui lisent comme vous', 'sont'],
-    titleAccent: 'plus près que vous ne croyez',
+    titleLines: ['Votre quartier est déjà', 'une bibliothèque'],
+    titleAccent: 'sans les murs',
     desc:
-      "biblocal aligne votre étagère sur les lecteurs et les librairies autour de vous, pour qu'un nouveau livre, et peut-être un nouvel ami, ne soit qu'à quelques pas.",
+      'biblocal cartographie les étagères et les librairies autour de vous, pour que votre prochaine lecture soit à quelques pas, pas au fond d\'un colis.',
     legendReaders: 'Lecteurs à proximité',
     legendStores: 'Librairies locales',
     legendYou: 'Vous',
@@ -96,10 +96,10 @@ export default {
     caption: 'Votre quartier, discrètement plein de lecteurs.',
   },
   signin: {
-    eyebrow: 'Votre étagère est prête',
+    eyebrow: 'La bibliothèque est ouverte',
     titleLead: 'Prêt quand ',
     titleAccent: "vous l'êtes.",
     desc:
-      'Ajoutez quelques livres. Voyez qui est à côté. Le reste a tendance à se faire tout seul : tranquillement, localement, un livre à la fois.',
+      'Ajoutez quelques livres. Ouvrez votre étagère. Le reste a tendance à se faire tout seul, un voisin à la fois.',
   },
 };

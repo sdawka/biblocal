@@ -43,6 +43,10 @@
         <span class="line accent"><em>{t.titleAccent}</em></span>
       </h1>
 
+      <p class="meta">
+        {#each t.meta as m, i}{#if i > 0}<i></i>{/if}<span>{m}</span>{/each}
+      </p>
+
       <p class="lede">
         {t.lede}
       </p>
@@ -57,9 +61,6 @@
         <button class="ghost" onclick={scrollDown}>{t.how}</button>
       </div>
 
-      <p class="meta">
-        {#each t.meta as m, i}{#if i > 0}<i></i>{/if}<span>{m}</span>{/each}
-      </p>
     </div>
 
     <div class="wall" aria-hidden="true">
@@ -210,13 +211,13 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    margin: 0;
+    margin: 0 0 var(--s-5);
     font-family: var(--font-ui);
     font-size: 0.78rem;
     font-weight: 590;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--ink-faint);
+    color: var(--accent);
   }
   .meta i { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); opacity: 0.8; }
 
