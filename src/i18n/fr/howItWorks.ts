@@ -4,13 +4,13 @@ export default {
   meta: {
     title: 'Comment ça marche — biblocal',
     description:
-      'Trois chapitres. Une étagère. Et les lecteurs qui attendent de l\'autre côté. Découvrez comment biblocal relie votre bibliothèque aux lecteurs voisins qui partagent vos goûts.',
+      'Trois chapitres, une étagère : découvrez comment biblocal met vos livres en circulation — prêtez, empruntez, donnez et discutez de livres à quelques pas de chez vous.',
   },
   hero: {
     back: '← Retour à l\'accueil',
     eyebrow: 'Comment ça marche',
-    titleLines: ['Comment votre étagère', 'trouve les siens.'],
-    subtitle: 'Trois chapitres. Une étagère. Et les lecteurs qui attendent de l\'autre côté.',
+    titleLines: ['Comment votre étagère', 'devient une bibliothèque.'],
+    subtitle: 'Trois chapitres. Une étagère. Et les idées qui dormaient dessus.',
   },
   chapters: {
     one: {
@@ -57,13 +57,13 @@ export default {
     },
     three: {
       eyebrow: 'Chapitre trois',
-      title: 'Trouvez vos semblables',
+      title: 'Comparez vos notes',
       intro:
-        'Voilà le secret des lecteurs : nous mourons d\'envie de parler de ce que nous avons lu. La bonne personne comprendra pourquoi cette fin vous a fait pleurer. Nous vous aidons à la trouver.',
+        'Un livre qui voyage revient rarement sans opinions. biblocal vous montre où votre étagère recoupe celles d\'à côté : quand vous aurez besoin de reparler de cette fin, la conversation sera à distance de marche.',
       cards: {
         twins: {
           title: 'Jumeaux d\'étagère',
-          body: 'Des gens au goût étrangement semblable. Le genre à finir vos phrases sur des détails d\'intrigue obscurs.',
+          body: 'Des étagères au contenu étrangement semblable. Quand les collections se recoupent à ce point, les prêts s\'organisent presque tout seuls.',
         },
         discussion: {
           title: 'Correspondances de discussion',
@@ -74,7 +74,7 @@ export default {
           body: 'Des boutiques indépendantes qui ont du caractère. Le genre où le libraire a tout lu et adore en débattre.',
         },
       },
-      aside: '« Jamais deux personnes ne lisent le même livre. » — Edmund Wilson. Mais certaines le lisent d\'assez près pour devenir amies.',
+      aside: '« Jamais deux personnes ne lisent le même livre. » — Edmund Wilson. Raison de plus pour faire circuler votre exemplaire.',
     },
   },
   colophon: {
@@ -91,8 +91,8 @@ export default {
     footnote2: '** GNU Terry Pratchett',
   },
   cta: {
-    title: 'Prêt à voir qui lit près de chez vous ?',
-    body: 'Votre étagère vous attend. Vos semblables sont là, dehors. Faisons les présentations.',
+    title: 'Prêt à mettre quelques livres en mouvement ?',
+    body: 'Les livres appartiennent à tout le monde. Nous les aidons juste à circuler. Commencez par les vôtres.',
     button: 'Construire mon étagère',
   },
 };

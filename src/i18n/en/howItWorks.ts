@@ -4,13 +4,13 @@ export default {
   meta: {
     title: 'How It Works — biblocal',
     description:
-      'Three chapters. One shelf. And the readers waiting on the other side. See how biblocal connects your bookshelf to nearby readers who share your taste.',
+      'Three chapters, one shelf: see how biblocal puts your books into circulation — lend, borrow, gift, and discuss books a short walk from home.',
   },
   hero: {
     back: '← Back to home',
     eyebrow: 'How It Works',
-    titleLines: ['How your shelf', 'finds its people.'],
-    subtitle: 'Three chapters. One shelf. And the readers waiting on the other side.',
+    titleLines: ['How your shelf', 'becomes a library.'],
+    subtitle: "Three chapters. One shelf. And the ideas it's been sitting on.",
   },
   chapters: {
     one: {
@@ -57,13 +57,13 @@ export default {
     },
     three: {
       eyebrow: 'Chapter Three',
-      title: 'Find your people',
+      title: 'Compare notes',
       intro:
-        "Here's the thing about readers: we're desperate to talk about what we've read. The right person will understand why you cried at that ending. We help you find them.",
+        "A book that travels tends to come back with opinions attached. biblocal shows you where your shelf overlaps with the ones nearby, so when you need to talk through that ending, the conversation is within walking distance.",
       cards: {
         twins: {
           title: 'Shelf twins',
-          body: "People with suspiciously similar taste. The kind who'll finish your sentences about obscure plot points.",
+          body: 'Shelves with suspiciously similar contents. When collections overlap that much, the lending practically organises itself.',
         },
         discussion: {
           title: 'Discussion matches',
@@ -74,7 +74,7 @@ export default {
           body: 'Independent shops with character. The kind where the owner has read everything and loves to argue about it.',
         },
       },
-      aside: '"No two persons ever read the same book." — Edmund Wilson. But some people read it similarly enough to become friends.',
+      aside: '"No two persons ever read the same book." — Edmund Wilson. All the more reason to pass your copy along.',
     },
   },
   colophon: {
@@ -91,8 +91,8 @@ export default {
     footnote2: '** GNU Terry Pratchett',
   },
   cta: {
-    title: "Ready to see who's reading near you?",
-    body: "Your shelf is waiting. Your people are out there. Let's introduce you.",
+    title: 'Ready to put a few books in motion?',
+    body: "Books belong to everyone. We're just helping them get around. Start with yours.",
     button: 'Build Your Shelf',
   },
 };

@@ -3,20 +3,20 @@ export default {
   meta: {
     title: 'About — biblocal',
     description:
-      'Build your living bookshelf. Find people nearby with similar taste. Borrow, discuss, and discover locally.',
+      'Build your living bookshelf and share it with your neighbourhood. Lend, borrow, and discuss books locally.',
   },
   hero: {
     back: '← Back to home',
     eyebrow: 'About biblocal',
     titleLead: 'Books belong to everyone.',
     titleTail: "We're just helping them get around.",
-    subtitle: 'A community project to connect readers, one shelf at a time.',
+    subtitle: 'A community project to put books back in circulation, one shelf at a time.',
   },
   what: {
     eyebrow: 'The Short Version',
     title: 'What is biblocal?',
     intro:
-      'A free tool that connects people through their bookshelves. Build your shelf, find neighbors with similar taste, lend and borrow locally. No algorithms pushing bestsellers. No fees. Just readers finding readers.',
+      'A free tool for sharing the books you already own. Build your shelf, lend and borrow locally, and let good ideas make the rounds. No algorithms pushing bestsellers. No fees. Just books doing what books do.',
     values: {
       community: {
         title: 'Community-owned',
@@ -28,7 +28,7 @@ export default {
       },
       local: {
         title: 'Hyper-local',
-        body: "Your matches are in your neighborhood. Walk over. Have coffee. Remember what that's like.",
+        body: "The next book you borrow is probably within walking distance. Go get it. Stay for coffee. Remember what that's like.",
       },
     },
   },
@@ -64,7 +64,7 @@ export default {
     title: 'Why we built this',
     paragraphs: [
       'We kept having the same experience: finishing a book, desperate to talk about it, and having no one to talk to. Meanwhile, that same book sat on a shelf, waiting to be lent out.',
-      "Libraries are wonderful but limited. Bookstores are great but don't connect readers. Social media is... social media. We wanted something simpler: a way to see what the people around us are reading, and maybe borrow that book we've been hunting for.",
+      "Libraries are wonderful but limited. Bookstores are great, but the books only travel one way. Social media is... social media. We wanted something simpler: a way to see what the people around us are reading, and maybe borrow that book we've been hunting for.",
       'So we built it. No venture capital, no growth hacking, no "disruption." Just a tool for readers, built by readers.',
       "It only works if people use it. That's where you come in.",
     ],
@@ -72,8 +72,8 @@ export default {
       '"A room without books is like a body without a soul." — Cicero. A neighborhood without book-sharing is just a collection of strangers.',
   },
   cta: {
-    title: 'Ready to find your people?',
-    body: "Build your shelf. See who's nearby. Start lending.",
+    title: 'Ready to put your shelf to work?',
+    body: "Build your shelf. Mark what you'd lend. The books will do the rest.",
     button: 'Get Started',
   },
 };

@@ -27,7 +27,7 @@ export default {
   },
   contact: {
     heading: 'Coordonnées',
-    desc: 'Permettez à vos correspondances de vous joindre. Partagées uniquement lorsque vous acceptez une demande de connexion.',
+    desc: 'Pour organiser les prêts et les échanges de livres. Partagées uniquement lorsque vous acceptez une demande de connexion.',
     methodLabel: 'Comment peut-on vous joindre ?',
     methodSelect: 'Choisir…',
     methodEmail: 'Courriel',
@@ -91,7 +91,7 @@ export default {
   onboarding: {
     eyebrow: 'Bienvenue',
     heading: 'Bienvenue sur biblocal',
-    tagline: 'Composez votre bibliothèque vivante. Trouvez près de chez vous des gens aux goûts proches.',
+    tagline: 'Composez votre bibliothèque vivante. Puis ouvrez-la.',
     nameLabel: 'Comment doit-on vous appeler ?',
     namePlaceholder: 'Votre nom',
     cityLabel: 'Où êtes-vous ?',
