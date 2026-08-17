@@ -3,20 +3,20 @@ export default {
   meta: {
     title: 'À propos — biblocal',
     description:
-      'Construisez votre étagère vivante. Trouvez près de chez vous des gens aux goûts proches des vôtres. Empruntez, discutez et découvrez, localement.',
+      'Construisez votre étagère vivante et partagez-la avec votre quartier. Prêtez, empruntez et discutez de livres, localement.',
   },
   hero: {
     back: "← Retour à l'accueil",
     eyebrow: 'À propos de biblocal',
     titleLead: 'Les livres appartiennent à tout le monde.',
     titleTail: 'On les aide juste à circuler.',
-    subtitle: 'Un projet communautaire pour relier les lecteurs, une étagère à la fois.',
+    subtitle: 'Un projet communautaire pour remettre les livres en circulation, une étagère à la fois.',
   },
   what: {
     eyebrow: 'La version courte',
     title: "Qu'est-ce que biblocal ?",
     intro:
-      "Un outil gratuit qui relie les gens par leurs étagères. Construisez la vôtre, trouvez des voisins aux goûts proches, prêtez et empruntez près de chez vous. Aucun algorithme pour vous vendre des best-sellers. Aucun frais. Juste des lecteurs qui se trouvent.",
+      "Un outil gratuit pour partager les livres que vous avez déjà. Construisez votre étagère, prêtez et empruntez près de chez vous, laissez les bonnes idées faire le tour du quartier. Aucun algorithme pour vous vendre des best-sellers. Aucun frais. Juste des livres qui font ce que font les livres.",
     values: {
       community: {
         title: 'À la communauté',
@@ -28,7 +28,7 @@ export default {
       },
       local: {
         title: 'Hyper-local',
-        body: 'Vos correspondances sont dans votre quartier. Allez-y à pied. Prenez un café. Souvenez-vous de ce que ça fait.',
+        body: 'Le prochain livre que vous emprunterez est sans doute à deux rues de chez vous. Allez-y à pied. Restez pour un café. Souvenez-vous de ce que ça fait.',
       },
     },
   },
@@ -64,7 +64,7 @@ export default {
     title: 'Pourquoi nous avons créé tout ça',
     paragraphs: [
       "On revivait sans cesse la même scène : finir un livre, mourir d'envie d'en parler, et n'avoir personne à qui le dire. Pendant ce temps, ce même livre dormait sur une étagère, attendant qu'on le prête.",
-      "Les bibliothèques sont merveilleuses mais limitées. Les librairies sont formidables mais ne relient pas les lecteurs. Les réseaux sociaux sont... les réseaux sociaux. Nous voulions plus simple : un moyen de voir ce que lisent les gens autour de nous, et peut-être d'emprunter ce livre que l'on traque depuis des mois.",
+      "Les bibliothèques sont merveilleuses mais limitées. Les librairies sont formidables, mais les livres n'y voyagent que dans un sens. Les réseaux sociaux sont... les réseaux sociaux. Nous voulions plus simple : un moyen de voir ce que lisent les gens autour de nous, et peut-être d'emprunter ce livre que l'on traque depuis des mois.",
       'Alors nous l’avons créé. Pas de capital-risque, pas de growth hacking, aucune « disruption ». Juste un outil pour les lecteurs, fait par des lecteurs.',
       "Il ne marche que si les gens s'en servent. C'est là que vous entrez en scène.",
     ],
@@ -72,8 +72,8 @@ export default {
       '« Une pièce sans livres est comme un corps sans âme. » — Cicéron. Un quartier sans partage de livres n’est qu’une collection d’inconnus.',
   },
   cta: {
-    title: 'Prêt à trouver vos semblables ?',
-    body: 'Construisez votre étagère. Voyez qui est à côté. Commencez à prêter.',
+    title: 'Prêt à prêter ?',
+    body: 'Construisez votre étagère. Indiquez ce que vous prêteriez. Les livres feront le reste.',
     button: 'Commencer',
   },
 };

@@ -27,7 +27,7 @@ export default {
   },
   contact: {
     heading: 'Contact Info',
-    desc: 'Let matches connect with you. Only shared when you accept a connection request.',
+    desc: 'For arranging lends and handoffs. Only shared when you accept a connection request.',
     methodLabel: 'How can people reach you?',
     methodSelect: 'Select…',
     methodEmail: 'Email',
@@ -91,7 +91,7 @@ export default {
   onboarding: {
     eyebrow: 'Welcome',
     heading: 'Welcome to biblocal',
-    tagline: 'Build your living bookshelf. Find people nearby with similar taste.',
+    tagline: 'Build your living bookshelf. Then open it.',
     nameLabel: 'What should we call you?',
     namePlaceholder: 'Your name',
     cityLabel: 'Where are you?',
