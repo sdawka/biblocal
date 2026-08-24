@@ -630,6 +630,29 @@
     padding: 0.3rem 0.6rem;
   }
 
+  /* In the narrow mobile sheet, putting a label and two controls on one line
+     squeezes both into hard-to-read tap targets. Keep the relationship clear
+     by stacking each label over its segmented choice. */
+  @media (max-width: 430px) {
+    .dimension-row {
+      align-items: stretch;
+      flex-direction: column;
+      gap: var(--s-1);
+    }
+
+    .dimension-label {
+      min-width: 0;
+    }
+
+    .dimension-row .segmented {
+      align-self: flex-start;
+    }
+
+    .dimension-row .segmented button {
+      min-height: 40px;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .chevron { transition: none; }
   }

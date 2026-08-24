@@ -10,7 +10,8 @@
 
   let isEmpty = $state(true);
   let hydrated = $state(false);
-  let adding = $state(false);
+  type IntakePanel = 'add' | 'import' | null;
+  let intakePanel: IntakePanel = $state(null);
 
   // Still loading: the shelf hasn't settled yet and has nothing in it. Show a
   // skeleton instead of the real empty state, so a fresh load never flashes
@@ -34,12 +35,28 @@
     return unsub;
   });
 
+  // The mobile navigation can link straight to the intake flow without
+  // introducing route-only state. Consume the parameter once so refreshing or
+  // closing the panel returns to the normal Biblio URL.
+  $effect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('add') !== '1') return;
+
+    intakePanel = 'add';
+    url.searchParams.delete('add');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  });
+
   function openAdd() {
-    adding = true;
+    intakePanel = 'add';
   }
 
   function closeAdd() {
-    adding = false;
+    intakePanel = null;
+  }
+
+  function openImport() {
+    intakePanel = 'import';
   }
 </script>
 
@@ -59,23 +76,51 @@
       </div>
     </div>
   {:else}
-    <div class="shelf-row">
-      {#if adding}
+    <div class="shelf-row intake-row">
+      {#if intakePanel}
         <section class="add-slot open" aria-label={t.page.zoneTitle}>
           <button class="add-slot-close" type="button" onclick={closeAdd} aria-label="Close">×</button>
-          <AddBookIsland {lang} onClose={closeAdd} />
-          <details class="import-section">
-            <summary>{t.page.importSummary}</summary>
+          <div class="intake-switcher" role="group" aria-label={t.page.intakeAriaLabel}>
+            <button
+              type="button"
+              class:active={intakePanel === 'add'}
+              aria-pressed={intakePanel === 'add'}
+              onclick={openAdd}
+            >
+              {t.page.zoneTitle}
+            </button>
+            <button
+              type="button"
+              class:active={intakePanel === 'import'}
+              aria-pressed={intakePanel === 'import'}
+              onclick={openImport}
+            >
+              {t.page.importSummary}
+            </button>
+          </div>
+          {#if intakePanel === 'add'}
+            <AddBookIsland {lang} onClose={closeAdd} />
+            <!-- Desktop keeps the original progressive-disclosure import path. -->
+            <details class="import-section">
+              <summary>{t.page.importSummary}</summary>
+              <ImportIsland {lang} />
+            </details>
+          {:else}
             <ImportIsland {lang} />
-          </details>
+          {/if}
         </section>
       {:else}
-        <button class="add-slot" type="button" onclick={openAdd}>
-          <span class="plus" aria-hidden="true">+</span>
-          <span class="add-label">{isEmpty ? t.empty.addFirst : t.page.zoneTitle}</span>
-        </button>
+        <div class="intake-actions">
+          <button class="add-slot" type="button" onclick={openAdd}>
+            <span class="plus" aria-hidden="true">+</span>
+            <span class="add-label">{isEmpty ? t.empty.addFirst : t.page.zoneTitle}</span>
+          </button>
+          <button class="import-trigger" type="button" onclick={openImport}>
+            {t.page.importSummary}
+          </button>
+        </div>
       {/if}
-      {#if isEmpty && !adding}
+      {#if isEmpty && !intakePanel}
         <a class="explore-nearby" href={lang === 'fr' ? '/fr/local' : '/local'}>
           <span class="explore-title">{t.empty.exploreNearby}</span>
           <span class="explore-subtitle">{t.empty.exploreNearbySubtitle}</span>
@@ -97,6 +142,10 @@
     padding-bottom: var(--s-3);
     border-bottom: 1px solid var(--hairline-strong);
     box-shadow: 0 1px 0 var(--hairline);
+  }
+
+  .intake-actions {
+    display: contents;
   }
 
   /* Loading skeleton: a few ghost spines with a shimmer sweep, so the
@@ -192,6 +241,11 @@
     animation: rise var(--dur-3) var(--ease-out) both;
   }
 
+  .intake-switcher,
+  .import-trigger {
+    display: none;
+  }
+
   .add-slot-close {
     position: absolute;
     top: var(--s-3);
@@ -206,6 +260,82 @@
 
   .import-section {
     margin-top: var(--s-4);
+  }
+
+  @media (max-width: 600px) {
+    /* Put the primary intake choice before a populated shelf without changing
+       the desktop shelf's trailing add slot. */
+    .intake-row {
+      order: -1;
+    }
+
+    .intake-actions {
+      display: flex;
+      gap: var(--s-3);
+    }
+
+    .intake-actions .add-slot,
+    .import-trigger {
+      width: auto;
+      min-height: 72px;
+      flex: 1;
+    }
+
+    .intake-actions .add-slot {
+      flex-direction: row;
+      gap: var(--s-2);
+    }
+
+    .intake-actions .plus {
+      font-size: 1.5rem;
+    }
+
+    .import-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--s-3);
+      border: 1px solid var(--hairline-strong);
+      border-radius: var(--r-md);
+      color: var(--ink-muted);
+      background: var(--surface);
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 590;
+      cursor: pointer;
+    }
+
+    .add-slot.open {
+      padding: var(--s-4);
+    }
+
+    .intake-switcher {
+      display: flex;
+      gap: var(--s-2);
+      margin: 0 0 var(--s-4);
+      padding-right: var(--s-5);
+    }
+
+    .intake-switcher button {
+      min-height: 40px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      padding: 0 var(--s-2);
+      color: var(--ink-muted);
+      background: transparent;
+      font: inherit;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    .intake-switcher button.active {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .import-section {
+      display: none;
+    }
   }
 
   .explore-nearby {

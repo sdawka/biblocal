@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { Spring } from 'svelte/motion';
   // Self-hosted (bundled) instead of a render-blocking unpkg stylesheet.
   import 'leaflet/dist/leaflet.css';
@@ -23,16 +23,22 @@
   import { useTranslations, type Lang } from '../i18n';
 
   let { lang = 'en' as Lang }: { lang?: Lang } = $props();
-  const t = $derived(useTranslations(lang).matches.map);
+  const matchesT = $derived(useTranslations(lang).matches);
+  const t = $derived(matchesT.map);
 
   // readonly: mirror the nanostores' readonly arrays; never mutated here.
   let matchList = $state<readonly Match[]>([]);
   let books = $state<readonly LocalBook[]>([]);
 
   type Panel = 'books' | 'people' | 'bookstores';
-  let panel = $state<Panel>('people');
+  // Books are the most direct route into local discovery. People and shops
+  // remain one tap away, but aren't the first thing a mobile visitor has to
+  // parse.
+  let panel = $state<Panel>('books');
   let query = $state('');
   let viewBounds = $state<MapBounds | null>(null);
+  let isMobile = $state(false);
+  let mobileView = $state<'list' | 'map'>('list');
 
   let loadingUsers = $state(usersLoading.get());
   let loadError = $state<string | null>(usersError.get());
@@ -57,7 +63,7 @@
       people.filter(
         (m) =>
           hasLocation(m) &&
-          (viewBounds == null || isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds)) &&
+          (isMobile || viewBounds == null || isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds)) &&
           matchesSearch(m)
       )
     )
@@ -71,7 +77,7 @@
       stores.filter(
         (m) =>
           hasLocation(m) &&
-          (viewBounds == null || isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds)) &&
+          (isMobile || viewBounds == null || isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds)) &&
           matchesSearch(m)
       )
     )
@@ -81,7 +87,7 @@
   const booksInView = $derived(
     books.filter(
       (row) =>
-        bookOwnerLocated(row, viewBounds) &&
+        bookOwnerLocated(row, isMobile ? null : viewBounds) &&
         !(row.owner.latitude == null || row.owner.longitude == null) &&
         bookMatchesSearch(row)
     )
@@ -244,18 +250,46 @@
   // return instead (previously the teardown never ran on unmount).
   let mapDestroyed = false;
   let mapCleanup: (() => void) | null = null;
+  let mapInitPromise: Promise<void> | null = null;
+
+  function updateMobileMode() {
+    isMobile = window.matchMedia('(max-width: 900px)').matches;
+    // Desktop keeps the established split map. Mobile starts with the useful
+    // result list, avoiding an expensive map and an empty-looking first screen.
+    if (!isMobile) ensureMap();
+  }
 
   onMount(() => {
-    initMap();
+    updateMobileMode();
+    const media = window.matchMedia('(max-width: 900px)');
+    const onChange = () => updateMobileMode();
+    media.addEventListener('change', onChange);
+
+    // Discovery data is independent of Leaflet so the list is ready before a
+    // mobile visitor chooses Map.
+    loadSeedUsers();
+    const unsubMatches = discovery.subscribe((m) => {
+      matchList = m;
+      if (map) updateMarkers();
+    });
+    const unsubBooks = discoveryBooks.subscribe((b) => (books = b));
+
     return () => {
       mapDestroyed = true;
+      media.removeEventListener('change', onChange);
+      unsubMatches();
+      unsubBooks();
       mapCleanup?.();
     };
   });
 
-  async function initMap() {
-    await loadSeedUsers();
+  async function ensureMap() {
+    if (map || mapDestroyed) return;
+    mapInitPromise ??= initMap();
+    await mapInitPromise;
+  }
 
+  async function initMap() {
     const L = await import('leaflet');
     await import('leaflet.markercluster');
 
@@ -323,13 +357,9 @@
         .addTo(map);
     }
 
-    // Populate matches from the store and keep pins in sync as it recomputes.
-    // (Fires synchronously on subscribe, so this also does the initial render.)
-    const unsubMatches = discovery.subscribe((m) => {
-      matchList = m;
-      if (map) updateMarkers();
-    });
-    const unsubBooks = discoveryBooks.subscribe((b) => (books = b));
+    // Data subscriptions are established on mount so list-first mobile mode
+    // does not need to initialize Leaflet. Render their current values now.
+    await updateMarkers();
 
     // Keep the panel's lists synced to what's actually visible on the map:
     // read the initial bounds now, then re-read (debounced) on every pan/zoom.
@@ -347,8 +377,6 @@
     });
 
     mapCleanup = () => {
-      unsubMatches();
-      unsubBooks();
       clearTimeout(moveTimer);
       themeObserver.disconnect();
       map?.remove();
@@ -357,6 +385,9 @@
 
   // Pan to and emphasize a pin when its card is selected.
   async function focusMarker(id: string) {
+    await ensureMap();
+    await tick();
+    map?.invalidateSize({ animate: false });
     const entry = markerMap.get(id);
     if (!entry || !map) return;
     const ll = entry.marker.getLatLng();
@@ -376,12 +407,30 @@
     panel = owned?.user.type === 'bookstore' ? 'bookstores' : 'people';
     expandedId = ownerId;
     applySelectionStyles();
+    // A row in the list has a clear visual continuation: show the owner on
+    // the map, rather than silently switching the list to another panel.
+    mobileView = 'map';
     focusMarker(ownerId);
+  }
+
+  async function setMobileView(view: 'list' | 'map') {
+    mobileView = view;
+    if (view === 'map') {
+      await tick();
+      await ensureMap();
+      map?.invalidateSize({ animate: false });
+    }
   }
 </script>
 
 <div class="match-map">
-  <div class="map-wrap">
+  <!-- Kept outside either surface so Map never becomes a dead end on mobile. -->
+  <div class="mobile-view-toggle" role="group" aria-label="Choose discovery view">
+    <button class:active={mobileView === 'list'} onclick={() => setMobileView('list')}>{matchesT.views.list}</button>
+    <button class:active={mobileView === 'map'} onclick={() => setMobileView('map')}>{matchesT.views.map}</button>
+  </div>
+
+  <div class:mobile-hidden={isMobile && mobileView === 'list'} class="map-wrap">
     <div class="map-container" bind:this={mapContainer}></div>
 
     <!-- Floating glass legend over the map -->
@@ -395,7 +444,7 @@
     </div>
   </div>
 
-  <div class="cards-panel card">
+  <div class:mobile-hidden={isMobile && mobileView === 'map'} class="cards-panel card">
     <LocalPanel
       {panel}
       onPanelChange={(p) => (panel = p)}
@@ -408,6 +457,7 @@
       {storesInView}
       {storesUnlocated}
       {inViewCount}
+      resultScope={isMobile ? t.nearby : undefined}
       {expandedId}
       onToggle={toggleExpanded}
       onOwner={focusFromRow}
@@ -488,21 +538,49 @@
     box-shadow: var(--shadow-1);
   }
 
+  .mobile-view-toggle { display: none; }
+
   @media (max-width: 900px) {
     .match-map {
       grid-template-columns: 1fr;
-      grid-template-rows: 320px auto;
+      grid-template-rows: auto;
       /* Let the stacked layout size to its content instead of trying to
          squeeze both the map and the full panel into one viewport slice. */
       height: auto;
       min-height: 0;
     }
 
+    .mobile-view-toggle {
+      display: inline-flex;
+      justify-self: start;
+      gap: var(--s-1);
+      margin: 0;
+      padding: 0.2rem;
+      border: 1px solid var(--hairline-strong);
+      border-radius: var(--r-full);
+      background: var(--surface-sunken);
+    }
+
     .cards-panel {
-      /* Bounded so the panel scrolls internally rather than stretching the
-         page — leaves room for the fixed map above plus surrounding chrome. */
-      max-height: 70vh;
       padding: var(--s-4);
+    }
+
+    .map-wrap { height: 320px; }
+    .mobile-hidden { display: none; }
+    .mobile-view-toggle button {
+      min-height: 2.75rem;
+      padding: 0.45rem 1rem;
+      border: 0;
+      border-radius: var(--r-full);
+      background: transparent;
+      color: var(--ink-muted);
+      font: 590 0.875rem var(--font-ui);
+      cursor: pointer;
+    }
+    .mobile-view-toggle button.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-1);
     }
 
     .legend {

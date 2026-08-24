@@ -11,6 +11,7 @@ export default {
   views: {
     books: 'Livres',
     people: 'Personnes',
+    list: 'Liste',
     map: 'Carte',
   },
   groups: {

@@ -18,6 +18,8 @@
     storesInView: Match[];
     storesUnlocated: Match[];
     inViewCount: number;
+    /** "In view" on desktop, "Nearby" when the mobile list is not map-bound. */
+    resultScope?: string;
     expandedId: string | null;
     onToggle: (id: string) => void;
     onOwner: (ownerId: string) => void;
@@ -39,6 +41,7 @@
     storesInView,
     storesUnlocated,
     inViewCount,
+    resultScope,
     expandedId,
     onToggle,
     onOwner,
@@ -93,7 +96,7 @@
     oninput={(e) => onQueryChange((e.target as HTMLInputElement).value)}
   />
 
-  <span class="in-view-count">{inViewCount} {th.inView}</span>
+  <span class="in-view-count">{inViewCount} {resultScope ?? th.inView}</span>
 </div>
 
 {#if loading && !hasAnyData}

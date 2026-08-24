@@ -36,21 +36,53 @@
   let privateCount = $derived(allBooks.filter((b) => b.visibility === 'private').length);
 
   let open = $state(false);
+  let isMobile = $state(false);
   let rootRef = $state<HTMLDivElement | null>(null);
   let buttonRef = $state<HTMLButtonElement | null>(null);
+  let sheetRef = $state<HTMLDivElement | null>(null);
 
   function handleWindowPointerDown(event: PointerEvent) {
-    if (open && rootRef && !rootRef.contains(event.target as Node)) {
+    if (open && !isMobile && rootRef && !rootRef.contains(event.target as Node)) {
       open = false;
     }
   }
 
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === 'Escape' && open) {
-      open = false;
-      buttonRef?.focus();
+      closeFilters();
+      return;
+    }
+
+    if (event.key === 'Tab' && open && isMobile && sheetRef) {
+      const focusable = sheetRef.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
     }
   }
+
+  function closeFilters() {
+    open = false;
+    requestAnimationFrame(() => buttonRef?.focus());
+  }
+
+  $effect(() => {
+    const mobileQuery = window.matchMedia('(max-width: 600px)');
+    const updateMobileState = () => (isMobile = mobileQuery.matches);
+    updateMobileState();
+    mobileQuery.addEventListener('change', updateMobileState);
+    return () => mobileQuery.removeEventListener('change', updateMobileState);
+  });
+
+  $effect(() => {
+    if (open && isMobile) requestAnimationFrame(() => sheetRef?.querySelector<HTMLElement>('button')?.focus());
+  });
 </script>
 
 <svelte:window onpointerdown={handleWindowPointerDown} onkeydown={handleKeyDown} />
@@ -74,8 +106,25 @@
     {/if}
   </button>
 
+  {#if open && isMobile}
+    <button class="filter-scrim" aria-label={t.closeFilters} onclick={closeFilters}></button>
+  {/if}
+
   {#if open}
-    <div class="popover card" role="group" aria-label={t.filterPopoverLabel}>
+    <div
+      class="popover card"
+      class:mobile-sheet={isMobile}
+      role={isMobile ? 'dialog' : 'group'}
+      aria-modal={isMobile ? 'true' : undefined}
+      aria-label={t.filterPopoverLabel}
+      bind:this={sheetRef}
+    >
+      {#if isMobile}
+        <div class="sheet-header">
+          <span class="sheet-handle" aria-hidden="true"></span>
+          <button class="sheet-close" aria-label={t.closeFilters} onclick={closeFilters}>{t.done}</button>
+        </div>
+      {/if}
       <div class="filter-row">
         <span class="filter-label">{t.filterOwnershipLabel}</span>
         <div class="chip-group" role="group" aria-label={t.filterOwnershipGroup}>
@@ -134,6 +183,16 @@
 <style>
   .filter-root {
     position: relative;
+  }
+
+  .filter-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 49;
+    width: 100%;
+    border: 0;
+    background: oklch(0 0 0 / 0.45);
+    cursor: default;
   }
 
   .filter-btn {
@@ -216,8 +275,92 @@
     margin-left: auto;
   }
 
+  .sheet-header, .sheet-handle, .sheet-close {
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .filter-btn {
+      min-height: 44px;
+    }
+
+    .popover.mobile-sheet {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 50;
+      width: 100%;
+      max-width: none;
+      min-width: 0;
+      max-height: min(78vh, 38rem);
+      padding: var(--s-3) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom));
+      overflow-y: auto;
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      animation: sheet-rise var(--dur-2) var(--ease-soft) both;
+    }
+
+    .sheet-header {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      min-height: 32px;
+      margin-bottom: var(--s-1);
+    }
+
+    .sheet-handle {
+      display: block;
+      width: 2.25rem;
+      height: 4px;
+      border-radius: var(--r-full);
+      background: var(--hairline-strong);
+    }
+
+    .sheet-close {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .filter-row {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: var(--s-2);
+      padding: var(--s-2) 0;
+    }
+
+    .filter-label {
+      min-width: 0;
+    }
+
+    .chip {
+      min-height: 44px;
+    }
+
+    .clear-link {
+      min-height: 44px;
+      margin-left: 0;
+    }
+  }
+
+  @keyframes sheet-rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .popover {
+    .popover, .popover.mobile-sheet {
       animation: none;
     }
   }

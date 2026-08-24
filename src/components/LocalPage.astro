@@ -28,9 +28,13 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
         </div>
       </div>
 
-      <PromptIsland client:idle context="matches" lang={lang} />
-
       <LocalDiscovery client:load lang={lang} />
+
+      <!-- Discovery is the page's job. Keep the optional profile prompt after
+           its first useful results, especially on a small screen. -->
+      <div class="profile-prompt">
+        <PromptIsland client:idle context="matches" lang={lang} />
+      </div>
     </main>
 </Layout>
 
@@ -66,5 +70,9 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 
   .add-store-link {
     text-decoration: none;
+  }
+
+  .profile-prompt {
+    margin-top: var(--s-6);
   }
 </style>

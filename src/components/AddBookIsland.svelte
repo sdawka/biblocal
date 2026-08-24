@@ -19,6 +19,7 @@
 
   let mode: Mode = $state('isbn');
   let isbn = $state('');
+  let isbnSource: 'manual' | 'scan' = $state('manual');
   let title = $state('');
   let author = $state('');
   let loading = $state(false);
@@ -42,6 +43,7 @@
 
   function resetForm() {
     isbn = '';
+    isbnSource = 'manual';
     title = '';
     author = '';
     error = '';
@@ -124,7 +126,9 @@
       visibility,
       ownership,
       intents,
-      addedVia: previewBook.isbn ? 'scan' : 'manual',
+      // An ISBN can be typed as well as scanned. Preserve that distinction for
+      // library analytics rather than treating every ISBN lookup as a scan.
+      addedVia: previewBook.isbn && isbnSource === 'scan' ? 'scan' : 'manual',
     });
 
     resetForm();
@@ -180,6 +184,7 @@
 
   function handleScanResult(scannedIsbn: string) {
     isbn = scannedIsbn;
+    isbnSource = 'scan';
     showScanner = false;
     handleIsbnSubmit();
   }
@@ -319,11 +324,15 @@
           handleIsbnSubmit();
         }}
       >
+        <button type="button" class="btn btn-filled scan-primary" onclick={openScanner}>
+          {t.scanBarcode}
+        </button>
         <div class="isbn-row">
           <input
             class="input"
             type="text"
             bind:value={isbn}
+            oninput={() => isbnSource = 'manual'}
             placeholder={t.isbnPlaceholder}
             disabled={loading}
             aria-invalid={error && mode === 'isbn' ? 'true' : undefined}
@@ -526,6 +535,10 @@
     transition: color var(--dur-1) var(--ease-soft), border-color var(--dur-1) var(--ease-soft), background var(--dur-2) var(--ease-out);
   }
 
+  .scan-primary {
+    display: none;
+  }
+
   .scan-btn:hover {
     color: var(--accent);
     border-color: var(--accent);
@@ -557,5 +570,16 @@
 
   .duplicate-actions .btn {
     flex: 1;
+  }
+
+  @media (max-width: 600px) {
+    .scan-primary {
+      display: block;
+      width: 100%;
+    }
+
+    .scan-btn {
+      display: none;
+    }
   }
 </style>

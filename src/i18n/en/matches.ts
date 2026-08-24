@@ -12,6 +12,7 @@ export default {
   views: {
     books: 'Books',
     people: 'People',
+    list: 'List',
     map: 'Map',
   },
   groups: {

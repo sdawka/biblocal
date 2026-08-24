@@ -112,7 +112,9 @@ describe('AddBookIsland', () => {
         expect(book.title).toBe('Crime and Punishment');
         expect(book.author).toBe('Fyodor Dostoevsky');
         expect(book.isbn).toBe(VALID_ISBN);
-        expect(book.addedVia).toBe('scan');
+        // A typed ISBN lookup is not a camera scan; only ScannerIsland sets
+        // the scan provenance flag.
+        expect(book.addedVia).toBe('manual');
         expect(book.subjects).toEqual(['Fiction', 'Russian Literature']);
       });
 

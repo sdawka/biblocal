@@ -15,6 +15,7 @@ const { title, lang = getLangFromUrl(Astro.url) } = Astro.props;
 const t = useTranslations(lang).common;
 const currentPath = stripLocale(Astro.url.pathname);
 const p = (path: string) => localizePath(path, lang);
+const addBookPath = `${p('/biblio')}?add=1`;
 const userId = getUserId(Astro.locals as Parameters<typeof getUserId>[0]);
 ---
 
@@ -86,6 +87,24 @@ const userId = getUserId(Astro.locals as Parameters<typeof getUserId>[0]);
       </div>
     </nav>
     <slot />
+    <nav class="mobile-tabbar glass" aria-label={t.appNav.mobileLabel}>
+      <a href={p('/biblio')} class:list={{ active: currentPath === '/biblio' }}>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+        <span>{t.appNav.shelf}</span>
+      </a>
+      <a class="add-tab" href={addBookPath} aria-label={t.appNav.addBook}>
+        <span class="add-tab-icon" aria-hidden="true">+</span>
+        <span>{t.appNav.add}</span>
+      </a>
+      <a href={p('/local')} class:list={{ active: currentPath === '/local' }}>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l2.5 2" /></svg>
+        <span>{t.appNav.matches}</span>
+      </a>
+      <a href={p('/profile')} class:list={{ active: currentPath === '/profile' }}>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3" /><path d="M5 21a7 7 0 0 1 14 0" /></svg>
+        <span>{t.appNav.profile}</span>
+      </a>
+    </nav>
     <script>
       const navToggle = document.getElementById('nav-toggle');
       const navLinks = document.getElementById('nav-links');
@@ -227,11 +246,14 @@ const userId = getUserId(Astro.locals as Parameters<typeof getUserId>[0]);
     border-radius: 2px;
     transition: transform var(--dur-2) var(--ease-spring), opacity var(--dur-1) var(--ease-soft);
   }
+
+  .mobile-tabbar { display: none; }
   .hamburger[aria-expanded="true"] .hamburger-line:nth-child(1) { transform: translateY(7px) rotate(45deg); }
   .hamburger[aria-expanded="true"] .hamburger-line:nth-child(2) { opacity: 0; }
   .hamburger[aria-expanded="true"] .hamburger-line:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
   @media (max-width: 768px) {
+    :global(body) { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
     .hamburger { display: flex; }
     .links {
       position: absolute;
@@ -268,5 +290,51 @@ const userId = getUserId(Astro.locals as Parameters<typeof getUserId>[0]);
     .theme-toggle { width: 100%; height: 44px; justify-content: flex-start; padding-left: 1rem; border: none; gap: 0.6rem; }
     .theme-toggle::after { content: attr(data-theme-label); font-size: 0.9rem; font-weight: 540; }
     .nav-lang { padding: 0.5rem 1rem; }
+
+    .mobile-tabbar {
+      position: fixed;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      gap: 0.15rem;
+      inset: auto 0 0;
+      z-index: 90;
+      min-height: 66px;
+      padding: 0.35rem max(var(--s-2), env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom)) max(var(--s-2), env(safe-area-inset-left));
+      border-top: 1px solid var(--hairline);
+      box-shadow: 0 -8px 24px oklch(0.28 0.025 55 / 0.08);
+    }
+    .mobile-tabbar a {
+      display: inline-flex;
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 52px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.15rem;
+      color: var(--ink-muted);
+      font-family: var(--font-ui);
+      font-size: 0.6875rem;
+      font-weight: 590;
+      text-decoration: none;
+    }
+    .mobile-tabbar a.active { color: var(--accent); }
+    .mobile-tabbar .add-tab { color: var(--accent-on); }
+    .add-tab-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      margin-top: -1rem;
+      border-radius: var(--r-full);
+      background: var(--accent);
+      box-shadow: var(--shadow-2);
+      font-size: 1.55rem;
+      font-weight: 400;
+      line-height: 1;
+    }
+    .add-tab span:last-child { color: var(--accent); }
   }
 </style>

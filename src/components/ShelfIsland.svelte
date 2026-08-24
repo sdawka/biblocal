@@ -3,6 +3,7 @@
     shelf,
     activeFilters,
     bookMatchesFilters,
+    clearAllFilters,
     updateBookIntents,
     updateBook,
     updateBookOwnership,
@@ -14,7 +15,14 @@
     updateNote,
     removeNote,
   } from '../stores/shelf';
-  import { shelfView, setShelfView } from '../stores/shelf-view';
+  import {
+    shelfView,
+    shelfSort,
+    resolveShelfView,
+    setShelfView,
+    setShelfSort,
+    type ShelfSort,
+  } from '../stores/shelf-view';
   import BookCard from './BookCard.svelte';
   import BookSpine from './BookSpine.svelte';
   import BookDetailSheet from './BookDetailSheet.svelte';
@@ -23,12 +31,22 @@
 
   let { lang = 'en' as Lang } = $props();
   const t = $derived(useTranslations(lang).shelf.list);
-  let view = $derived($shelfView);
+  let viewPreference = $derived($shelfView);
+  let sort = $derived($shelfSort);
+  let isMobile = $state(false);
+  let view = $derived(resolveShelfView(viewPreference, isMobile));
+  let query = $state('');
 
   let filters = $derived($activeFilters);
   let allBooks = $derived(Object.values($shelf));
-  let filteredBooks = $derived(
-    allBooks.filter(book => bookMatchesFilters(book, filters))
+  let activeFilterCount = $derived(
+    filters.visibility.length + filters.ownership.length + filters.intents.length
+  );
+  let normalizedQuery = $derived(query.trim().toLocaleLowerCase());
+  let filteredBooks = $derived(allBooks
+    .filter(book => bookMatchesFilters(book, filters))
+    .filter(book => !normalizedQuery || `${book.title} ${book.author}`.toLocaleLowerCase().includes(normalizedQuery))
+    .sort((a, b) => compareBooks(a, b, sort))
   );
   let booksIHave = $derived(filteredBooks.filter(b => b.ownership === 'have'));
   let booksImSeeking = $derived(filteredBooks.filter(b => b.ownership === 'seeking'));
@@ -39,6 +57,36 @@
 
   let openBookId = $state<string | null>(null);
   let openBook = $derived(openBookId ? $shelf[openBookId] : null);
+
+  $effect(() => {
+    const mobileQuery = window.matchMedia('(max-width: 600px)');
+    const updateMobileState = () => (isMobile = mobileQuery.matches);
+    updateMobileState();
+    mobileQuery.addEventListener('change', updateMobileState);
+    return () => mobileQuery.removeEventListener('change', updateMobileState);
+  });
+
+  function compareBooks(a: typeof allBooks[number], b: typeof allBooks[number], order: ShelfSort) {
+    if (order === 'title') {
+      return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+    }
+    if (order === 'shareable') {
+      const shareability = (book: typeof a) =>
+        book.visibility === 'visible' && book.ownership === 'have' && book.intents.length > 0 ? 1 : 0;
+      const difference = shareability(b) - shareability(a);
+      if (difference) return difference;
+    }
+    return b.addedAt - a.addedAt;
+  }
+
+  function clearSearchAndFilters() {
+    query = '';
+    clearAllFilters();
+  }
+
+  function moreCount(books: typeof allBooks) {
+    return Math.max(books.length - 2, 0);
+  }
 
   function handleDeleteBook(id: string) {
     removeBook(id);
@@ -60,6 +108,33 @@
       <FilterPopover {lang} />
     </div>
   </div>
+
+  {#if totalBooks > 0}
+    <div class="library-tools">
+      <label class="search-field">
+        <span class="visually-hidden">{t.searchAria}</span>
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+          <circle cx="8.5" cy="8.5" r="5.5" />
+          <path d="m13 13 4 4" stroke-linecap="round" />
+        </svg>
+        <input class="input" type="search" bind:value={query} placeholder={t.searchPlaceholder} />
+      </label>
+      <label class="sort-field">
+        <span>{t.sort}</span>
+        <select class="input" value={sort} onchange={(event) => setShelfSort((event.currentTarget as HTMLSelectElement).value as ShelfSort)}>
+          <option value="recent">{t.sortRecent}</option>
+          <option value="title">{t.sortTitle}</option>
+          <option value="shareable">{t.sortShareable}</option>
+        </select>
+      </label>
+    </div>
+    <div class="result-summary" aria-live="polite">
+      <span>{t.showing.replace('{shown}', String(filteredBooks.length)).replace('{total}', String(totalBooks))}</span>
+      {#if normalizedQuery || activeFilterCount > 0}
+        <button class="btn btn-plain btn-sm" onclick={clearSearchAndFilters}>{t.clearResults}</button>
+      {/if}
+    </div>
+  {/if}
 
   {#if filteredBooks.length === 0}
     <div class="empty card">
@@ -103,6 +178,9 @@
                 </div>
               {/each}
             </div>
+            {#if moreCount(booksIHave) > 0}
+              <p class="swipe-cue" aria-hidden="true">{t.swipeMore.replace('{n}', String(moreCount(booksIHave)))}</p>
+            {/if}
           {:else}
             <div class="grid" id="books-i-have-grid">
               {#each booksIHave as book, i (book.id)}
@@ -141,6 +219,9 @@
                 </div>
               {/each}
             </div>
+            {#if moreCount(booksImSeeking) > 0}
+              <p class="swipe-cue" aria-hidden="true">{t.swipeMore.replace('{n}', String(moreCount(booksImSeeking)))}</p>
+            {/if}
           {:else}
             <div class="grid" id="books-seeking-grid">
               {#each booksImSeeking as book, i (book.id)}
@@ -195,6 +276,68 @@
     display: flex;
     align-items: center;
     gap: var(--s-3);
+  }
+
+  .library-tools {
+    display: flex;
+    align-items: end;
+    gap: var(--s-3);
+    margin: calc(-1 * var(--s-2)) 0 var(--s-2);
+  }
+
+  .search-field {
+    position: relative;
+    flex: 1;
+    min-width: 12rem;
+  }
+
+  .search-field svg {
+    position: absolute;
+    top: 50%;
+    left: var(--s-3);
+    color: var(--ink-muted);
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  .search-field .input {
+    width: 100%;
+    padding-left: calc(var(--s-3) + 20px);
+  }
+
+  .sort-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 0.75rem;
+    font-weight: 590;
+    color: var(--ink-muted);
+  }
+
+  .sort-field select {
+    min-width: 7.5rem;
+  }
+
+  .result-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 30px;
+    margin-bottom: var(--s-3);
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   h2 {
@@ -339,6 +482,13 @@
     scroll-snap-align: start;
   }
 
+  .swipe-cue {
+    display: none;
+    margin: calc(-1 * var(--s-2)) 0 0;
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+  }
+
   /* Spine entrance: mirrors the Details cards' staggered rise (small
      translateY + fade, capped stagger), keyed by book.id like the cards so
      re-filtering doesn't re-fire it on items already on screen. */
@@ -367,5 +517,40 @@
   @media (prefers-reduced-motion: reduce) {
     .book-wrapper { opacity: 1; animation: none; }
     .spine-wrapper { opacity: 1; animation: none; }
+  }
+
+  @media (max-width: 600px) {
+    .toolbar {
+      align-items: flex-start;
+    }
+
+    .toolbar-controls {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .library-tools {
+      align-items: stretch;
+      flex-direction: column;
+      gap: var(--s-2);
+    }
+
+    .search-field, .sort-field {
+      width: 100%;
+    }
+
+    .sort-field {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sort-field select {
+      width: min(13rem, 70%);
+    }
+
+    .swipe-cue {
+      display: block;
+    }
   }
 </style>

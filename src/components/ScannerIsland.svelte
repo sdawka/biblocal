@@ -216,6 +216,7 @@
   role="dialog"
   aria-modal="true"
   aria-labelledby="scanner-title"
+  tabindex="-1"
   bind:this={dialogRef}
 >
   <div class="scanner-sheet glass" role="document">
