@@ -9,7 +9,7 @@
 	},
 	"vars": {
 		"ENVIRONMENT": "production",
-		"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_aHVtYW5lLWxvbmdob3JuLTY2LmNsZXJrLmFjY291bnRzLmRldiQ"
+		"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuYmlibG9jYWwuY29tJA"
 	},
 	"observability": {
 		"enabled": true
