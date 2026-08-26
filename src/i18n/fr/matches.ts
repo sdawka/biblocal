@@ -38,6 +38,7 @@ export default {
     errorTitle: 'Impossible de charger les correspondances à proximité.',
     empty: 'Ajoutez quelques livres pour trouver des correspondances !',
     locationNotShared: 'Position non partagée',
+    chooseView: 'Choisir la vue de découverte',
   },
   hub: {
     panelBooks: 'Livres',

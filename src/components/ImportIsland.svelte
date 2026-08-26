@@ -75,14 +75,18 @@
 
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || t.importFailed);
+        console.error('Import failed:', data.error);
+        error = t.importFailed;
+        step = 'preview';
+        return;
       }
 
       importResult = await res.json();
       await loadBooksFromServer();
       step = 'done';
     } catch (e) {
-      error = e instanceof Error ? e.message : t.importFailed;
+      console.error('Import failed:', e);
+      error = t.importFailed;
       step = 'preview';
     }
   }
@@ -197,7 +201,7 @@
             <p>{importResult.errors.length} {t.errorsLabel}</p>
             <ul>
               {#each importResult.errors.slice(0, 5) as err}
-                <li>{err}</li>
+                <li>{t.failedBook.replace('{title}', err)}</li>
               {/each}
               {#if importResult.errors.length > 5}
                 <li>{t.andMore.replace('{n}', String(importResult.errors.length - 5))}</li>

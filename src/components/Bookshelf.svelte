@@ -3,7 +3,7 @@
   import ShelfIsland from './ShelfIsland.svelte';
   import AddBookIsland from './AddBookIsland.svelte';
   import ImportIsland from './ImportIsland.svelte';
-  import { useTranslations, type Lang } from '../i18n';
+  import { localizePath, useTranslations, type Lang } from '../i18n';
 
   let { lang = 'en' as Lang } = $props();
   const t = $derived(useTranslations(lang).shelf);
@@ -79,7 +79,7 @@
     <div class="shelf-row intake-row">
       {#if intakePanel}
         <section class="add-slot open" aria-label={t.page.zoneTitle}>
-          <button class="add-slot-close" type="button" onclick={closeAdd} aria-label="Close">×</button>
+          <button class="add-slot-close" type="button" onclick={closeAdd} aria-label={t.page.closeAdd}>×</button>
           <div class="intake-switcher" role="group" aria-label={t.page.intakeAriaLabel}>
             <button
               type="button"
@@ -121,7 +121,7 @@
         </div>
       {/if}
       {#if isEmpty && !intakePanel}
-        <a class="explore-nearby" href={lang === 'fr' ? '/fr/local' : '/local'}>
+        <a class="explore-nearby" href={localizePath('/local', lang)}>
           <span class="explore-title">{t.empty.exploreNearby}</span>
           <span class="explore-subtitle">{t.empty.exploreNearbySubtitle}</span>
         </a>

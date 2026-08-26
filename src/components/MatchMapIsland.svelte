@@ -425,7 +425,7 @@
 
 <div class="match-map">
   <!-- Kept outside either surface so Map never becomes a dead end on mobile. -->
-  <div class="mobile-view-toggle" role="group" aria-label="Choose discovery view">
+  <div class="mobile-view-toggle" role="group" aria-label={matchesT.map.chooseView}>
     <button class:active={mobileView === 'list'} onclick={() => setMobileView('list')}>{matchesT.views.list}</button>
     <button class:active={mobileView === 'map'} onclick={() => setMobileView('map')}>{matchesT.views.map}</button>
   </div>

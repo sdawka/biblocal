@@ -3,7 +3,7 @@
   import BookCardShell from './BookCardShell.svelte';
   import BookDetail from './BookDetail.svelte';
   import { safeExternalUrl } from '../lib/url';
-  import { useTranslations, type Lang } from '../i18n';
+  import { localizeTopicLabel, useTranslations, type Lang } from '../i18n';
   import type { BookVisibility, BookOwnership, BookIntent } from '../lib/types';
 
   interface Props {
@@ -55,14 +55,17 @@
       const res = await fetch(`/api/stores/${storeId}`);
       if (!res.ok) {
         const data: { error?: string } = await res.json();
-        throw new Error(data.error || t.detail.errorLoadFailed);
+        console.error('Failed to load store:', data.error);
+        error = t.detail.errorLoadFailed;
+        return;
       }
       const data: { store: StoreData; books: BookData[]; canEdit: boolean } = await res.json();
       store = data.store;
       books = data.books;
       canEdit = data.canEdit;
     } catch (e) {
-      error = e instanceof Error ? e.message : t.detail.errorGeneric;
+      console.error('Failed to load store:', e);
+      error = t.detail.errorGeneric;
     } finally {
       loading = false;
     }
@@ -88,7 +91,9 @@
 
       if (!res.ok) {
         const data: { error?: string } = await res.json();
-        throw new Error(data.error || t.detail.errorAddBookFailed);
+        console.error('Failed to add store book:', data.error);
+        error = t.detail.errorAddBookFailed;
+        return;
       }
 
       const data: { book: BookData } = await res.json();
@@ -98,7 +103,8 @@
       newBookIsbn = '';
       showAddBook = false;
     } catch (e) {
-      error = e instanceof Error ? e.message : t.detail.errorAddBookFailed;
+      console.error('Failed to add store book:', e);
+      error = t.detail.errorAddBookFailed;
     } finally {
       addingBook = false;
     }
@@ -143,7 +149,7 @@
         <h3>{t.detail.specialtiesHeading}</h3>
         <div class="specialty-tags">
           {#each store.specialties as specialty}
-            <span class="tag">{specialty.replace(/-/g, ' ')}</span>
+            <span class="tag">{localizeTopicLabel(specialty, lang)}</span>
           {/each}
         </div>
       </div>

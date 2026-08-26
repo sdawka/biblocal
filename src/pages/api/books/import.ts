@@ -180,7 +180,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         result.imported++;
       } catch (e) {
-        result.errors.push(`Failed to import "${book.title}": ${e instanceof Error ? e.message : 'Unknown error'}`);
+        console.error('Failed to import book:', { title: book.title, error: e });
+        result.errors.push(book.title);
       }
     }
 

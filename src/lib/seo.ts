@@ -36,7 +36,13 @@ export function resolveSeo(input: SeoInput): ResolvedSeo {
   };
 }
 
-export function organizationJsonLd(): object {
+const DEFAULT_ORGANIZATION_DESCRIPTION =
+  'biblocal is a local book-lending and reader-matching app. Build a living bookshelf, find neighbours who share your taste, and borrow, lend, discuss, or gift books nearby.';
+
+const DEFAULT_WEB_APPLICATION_DESCRIPTION =
+  'Organize your bookshelf, match with local readers by taste, and lend, borrow, discuss, or gift books with people nearby.';
+
+export function organizationJsonLd(description = DEFAULT_ORGANIZATION_DESCRIPTION): object {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -44,8 +50,7 @@ export function organizationJsonLd(): object {
     url: SITE_ORIGIN,
     logo: absoluteUrl('/favicon.svg'),
     slogan: 'You are what you read.',
-    description:
-      'biblocal is a local book-lending and reader-matching app. Build a living bookshelf, find neighbours who share your taste, and borrow, lend, discuss, or gift books nearby.',
+    description,
   };
 }
 
@@ -60,7 +65,7 @@ export function websiteJsonLd(): object {
 
 // Homepage-only: marks biblocal as an interactive web app (not a blog) for
 // Google. Truthful and Rich-Results-eligible; the app is free to use.
-export function webApplicationJsonLd(): object {
+export function webApplicationJsonLd(description = DEFAULT_WEB_APPLICATION_DESCRIPTION): object {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
@@ -68,8 +73,7 @@ export function webApplicationJsonLd(): object {
     url: SITE_ORIGIN,
     applicationCategory: 'LifestyleApplication',
     operatingSystem: 'Web',
-    description:
-      'Organize your bookshelf, match with local readers by taste, and lend, borrow, discuss, or gift books with people nearby.',
+    description,
     offers: {
       '@type': 'Offer',
       price: '0',

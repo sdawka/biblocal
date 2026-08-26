@@ -5,7 +5,7 @@ import { env } from 'cloudflare:workers';
 import { getDb } from '../db/client';
 import { users } from '../db/schema';
 import { eq } from 'drizzle-orm';
-import { useTranslations, localizePath, type Lang } from '../i18n';
+import { useTranslations, localizePath, localizeTopicLabel, type Lang } from '../i18n';
 
 export const prerender = false;
 
@@ -42,7 +42,7 @@ const storesList = stores.map((s) => ({
       </div>
       <div class="header-actions">
         <a href={p('/stores/new')} class="btn btn-tinted btn-sm">{t.index.addStore}</a>
-        {!isQaMode && <UserButton />}
+        {!isQaMode && <UserButton signInUrl={p('/')} />}
       </div>
     </div>
 
@@ -71,7 +71,7 @@ const storesList = stores.map((s) => ({
             {store.specialties && store.specialties.length > 0 && (
               <div class="specialties">
                 {store.specialties.slice(0, 3).map((s: string) => (
-                  <span class="tag">{s.replace(/-/g, ' ')}</span>
+                  <span class="tag">{localizeTopicLabel(s, lang)}</span>
                 ))}
                 {store.specialties.length > 3 && (
                   <span class="more faint">{t.index.more.replace('{n}', String(store.specialties.length - 3))}</span>

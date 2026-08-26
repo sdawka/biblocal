@@ -5,13 +5,14 @@ import ConnectionRequestsIsland from './ConnectionRequestsIsland.svelte';
 import SyncErrorToast from './SyncErrorToast.svelte';
 import { UserButton } from '@clerk/astro/components';
 import { env } from 'cloudflare:workers';
-import { useTranslations, type Lang } from '../i18n';
+import { localizePath, useTranslations, type Lang } from '../i18n';
 
 interface Props {
   lang?: Lang;
 }
 const { lang = 'en' } = Astro.props;
 const t = useTranslations(lang).profile;
+const p = (path: string) => localizePath(path, lang);
 
 const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 ---
@@ -20,12 +21,12 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
   <main>
       <div class="header-row rise">
         <h1 class="serif">{t.page.heading}</h1>
-        {!isQaMode && <UserButton />}
+        {!isQaMode && <UserButton signInUrl={p('/')} />}
       </div>
 
       <SyncErrorToast lang={lang} client:load />
 
-      <ConnectionRequestsIsland client:idle />
+      <ConnectionRequestsIsland lang={lang} client:idle />
       <ProfileIsland lang={lang} client:load />
     </main>
 </Layout>

@@ -3,6 +3,7 @@ import '../styles/theme.css';
 import { SignOutButton } from '@clerk/astro/components';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 import AuthInit from '../components/AuthInit.svelte';
+import ClerkLocalization from '../components/ClerkLocalization.astro';
 import { useTranslations, localizePath, stripLocale, getLangFromUrl, type Lang } from '../i18n';
 import { getUserId } from '../lib/auth';
 
@@ -48,13 +49,14 @@ const userId = getUserId(Astro.locals as Parameters<typeof getUserId>[0]);
     </script>
   </head>
   <body>
+    <ClerkLocalization lang={lang} />
     {userId && <AuthInit client:load userId={userId} />}
     <nav class="glass">
       <a href={p('/')} class="logo">biblocal</a>
       <button
         class="hamburger"
         id="nav-toggle"
-        aria-label="Toggle navigation menu"
+        aria-label={t.appNav.toggleNavigation}
         aria-expanded="false"
         aria-controls="nav-links"
       >
@@ -70,8 +72,8 @@ const userId = getUserId(Astro.locals as Parameters<typeof getUserId>[0]);
           id="theme-toggle"
           class="theme-toggle"
           type="button"
-          aria-label="Toggle color theme"
-          title="Toggle light / dark"
+          aria-label={t.appNav.toggleTheme}
+          title={t.appNav.toggleThemeTitle}
           data-theme-label={t.appNav.theme}
         >
           <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -82,7 +84,7 @@ const userId = getUserId(Astro.locals as Parameters<typeof getUserId>[0]);
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
-        <span class="logout-wrapper"><SignOutButton>{t.appNav.logout}</SignOutButton></span>
+        <span class="logout-wrapper"><SignOutButton redirectUrl={p('/')}>{t.appNav.logout}</SignOutButton></span>
         <span class="nav-lang"><LanguageSwitcher /></span>
       </div>
     </nav>

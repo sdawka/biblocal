@@ -1,10 +1,21 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /signed-out
 Disallow: /biblio
 Disallow: /local
 Disallow: /profile
 Disallow: /stores
 Disallow: /store
+Disallow: /fr/biblio
+Disallow: /fr/local
+Disallow: /fr/profile
+Disallow: /fr/stores
+Disallow: /fr/store
+Disallow: /es/biblio
+Disallow: /es/local
+Disallow: /es/profile
+Disallow: /es/stores
+Disallow: /es/store
 
 Sitemap: https://biblocal.com/sitemap-index.xml

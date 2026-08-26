@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import MatchCardIsland from '../../src/components/MatchCardIsland.svelte';
 import type { Match, UserProfile } from '../../src/lib/types';
 
@@ -48,6 +48,17 @@ describe('MatchCardIsland', () => {
     expect(screen.getByRole('button', { name: /request to connect/i })).toBeTruthy();
   });
 
+  it('does not expose an English store error in the Spanish UI', async () => {
+    const match = makeMatch({ id: 'jane', name: 'Jane Reader', type: 'person' });
+    render(MatchCardIsland, { props: { match, lang: 'es' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: /solicitar conexión/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toBe('No se pudo enviar la solicitud');
+    });
+  });
+
   it('shows specialties and a /store/ link for a bookstore, with no Connect button', () => {
     const match = makeMatch(
       {
@@ -70,6 +81,21 @@ describe('MatchCardIsland', () => {
     expect(storeLink.getAttribute('href')).toBe('/store/bobs-books');
 
     expect(screen.queryByRole('button', { name: /connect/i })).toBeNull();
+  });
+
+  it('keeps bookstore details in the active locale', () => {
+    const match = makeMatch({
+      id: 'bobs-books',
+      name: "Bob's Books",
+      type: 'bookstore',
+      specialties: ['science-fiction'],
+    });
+    render(MatchCardIsland, { props: { match, lang: 'es' } });
+
+    expect(screen.getByText('Ciencia ficción')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /ver detalles/i }).getAttribute('href')).toBe(
+      '/es/store/bobs-books',
+    );
   });
 
   it('does not show a why-match line for a bookstore card', () => {

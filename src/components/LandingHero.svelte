@@ -86,7 +86,7 @@
     </div>
   </div>
 
-  <button class="scroll-hint" onclick={scrollDown} aria-label="Scroll to learn more">
+  <button class="scroll-hint" onclick={scrollDown} aria-label={t.scrollAria}>
     <span>{t.scroll}</span>
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 5v14M6 13l6 6 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>

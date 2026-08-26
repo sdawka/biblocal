@@ -1,12 +1,19 @@
 ---
-import { stripLocale, localizePath, languages, getLangFromUrl, type Lang } from '../i18n';
+import {
+  stripLocale,
+  localizePath,
+  getLangFromUrl,
+  getLanguagesForPath,
+  useTranslations,
+} from '../i18n';
 
 const current = getLangFromUrl(Astro.url);
 const base = stripLocale(Astro.url.pathname);
-const langs = Object.keys(languages) as Lang[];
+const langs = getLanguagesForPath(base);
+const label = useTranslations(current).common.langSwitch.label;
 ---
 
-<div class="lang-switch" role="group" aria-label="Language">
+<div class="lang-switch" role="group" aria-label={label}>
   {langs.map((l, i) => (
     <>
       {i > 0 && <span class="sep" aria-hidden="true">/</span>}

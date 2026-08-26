@@ -2,12 +2,12 @@
 // islands (no Astro-only globals).
 import { ui } from './ui';
 
-export const languages = { en: 'English', fr: 'Français' } as const;
+export const languages = { en: 'English', fr: 'Français', es: 'Español' } as const;
 export const defaultLang = 'en';
 export type Lang = keyof typeof languages;
 
 export function isLang(value: string | undefined): value is Lang {
-  return value === 'en' || value === 'fr';
+  return value !== undefined && Object.hasOwn(languages, value);
 }
 
 /** Derive the active language from a URL path ("/fr/about" -> "fr"). */
@@ -19,6 +19,23 @@ export function getLangFromUrl(url: URL | { pathname: string }): Lang {
 /** Translations for a language (FR already falls back to EN in ui.ts). */
 export function useTranslations(lang: Lang) {
   return ui[lang] ?? ui[defaultLang];
+}
+
+/** Translate canonical topic IDs while leaving user-authored labels untouched. */
+export function localizeTopicLabel(topic: string, lang: Lang): string {
+  const labels = useTranslations(lang).profile.topicPicker.labels as Record<string, string>;
+  return labels[topic] ?? topic;
+}
+
+/** Translate the six generated lending styles while preserving custom overrides. */
+export function localizeLendingPersonality(
+  personality: string,
+  lang: Lang,
+  isOverride = false,
+): string {
+  if (isOverride) return personality;
+  const labels = useTranslations(lang).profile.lendingStyle.autoLabels as Record<string, string>;
+  return labels[personality] ?? personality;
 }
 
 /**
@@ -40,4 +57,10 @@ export function stripLocale(path: string): string {
     return rest === '' ? '/' : rest;
   }
   return path;
+}
+
+/** Languages with actual content for a path. Blog articles are editorially translated. */
+export function getLanguagesForPath(path: string): Lang[] {
+  const base = stripLocale(path);
+  return base === '/blog' || base.startsWith('/blog/') ? ['en', 'fr'] : ['en', 'fr', 'es'];
 }

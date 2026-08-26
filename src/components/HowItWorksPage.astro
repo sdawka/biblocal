@@ -1,19 +1,20 @@
 ---
 import LandingLayout from '../layouts/LandingLayout.astro';
 import Footer from '../components/Footer.astro';
-import { useTranslations, type Lang } from '../i18n';
+import { localizePath, useTranslations, type Lang } from '../i18n';
 
 interface Props {
   lang?: Lang;
 }
 const { lang = 'en' } = Astro.props;
 const t = useTranslations(lang).howItWorks;
+const p = (path: string) => localizePath(path, lang);
 ---
 
 <LandingLayout lang={lang} title={t.meta.title} seo={{ description: t.meta.description }}>
   <main>
     <section class="hero-mini">
-      <a href="/" class="back-link rise">{t.hero.back}</a>
+      <a href={p('/')} class="back-link rise">{t.hero.back}</a>
       <span class="eyebrow rise rise-1">{t.hero.eyebrow}</span>
       <h1 class="serif rise rise-2">{t.hero.titleLines[0]}<br/>{t.hero.titleLines[1]}</h1>
       <p class="subtitle muted rise rise-3">{t.hero.subtitle}</p>
@@ -145,7 +146,7 @@ const t = useTranslations(lang).howItWorks;
     <section class="cta-section">
       <h2 class="serif">{t.cta.title}</h2>
       <p class="muted">{t.cta.body}</p>
-      <a href="/" class="btn btn-filled btn-lg">{t.cta.button}</a>
+      <a href={p('/')} class="btn btn-filled btn-lg">{t.cta.button}</a>
     </section>
 
     <Footer lang={lang} />

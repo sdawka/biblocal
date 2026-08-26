@@ -37,7 +37,7 @@
     if (!result.success) {
       respondErrors = {
         ...respondErrors,
-        [requestId]: result.error || t.couldNotRespond,
+        [requestId]: t.couldNotRespond,
       };
     }
   }

@@ -3,7 +3,7 @@ import type { UserProfile } from '../lib/types';
 
 export const seedUsers = atom<UserProfile[]>([]);
 export const usersLoading = atom<boolean>(false);
-export const usersError = atom<string | null>(null);
+export const usersError = atom<'load-failed' | null>(null);
 
 // In-flight guard: if two callers race, they share the same promise.
 let _loadSeedUsersPromise: Promise<void> | null = null;
@@ -17,11 +17,12 @@ export async function loadSeedUsers(): Promise<void> {
     usersError.set(null);
     try {
       const res = await fetch('/api/users.json');
-      if (!res.ok) throw new Error('Failed to load users');
+      if (!res.ok) throw new Error(`Failed to load users (${res.status})`);
       const data = (await res.json()) as UserProfile[];
       seedUsers.set(data);
     } catch (err) {
-      usersError.set(err instanceof Error ? err.message : 'Unknown error');
+      console.error('Failed to load users:', err);
+      usersError.set('load-failed');
     } finally {
       usersLoading.set(false);
       _loadSeedUsersPromise = null;

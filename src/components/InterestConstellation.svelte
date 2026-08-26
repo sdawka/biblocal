@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useTranslations, type Lang } from '../i18n';
+  import { localizeTopicLabel, useTranslations, type Lang } from '../i18n';
 
   interface Props {
     curated?: string[];
@@ -46,9 +46,9 @@
     };
 
     const allTopics = [
-      ...curated.map(t => ({ label: t, type: 'curated' as const })),
+      ...curated.map(t => ({ label: localizeTopicLabel(t, lang), type: 'curated' as const })),
       ...freeform.map(t => ({ label: t, type: 'freeform' as const })),
-      ...inferred.map(t => ({ label: t, type: 'inferred' as const })),
+      ...inferred.map(t => ({ label: localizeTopicLabel(t, lang), type: 'inferred' as const })),
     ];
 
     // Distribute in a spiral pattern from center
@@ -152,7 +152,7 @@
             y={star.y + star.size + 4}
             class="star-label {star.type}"
           >
-            {star.label.replaceAll('-', ' ')}
+            {star.label}
           </text>
         </g>
       {/each}
