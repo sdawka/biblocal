@@ -1,4 +1,5 @@
 {
+	"account_id": "1bae12d5089e4c2ee5c0e62c021a117f",
 	"compatibility_date": "2026-05-05",
 	"compatibility_flags": ["nodejs_compat", "disable_nodejs_process_v2"],
 	"name": "biblocal",
