@@ -9,5 +9,7 @@ describe('route redirects', () => {
     expect(r['/matches']).toBe('/local');
     expect(r['/fr/shelf']).toBe('/fr/biblio');
     expect(r['/fr/matches']).toBe('/fr/local');
+    expect(r['/es/shelf']).toBe('/es/biblio');
+    expect(r['/es/matches']).toBe('/es/local');
   });
 });

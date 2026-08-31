@@ -4,13 +4,14 @@ import LocalDiscovery from './LocalDiscovery.svelte';
 import PromptIsland from './PromptIsland.svelte';
 import { UserButton } from '@clerk/astro/components';
 import { env } from 'cloudflare:workers';
-import { useTranslations, type Lang } from '../i18n';
+import { localizePath, useTranslations, type Lang } from '../i18n';
 
 interface Props {
   lang?: Lang;
 }
 const { lang = 'en' } = Astro.props;
 const t = useTranslations(lang).matches;
+const p = (path: string) => localizePath(path, lang);
 
 const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 ---
@@ -23,8 +24,8 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
           <h1>{t.header.title}</h1>
         </div>
         <div class="header-actions">
-          <a href="/stores/new" class="btn btn-outline btn-sm add-store-link">{t.header.addStore}</a>
-          {!isQaMode && <UserButton />}
+          <a href={p('/stores/new')} class="btn btn-outline btn-sm add-store-link">{t.header.addStore}</a>
+          {!isQaMode && <UserButton signInUrl={p('/')} />}
         </div>
       </div>
 

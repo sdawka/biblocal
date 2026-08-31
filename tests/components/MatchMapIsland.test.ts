@@ -195,10 +195,11 @@ describe('LocalPanel', () => {
 
   it('renders an error state before any data has arrived', () => {
     render(LocalPanel, {
-      props: { ...baseProps(), error: 'network down', hasAnyData: false },
+      props: { ...baseProps(), error: 'network down', hasAnyData: false, lang: 'es' },
     });
     expect(screen.getByRole('alert')).toBeTruthy();
-    expect(screen.getByText('network down')).toBeTruthy();
+    expect(screen.getByText('No se pudieron cargar las coincidencias cercanas.')).toBeTruthy();
+    expect(screen.queryByText('network down')).toBeNull();
   });
 
   it('calls onQueryChange as the search input changes', async () => {

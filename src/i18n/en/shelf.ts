@@ -9,6 +9,7 @@ export default {
     zoneTitle: 'Add a book',
     importSummary: 'Import from Goodreads',
     intakeAriaLabel: 'Add books',
+    closeAdd: 'Close',
   },
   intents: {
     prompt: 'Open to:',
@@ -200,6 +201,8 @@ export default {
     skipped: 'skipped (duplicates)',
     // {n} interpolated
     errorsLabel: 'errors:',
+    failedBook: 'Could not import {title}',
+    failedUnknownBook: 'Could not import a book',
     andMore: '...and {n} more',
     done: 'Done',
   },

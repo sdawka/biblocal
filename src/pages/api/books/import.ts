@@ -130,11 +130,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const toImport: ImportBook[] = [];
     for (const book of body.books) {
       if (!book.title || !book.author || typeof book.title !== 'string' || typeof book.author !== 'string') {
-        result.errors.push(`Skipped book with missing title or author`);
+        result.errors.push(typeof book.title === 'string' ? book.title : '');
         continue;
       }
       if (book.title.length > MAX_BOOK_TITLE_LEN || book.author.length > MAX_BOOK_AUTHOR_LEN) {
-        result.errors.push(`Skipped "${book.title.slice(0, 50)}": title or author too long`);
+        result.errors.push(book.title.slice(0, 50));
         continue;
       }
       if (book.isbn && existingIsbns.has(book.isbn)) {
@@ -192,8 +192,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         result.imported++;
       } catch (e) {
         // Never echo raw DB error messages to the client.
-        console.error('Import book insert error:', e);
-        result.errors.push(`Failed to import "${book.title}"`);
+        console.error('Import book insert error:', { title: book.title, error: e });
+        result.errors.push(book.title);
       }
     }
 

@@ -39,6 +39,7 @@ export default {
     errorTitle: "Couldn't load nearby matches.",
     empty: 'Add some books to find matches!',
     locationNotShared: 'Location not shared',
+    chooseView: 'Choose discovery view',
   },
   hub: {
     panelBooks: 'Books',

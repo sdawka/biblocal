@@ -1,0 +1,37 @@
+---
+import type { Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<span data-clerk-locale={lang} hidden></span>
+
+<script>
+  import { $isLoadedStore, updateClerkOptions } from '@clerk/astro/client';
+
+  const lang = document.querySelector<HTMLElement>('[data-clerk-locale]')?.dataset.clerkLocale;
+  try {
+    localStorage.setItem('biblocal-lang', lang ?? 'en');
+  } catch {}
+  const loadLocalization =
+    lang === 'fr'
+      ? () => import('@clerk/localizations/fr-FR').then((module) => module.frFR)
+      : lang === 'es'
+        ? () => import('@clerk/localizations/es-ES').then((module) => module.esES)
+        : undefined;
+  let applying = false;
+
+  if (loadLocalization) {
+    $isLoadedStore.subscribe(async (isLoaded) => {
+      if (isLoaded && !applying) {
+        applying = true;
+        const localization = await loadLocalization();
+        updateClerkOptions({ localization });
+      }
+    });
+  }
+</script>

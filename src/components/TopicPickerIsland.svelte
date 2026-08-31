@@ -2,7 +2,7 @@
   import { CURATED_TOPICS } from '../stores/topics';
   import { profile, updateTopics } from '../stores/profile';
   import type { UserTopics } from '../lib/types';
-  import { useTranslations, type Lang } from '../i18n';
+  import { localizeTopicLabel, useTranslations, type Lang } from '../i18n';
 
   interface Props {
     mode?: 'curated' | 'freeform' | 'both';
@@ -58,7 +58,7 @@
             disabled={!topics.curated.includes(topic) &&
               topics.curated.length >= maxCurated}
           >
-            {topic.replace(/-/g, ' ')}
+            {localizeTopicLabel(topic, lang)}
           </button>
         {/each}
       </div>

@@ -8,6 +8,7 @@ export default {
     zoneTitle: 'Ajouter un livre',
     importSummary: 'Importer depuis Goodreads',
     intakeAriaLabel: 'Ajouter des livres',
+    closeAdd: 'Fermer',
   },
   intents: {
     prompt: 'Ouvert à :',
@@ -194,6 +195,8 @@ export default {
     imported: 'importés',
     skipped: 'ignorés (doublons)',
     errorsLabel: 'erreurs :',
+    failedBook: 'Impossible d’importer {title}',
+    failedUnknownBook: 'Impossible d’importer un livre',
     andMore: '...et {n} de plus',
     done: 'Terminé',
   },

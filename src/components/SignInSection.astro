@@ -1,9 +1,10 @@
 ---
 import { SignIn, Show } from '@clerk/astro/components';
-import { useTranslations, type Lang } from '../i18n';
+import { localizePath, useTranslations, type Lang } from '../i18n';
 
 const { lang = 'en' as Lang } = Astro.props;
 const t = useTranslations(lang);
+const signedInUrl = localizePath('/biblio', lang);
 ---
 
 <section id="signin-section" class="signin-section" aria-labelledby="signin-title">
@@ -35,7 +36,10 @@ const t = useTranslations(lang);
     <div class="signin-card card">
       <Show when="signed-out">
         <div class="clerk-container">
-          <SignIn />
+          <SignIn
+            fallbackRedirectUrl={signedInUrl}
+            signUpFallbackRedirectUrl={signedInUrl}
+          />
         </div>
       </Show>
     </div>

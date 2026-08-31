@@ -20,7 +20,11 @@ const t = useTranslations(lang).home;
 <LandingLayout
   lang={lang}
   title={t.meta.title}
-  seo={{ description: t.meta.description, jsonLd: [webApplicationJsonLd()] }}
+  seo={{
+    description: t.meta.description,
+    organizationDescription: t.meta.description,
+    jsonLd: [webApplicationJsonLd(t.meta.description)],
+  }}
 >
   <main>
     <LandingHero lang={lang} client:load />

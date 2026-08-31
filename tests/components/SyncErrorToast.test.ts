@@ -8,6 +8,10 @@ vi.mock('../../src/i18n', () => ({
   useTranslations: (lang: string) => ({
     common: {
       dismiss: 'Dismiss',
+      syncError:
+        lang === 'es'
+          ? 'No se pudo guardar el cambio. Inténtalo de nuevo.'
+          : 'Could not save your change. Please try again.',
     },
   }),
 }));
@@ -33,12 +37,13 @@ describe('SyncErrorToast', () => {
       expect(toast).toBeTruthy();
     });
 
-    it('renders error message text', () => {
+    it('renders a safe localized error message instead of raw failure details', () => {
       const errorMessage = 'Network error: connection failed';
       syncError.set(errorMessage);
       render(SyncErrorToast, { props: { lang: 'en' } });
 
-      expect(screen.queryByText(errorMessage)).toBeTruthy();
+      expect(screen.getByText('Could not save your change. Please try again.')).toBeTruthy();
+      expect(screen.queryByText(errorMessage)).toBeNull();
     });
 
     it('toast has correct CSS classes', () => {
@@ -117,12 +122,12 @@ describe('SyncErrorToast', () => {
       syncError.set('First error');
       const { rerender } = render(SyncErrorToast, { props: { lang: 'en' } });
 
-      expect(screen.queryByText('First error')).toBeTruthy();
+      expect(screen.getByText('Could not save your change. Please try again.')).toBeTruthy();
 
       // Re-render with new store value
       syncError.set('Second error');
       rerender(SyncErrorToast, { props: { lang: 'en' } });
-      expect(screen.queryByText('Second error')).toBeTruthy();
+      expect(screen.getByText('Could not save your change. Please try again.')).toBeTruthy();
     });
 
     it('shows new error after dismissing previous one', () => {
@@ -157,7 +162,8 @@ describe('SyncErrorToast', () => {
       const { container } = render(SyncErrorToast, { props: { lang: 'en' } });
 
       expect(container.querySelector('.sync-toast')).toBeTruthy();
-      expect(screen.queryByText(error)).toBeTruthy();
+      expect(screen.getByText('Could not save your change. Please try again.')).toBeTruthy();
+      expect(screen.queryByText(error)).toBeNull();
     });
   });
 
@@ -176,7 +182,8 @@ describe('SyncErrorToast', () => {
       syncError.set(longError);
       render(SyncErrorToast, { props: { lang: 'en' } });
 
-      expect(screen.queryByText(longError)).toBeTruthy();
+      expect(screen.getByText('Could not save your change. Please try again.')).toBeTruthy();
+      expect(screen.queryByText(longError)).toBeNull();
     });
 
     it('handles special characters in error message', () => {
@@ -184,7 +191,8 @@ describe('SyncErrorToast', () => {
       syncError.set(specialError);
       render(SyncErrorToast, { props: { lang: 'en' } });
 
-      expect(screen.queryByText(specialError)).toBeTruthy();
+      expect(screen.getByText('Could not save your change. Please try again.')).toBeTruthy();
+      expect(screen.queryByText(specialError)).toBeNull();
     });
 
     it('handles null error (no toast)', () => {
@@ -211,6 +219,14 @@ describe('SyncErrorToast', () => {
 
       const toast = container.querySelector('.sync-toast');
       expect(toast).toBeTruthy();
+    });
+
+    it('replaces raw English failure details with a localized message', () => {
+      syncError.set('Network error');
+      render(SyncErrorToast, { props: { lang: 'es' } });
+
+      expect(screen.getByText('No se pudo guardar el cambio. Inténtalo de nuevo.')).toBeTruthy();
+      expect(screen.queryByText('Network error')).toBeNull();
     });
   });
 });

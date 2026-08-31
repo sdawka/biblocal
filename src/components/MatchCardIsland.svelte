@@ -8,7 +8,7 @@
     sendConnectionRequest,
   } from '../stores/connections';
   import { connectButtonState } from '../lib/connection-ui';
-  import { useTranslations, type Lang } from '../i18n';
+  import { localizePath, localizeTopicLabel, useTranslations, type Lang } from '../i18n';
 
   interface Props {
     match: Match;
@@ -53,7 +53,7 @@
     const result = await sendConnectionRequest(match.user.id);
     requesting = false;
     if (!result.success) {
-      requestError = result.error || t.failedToSend;
+      requestError = t.failedToSend;
     }
   }
 
@@ -161,7 +161,7 @@
     {#if isStore && specialties.length > 0}
       <div class="specialties">
         {#each specialties.slice(0, 4) as specialty}
-          <span class="specialty-tag">{specialty}</span>
+          <span class="specialty-tag">{localizeTopicLabel(specialty, lang)}</span>
         {/each}
         {#if specialties.length > 4}
           <span class="specialty-tag more">+{specialties.length - 4}</span>
@@ -221,7 +221,7 @@
 
   {#if isStore}
     <div class="store-quicklinks">
-      <a href={`/store/${match.user.id}`} onclick={(e) => e.stopPropagation()}>
+      <a href={localizePath(`/store/${match.user.id}`, lang)} onclick={(e) => e.stopPropagation()}>
         {t.viewStoreDetails}
       </a>
     </div>

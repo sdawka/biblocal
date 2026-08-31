@@ -111,7 +111,6 @@
 {:else if error && !hasAnyData}
   <div class="panel-state error" role="alert">
     <p>{th.errorTitle}</p>
-    <p class="state-note">{error}</p>
   </div>
 {:else if panel === 'books'}
   {#if bookGroups.length === 0 && bookGroupsUnlocated.length === 0}
@@ -306,10 +305,6 @@
     font-size: 0.85rem;
     color: var(--ink-faint);
   }
-  .panel-state.error .state-note {
-    color: var(--danger);
-  }
-
   .skeleton-list {
     display: flex;
     flex-direction: column;

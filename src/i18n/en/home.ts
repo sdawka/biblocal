@@ -16,6 +16,7 @@ export default {
     how: 'How it works',
     meta: ['Lend', 'Borrow', 'Discuss', 'Gift', 'Hunt'],
     scroll: 'Keep reading',
+    scrollAria: 'Scroll to learn more',
   },
   shelf: {
     eyebrow: 'Your branch',

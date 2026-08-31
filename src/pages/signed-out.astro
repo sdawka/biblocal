@@ -1,0 +1,24 @@
+---
+// Clerk's UserButton has one instance-wide sign-out destination. Keep that
+// destination stable, then restore the locale last used in this browser.
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="noindex" />
+    <title>biblocal</title>
+  </head>
+  <body>
+    <noscript><a href="/">biblocal</a></noscript>
+    <script is:inline>
+      let lang = 'en';
+      try {
+        lang = localStorage.getItem('biblocal-lang') || 'en';
+      } catch {}
+      const destination = lang === 'fr' ? '/fr' : lang === 'es' ? '/es' : '/';
+      window.location.replace(destination);
+    </script>
+  </body>
+</html>

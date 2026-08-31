@@ -54,6 +54,13 @@ describe('Bookshelf', () => {
     expect(link.getAttribute('href')).toContain('/local');
   });
 
+  it('keeps the Explore nearby link in the active locale', () => {
+    render(Bookshelf, { props: { lang: 'es' } });
+    const link = screen.getByRole('link', { name: /explorar cerca/i });
+
+    expect(link.getAttribute('href')).toBe('/es/local');
+  });
+
   it('hides the Explore nearby link while adding a book', async () => {
     render(Bookshelf, { props: { lang: 'en' } });
     await fireEvent.click(screen.getByRole('button', { name: /add.*book/i }));

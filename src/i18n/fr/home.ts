@@ -14,6 +14,7 @@ export default {
     how: 'Comment ça marche',
     meta: ['Prêter', 'Emprunter', 'Discuter', 'Offrir', 'Chercher'],
     scroll: 'Continuez à lire',
+    scrollAria: 'Faire défiler pour en savoir plus',
   },
   shelf: {
     eyebrow: 'Votre annexe',

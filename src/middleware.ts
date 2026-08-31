@@ -2,6 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/astro/server';
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
 import { qaBypassAllowed } from './lib/auth';
+import { getLangFromUrl, localizePath } from './i18n';
 
 const isPublicRoute = createRouteMatcher([
   '/',
@@ -15,18 +16,24 @@ const isPublicRoute = createRouteMatcher([
   '/fr/how-it-works',
   '/fr/blog',
   '/fr/blog/(.*)',
+  // Spanish UI routes. Blog articles remain editorially available in EN/FR.
+  '/es',
+  '/es/about',
+  '/es/how-it-works',
+  '/signed-out',
   '/api/(.*)',
 ]);
 
 const clerkAuthMiddleware = clerkMiddleware((auth, context) => {
   const { userId } = auth();
   const url = new URL(context.request.url);
-  const isFr = url.pathname === '/fr' || url.pathname.startsWith('/fr/');
-  const homePath = isFr ? '/fr' : '/';
+  const lang = getLangFromUrl(url);
+  const homePath = localizePath('/', lang);
+  const isHome = url.pathname === homePath || (homePath !== '/' && url.pathname === `${homePath}/`);
 
   // Signed-in users on a home page → redirect to the shelf (same locale).
-  if (userId && (url.pathname === '/' || url.pathname === '/fr')) {
-    return context.redirect(isFr ? '/fr/biblio' : '/biblio');
+  if (userId && isHome) {
+    return context.redirect(localizePath('/biblio', lang));
   }
 
   // Protected routes: require auth, bouncing to the same-locale home.

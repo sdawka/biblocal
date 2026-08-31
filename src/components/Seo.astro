@@ -6,7 +6,7 @@ import {
   SITE_NAME,
   absoluteUrl,
 } from '../lib/seo';
-import { stripLocale, localizePath, languages, type Lang } from '../i18n';
+import { stripLocale, localizePath, getLanguagesForPath, type Lang } from '../i18n';
 
 interface Props {
   title: string;
@@ -16,23 +16,36 @@ interface Props {
   ogImage?: string;
   type?: 'website' | 'article';
   jsonLd?: object[];
+  organizationDescription?: string;
 }
 
-const { title, description, path, lang = 'en', ogImage, type, jsonLd = [] } = Astro.props;
+const {
+  title,
+  description,
+  path,
+  lang = 'en',
+  ogImage,
+  type,
+  jsonLd = [],
+  organizationDescription,
+} = Astro.props;
 const seo = resolveSeo({ title, description, path, ogImage, type });
 
 // hreflang alternates for the same page across locales.
 const basePath = stripLocale(path);
-const alternates = (Object.keys(languages) as Lang[]).map((l) => ({
+const alternates = getLanguagesForPath(basePath).map((l) => ({
   lang: l,
   href: absoluteUrl(localizePath(basePath, l)),
 }));
 const xDefault = absoluteUrl(localizePath(basePath, 'en'));
-const ogLocale = lang === 'fr' ? 'fr_FR' : 'en_US';
-const ogLocaleAlt = lang === 'fr' ? 'en_US' : 'fr_FR';
+const ogLocales: Record<Lang, string> = { en: 'en_US', fr: 'fr_FR', es: 'es_ES' };
+const ogLocale = ogLocales[lang];
+const ogLocaleAlternates = getLanguagesForPath(basePath)
+  .filter((l) => l !== lang)
+  .map((l) => ogLocales[l]);
 
 // Site-wide structured data always present; page-specific appended.
-const graphs = [organizationJsonLd(), websiteJsonLd(), ...jsonLd];
+const graphs = [organizationJsonLd(organizationDescription), websiteJsonLd(), ...jsonLd];
 ---
 
 <title>{seo.title}</title>
@@ -47,7 +60,9 @@ const graphs = [organizationJsonLd(), websiteJsonLd(), ...jsonLd];
 <meta property="og:type" content={seo.type} />
 <meta property="og:site_name" content={SITE_NAME} />
 <meta property="og:locale" content={ogLocale} />
-<meta property="og:locale:alternate" content={ogLocaleAlt} />
+{ogLocaleAlternates.map((locale) => (
+  <meta property="og:locale:alternate" content={locale} />
+))}
 <meta property="og:title" content={seo.title} />
 <meta property="og:description" content={seo.description} />
 <meta property="og:url" content={seo.canonical} />

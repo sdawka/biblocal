@@ -8,7 +8,7 @@
 
 {#if $syncError}
   <div class="sync-toast rise" role="alert">
-    <p class="sync-toast-msg">{$syncError}</p>
+    <p class="sync-toast-msg">{t.syncError}</p>
     <button
       type="button"
       class="sync-toast-close"
