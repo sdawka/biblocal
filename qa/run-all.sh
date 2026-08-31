@@ -17,24 +17,33 @@ command -v agent-browser >/dev/null 2>&1 || {
   exit 1
 }
 
-# Check if dev server is running
-if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:4321/ | grep -q "200\|302"; then
-  echo "Warning: Dev server may not be running on localhost:4321"
-  echo "Start it with: npm run dev"
-  echo ""
-fi
-
-# Close any existing browser session
-agent-browser close >/dev/null 2>&1 || true
-
 # Configuration
 export BASE_URL="${BASE_URL:-http://localhost:4321}"
 export TEST_EMAIL="${TEST_EMAIL:-qa+clerk_test@example.com}"
 export TEST_PASSWORD="${TEST_PASSWORD:-biblocalqa}"
 export TEST_VERIFY_CODE="${TEST_VERIFY_CODE:-424242}"
 
+# Which D1 database scenario seeds (scripts/qa-scenario.sh) should target:
+# the local D1 when testing a local server, the remote QA D1 otherwise.
+# Overridable by setting QA_TARGET explicitly.
+case "$BASE_URL" in
+  *localhost*|*127.0.0.1*) export QA_TARGET="${QA_TARGET:-local}" ;;
+  *)                       export QA_TARGET="${QA_TARGET:-remote}" ;;
+esac
+
+# Check the server under test is responding
+if ! curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/" | grep -q "200\|302"; then
+  echo "Warning: Server may not be responding at $BASE_URL"
+  echo "For local runs, start it with: npm run dev"
+  echo ""
+fi
+
+# Close any existing browser session
+agent-browser close >/dev/null 2>&1 || true
+
 echo "Config:"
 echo "  BASE_URL: $BASE_URL"
+echo "  QA_TARGET: $QA_TARGET"
 echo "  TEST_EMAIL: $TEST_EMAIL"
 echo ""
 
@@ -83,6 +92,12 @@ run_journey "Connections" "$SCRIPT_DIR/journeys/08-connections.sh"
 run_journey "Edge Cases" "$SCRIPT_DIR/journeys/09-edge-cases.sh"
 run_journey "Bookstore" "$SCRIPT_DIR/journeys/10-bookstore.sh"
 run_journey "Filters" "$SCRIPT_DIR/journeys/11-filters.sh"
+run_journey "Scanner" "$SCRIPT_DIR/journeys/12-scanner.sh"
+run_journey "Goodreads Import" "$SCRIPT_DIR/journeys/13-import.sh"
+run_journey "Book Lifecycle" "$SCRIPT_DIR/journeys/14-book-lifecycle.sh"
+run_journey "Stores Directory" "$SCRIPT_DIR/journeys/15-stores.sh"
+run_journey "Profile Save" "$SCRIPT_DIR/journeys/16-profile-save.sh"
+run_journey "Content Pages" "$SCRIPT_DIR/journeys/17-content-pages.sh"
 
 # Summary
 echo ""

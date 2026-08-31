@@ -27,18 +27,18 @@ assert_element "Continue"
 info "Test: /biblio redirects unauthenticated users"
 agent-browser open "$BASE_URL/biblio" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
-assert_url "/"
+assert_path "/"
 assert_element "Sign in"
 
 info "Test: /profile redirects unauthenticated users"
 agent-browser open "$BASE_URL/profile" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
-assert_url "/"
+assert_path "/"
 
 info "Test: /local redirects unauthenticated users"
 agent-browser open "$BASE_URL/local" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
-assert_url "/"
+assert_path "/"
 
 # Test 3: Login flow
 info "Test: Login redirects to /biblio"
@@ -68,7 +68,7 @@ assert_url "/local"
 # Test 6: Logout
 info "Test: Logout returns to home"
 logout_user
-assert_url "/"
+assert_path "/"
 assert_element "Sign in"
 
 echo ""

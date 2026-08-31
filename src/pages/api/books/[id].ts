@@ -13,8 +13,14 @@ import {
   VALID_OWNERSHIP,
   VALID_INTENTS,
   VALID_STATUS,
+  MAX_BOOK_TITLE_LEN,
+  MAX_BOOK_AUTHOR_LEN,
+  MAX_BOOK_ISBN_LEN,
+  MAX_COVER_URL_LEN,
+  MAX_NOTE_TEXT_LEN,
 } from '../../../lib/validation';
 import { isHostedCoverUrl, hostedImageIdFromUrl } from '../../../lib/coverImages';
+import { readJsonBody } from '../../../lib/request';
 
 type Env = { DB: D1Database };
 
@@ -56,7 +62,54 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    const updates = (await request.json()) as Record<string, unknown>;
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const updates = parsed.body as Record<string, unknown>;
+
+    // Text fields must be strings before they reach the update. A null/non-string
+    // title or author would violate the NOT NULL constraint (500) or corrupt the row.
+    const requiredTextFields = [
+      ['title', MAX_BOOK_TITLE_LEN],
+      ['author', MAX_BOOK_AUTHOR_LEN],
+    ] as const;
+    for (const [field, maxLen] of requiredTextFields) {
+      const value = updates[field];
+      if (value === undefined) continue;
+      if (typeof value !== 'string' || value.trim() === '') {
+        return new Response(JSON.stringify({ error: `${field} must be a non-empty string` }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (value.length > maxLen) {
+        return new Response(
+          JSON.stringify({ error: `${field} must be at most ${maxLen} characters` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    // Nullable text fields: null clears them, anything else must be a capped string.
+    const optionalTextFields = [
+      ['isbn', MAX_BOOK_ISBN_LEN],
+      ['coverUrl', MAX_COVER_URL_LEN],
+      ['notes', MAX_NOTE_TEXT_LEN],
+    ] as const;
+    for (const [field, maxLen] of optionalTextFields) {
+      const value = updates[field];
+      if (value === undefined || value === null) continue;
+      if (typeof value !== 'string') {
+        return new Response(JSON.stringify({ error: `${field} must be a string` }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (value.length > maxLen) {
+        return new Response(
+          JSON.stringify({ error: `${field} must be at most ${maxLen} characters` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // Validate enum fields before processing
     if (updates.visibility !== undefined) {

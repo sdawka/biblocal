@@ -82,7 +82,10 @@
         mode = 'manual';
       }
     } catch {
-      error = t.errors.notFound;
+      // fetchByIsbn throws OpenLibraryNetworkError when the request itself
+      // failed (offline/timeout) — the book may well exist, so stay in ISBN
+      // mode and let the user retry rather than telling them it wasn't found.
+      error = t.errors.networkError;
     } finally {
       loading = false;
     }
@@ -97,6 +100,9 @@
     previewBook = {
       title: title.trim(),
       author: author.trim(),
+      // A failed lookup falls back to manual entry; keep the scanned/typed
+      // ISBN (and thereby its scan provenance via isbnSource) on the book.
+      isbn: isValidIsbn(isbn) ? isbn.replace(/[-\s]/g, '').toUpperCase() : undefined,
     };
   }
 

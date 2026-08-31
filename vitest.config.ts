@@ -16,6 +16,9 @@ export default defineConfig({
       'cloudflare:workers': fileURLToPath(
         new URL('./tests/mocks/cloudflare-workers.ts', import.meta.url),
       ),
+      'astro:middleware': fileURLToPath(
+        new URL('./tests/mocks/astro-middleware.ts', import.meta.url),
+      ),
     },
     conditions: ['node'],
   },

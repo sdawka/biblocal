@@ -54,7 +54,7 @@ ref=$(echo "$snapshot" | grep -i "biblocal" | grep "link" | grep -o '\[ref=e[0-9
 agent-browser click @"$ref" >/dev/null 2>&1
 agent-browser wait --load networkidle >/dev/null 2>&1
 if is_qa_mode; then
-  assert_url "/"
+  assert_path "/"
   pass "Logo navigates to home (QA mode: no authenticated redirect)"
 else
   assert_url "/biblio"
@@ -83,14 +83,21 @@ else
 fi
 
 # Test 6: Responsive viewport (mobile)
+# `set viewport` actually resizes the page (assigning window.innerWidth via
+# eval is a no-op — the property is read-only).
 info "Test: Mobile viewport"
-agent-browser eval 'window.innerWidth = 375; window.innerHeight = 667' >/dev/null 2>&1
+agent-browser set viewport 375 667 >/dev/null 2>&1
 sleep 1
-agent-browser screenshot >/dev/null 2>&1
-pass "Mobile viewport screenshot captured"
+snapshot=$(agent-browser snapshot -i 2>/dev/null)
+if echo "$snapshot" | grep -qi "biblio"; then
+  agent-browser screenshot >/dev/null 2>&1
+  pass "Page renders at mobile viewport (375x667)"
+else
+  fail "Page content missing at mobile viewport (375x667)"
+fi
 
 # Reset viewport
-agent-browser eval 'window.innerWidth = 1280; window.innerHeight = 800' >/dev/null 2>&1
+agent-browser set viewport 1280 800 >/dev/null 2>&1
 
 echo ""
 pass "Navigation journey complete!"

@@ -55,6 +55,7 @@ export default {
     errors: {
       invalidIsbn: 'Please enter a valid 10 or 13 digit ISBN',
       notFound: 'Book not found. Try manual entry.',
+      networkError: 'Could not reach the book database. Check your connection and try again.',
       titleAuthorRequired: 'Title and author are required',
     },
     duplicate: {

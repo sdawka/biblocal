@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Journey: Filters
 # Scenario: power (50 books with varied intents)
-# Tests: Filter by intent, verify counts, filter combinations
+# Tests: open the Filter popover, filter by intent/ownership/visibility, reset
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/helpers.sh"
@@ -9,6 +9,58 @@ source "$SCRIPT_DIR/../lib/helpers.sh"
 echo "═══════════════════════════════════════"
 echo "Journey 11: Filters"
 echo "═══════════════════════════════════════"
+
+# Filter chips live inside FilterPopover (opened from the "Filters" button in
+# the biblio toolbar — see ShelfIsland.svelte / FilterPopover.svelte), not on
+# the page itself. Every filter interaction must open the popover first;
+# grepping the bare page for "Lending" etc. finds card intent pills instead.
+
+# Open the Filter popover (idempotent: no-op if already open).
+open_filter_popover() {
+  local snapshot ref
+  snapshot=$(agent-browser snapshot -i 2>/dev/null)
+  # aria-expanded shows in the snapshot when the popover is already open
+  if echo "$snapshot" | grep -i "filter" | grep -qi "expanded"; then
+    return 0
+  fi
+  ref=$(echo "$snapshot" | grep -i "filter" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
+  [ -n "$ref" ] || fail "Filter button not found in biblio toolbar"
+  agent-browser click @"$ref" >/dev/null 2>&1
+  sleep 0.5
+  snapshot=$(agent-browser snapshot -i 2>/dev/null)
+  if ! echo "$snapshot" | grep -qi "private only"; then
+    fail "Filter popover did not open (no filter chips in snapshot)"
+  fi
+}
+
+# Toggle the chip labelled $1 inside the open popover. Chips carry a count
+# suffix (e.g. "Lending 20"), which distinguishes them from same-named intent
+# pills on book cards; the popover also precedes the cards in the snapshot,
+# so the first match falls back to the chip if no counted label is found.
+toggle_chip() {
+  local label="$1"
+  local snapshot ref
+  snapshot=$(agent-browser snapshot -i 2>/dev/null)
+  ref=$(echo "$snapshot" | grep -iE "\"$label [0-9]+\"" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
+  if [ -z "$ref" ]; then
+    ref=$(echo "$snapshot" | grep -i "button" | grep -i "$label" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
+  fi
+  [ -n "$ref" ] || fail "Filter chip '$label' not found in popover"
+  agent-browser click @"$ref" >/dev/null 2>&1
+  sleep 0.5
+}
+
+# Assert a title pattern is NOT in the current snapshot (filtered out).
+assert_absent() {
+  local pattern="$1"
+  local snapshot
+  snapshot=$(agent-browser snapshot -i 2>/dev/null)
+  if echo "$snapshot" | grep -qi "$pattern"; then
+    fail "Expected '$pattern' to be filtered out, but it is still visible"
+  else
+    pass "'$pattern' filtered out"
+  fi
+}
 
 # Load power scenario (50 books)
 info "Loading power scenario..."
@@ -24,128 +76,67 @@ agent-browser wait --load networkidle >/dev/null 2>&1
 sleep 2
 
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
-
-# Should see multiple books
 if echo "$snapshot" | grep -qi "dune\|foundation\|neuromancer"; then
   pass "Multiple books visible on biblio"
 else
-  info "Book titles not found in snapshot"
+  fail "Power scenario books (Dune/Foundation/Neuromancer) not visible on biblio"
 fi
 
-# Look for filter controls
-info "Test: Filter controls present"
-if echo "$snapshot" | grep -qi "filter\|all\|lend\|discuss\|gift\|seek\|private"; then
-  pass "Filter controls visible"
-else
-  info "Filter controls may use different labels"
-fi
+# Open the filter popover
+info "Test: Filter popover opens"
+open_filter_popover
+pass "Filter popover open with filter chips"
 
-# Test borrowable filter
-info "Test: Filter by borrowable"
-borrow_ref=$(echo "$snapshot" | grep -i "lend\|borrow" | grep -o '\[ref=e[0-9]*\]' | head -1 | sed 's/\[ref=//;s/\]//')
-if [ -n "$borrow_ref" ]; then
-  agent-browser click @"$borrow_ref" >/dev/null 2>&1
-  sleep 0.5
+# Test borrowable (Lending) filter
+info "Test: Filter by Lending"
+toggle_chip "Lending"
+assert_element "dune"
+assert_absent "godel"
+toggle_chip "Lending"  # clear before next test
 
-  snapshot=$(agent-browser snapshot -i 2>/dev/null)
-  # Power user has 15 borrowable + 5 both = ~20 should show
-  if echo "$snapshot" | grep -qi "dune\|foundation"; then
-    pass "Borrowable filter applied"
-  fi
-else
-  info "Could not find borrowable filter"
-fi
+# Test discussable (Discussion) filter
+info "Test: Filter by Discussion"
+toggle_chip "Discussion"
+assert_element "godel"
+assert_absent "neuromancer"
+toggle_chip "Discussion"
 
-# Test discussable filter
-info "Test: Filter by discussable"
-snapshot=$(agent-browser snapshot -i 2>/dev/null)
-discuss_ref=$(echo "$snapshot" | grep -i "discuss" | grep -o '\[ref=e[0-9]*\]' | head -1 | sed 's/\[ref=//;s/\]//')
-if [ -n "$discuss_ref" ]; then
-  agent-browser click @"$discuss_ref" >/dev/null 2>&1
-  sleep 0.5
+# Test giftable (Gifting) filter
+info "Test: Filter by Gifting"
+toggle_chip "Gifting"
+assert_element "alchemist"
+assert_absent "neuromancer"
+toggle_chip "Gifting"
 
-  snapshot=$(agent-browser snapshot -i 2>/dev/null)
-  if echo "$snapshot" | grep -qi "godel\|master\|margarita\|borges"; then
-    pass "Discussable filter applied"
-  fi
-else
-  info "Could not find discussable filter"
-fi
+# Test seeking (ownership) filter
+info "Test: Filter by am seeking"
+toggle_chip "am seeking"
+assert_element "small gods"
+assert_absent "dune"
+toggle_chip "am seeking"
 
-# Test giftable filter
-info "Test: Filter by giftable"
-snapshot=$(agent-browser snapshot -i 2>/dev/null)
-gift_ref=$(echo "$snapshot" | grep -i "gift" | grep -o '\[ref=e[0-9]*\]' | head -1 | sed 's/\[ref=//;s/\]//')
-if [ -n "$gift_ref" ]; then
-  agent-browser click @"$gift_ref" >/dev/null 2>&1
-  sleep 0.5
+# Test private-only (visibility) filter
+info "Test: Filter by Private only"
+toggle_chip "Private only"
+assert_element "diary"
+assert_absent "dune"
+toggle_chip "Private only"
 
-  snapshot=$(agent-browser snapshot -i 2>/dev/null)
-  if echo "$snapshot" | grep -qi "alchemist\|little prince\|siddhartha"; then
-    pass "Giftable filter applied"
-  fi
-else
-  info "Could not find giftable filter"
-fi
-
-# Test seeking filter
-info "Test: Filter by seeking"
-snapshot=$(agent-browser snapshot -i 2>/dev/null)
-seek_ref=$(echo "$snapshot" | grep -i "seek\|want" | grep -o '\[ref=e[0-9]*\]' | head -1 | sed 's/\[ref=//;s/\]//')
-if [ -n "$seek_ref" ]; then
-  agent-browser click @"$seek_ref" >/dev/null 2>&1
-  sleep 0.5
-
-  snapshot=$(agent-browser snapshot -i 2>/dev/null)
-  if echo "$snapshot" | grep -qi "small gods\|infinite jest\|house of leaves"; then
-    pass "Seeking filter applied"
-  fi
-else
-  info "Could not find seeking filter"
-fi
-
-# Test private filter
-info "Test: Filter by private"
-snapshot=$(agent-browser snapshot -i 2>/dev/null)
-private_ref=$(echo "$snapshot" | grep -i "private" | grep -o '\[ref=e[0-9]*\]' | head -1 | sed 's/\[ref=//;s/\]//')
-if [ -n "$private_ref" ]; then
-  agent-browser click @"$private_ref" >/dev/null 2>&1
-  sleep 0.5
-
-  snapshot=$(agent-browser snapshot -i 2>/dev/null)
-  # Private books should show (diary, self-help, etc.)
-  if echo "$snapshot" | grep -qi "diary\|embarrassing\|secret\|guilty"; then
-    pass "Private filter applied"
-  else
-    # Private books might have generic titles
-    pass "Private filter clicked (content may vary)"
-  fi
-else
-  info "Could not find private filter"
-fi
-
-# Reset to all
-info "Test: Reset to all books"
-snapshot=$(agent-browser snapshot -i 2>/dev/null)
-all_ref=$(echo "$snapshot" | grep -i "^all\|show all" | grep -o '\[ref=e[0-9]*\]' | head -1 | sed 's/\[ref=//;s/\]//')
-if [ -n "$all_ref" ]; then
-  agent-browser click @"$all_ref" >/dev/null 2>&1
-  sleep 0.5
-  pass "Reset to all books"
-else
-  # Reload page to reset
-  agent-browser open "$BASE_URL/biblio" >/dev/null 2>&1
-  agent-browser wait --load networkidle >/dev/null 2>&1
-  pass "Page reloaded to reset filters"
-fi
+# Reset: with all chips toggled back off, the full shelf should be visible
+info "Test: All books visible after clearing filters"
+agent-browser press Escape >/dev/null 2>&1
+sleep 0.5
+assert_element "dune"
+assert_element "godel"
+assert_element "small gods"
 
 # Verify biblio stats
 info "Test: Biblio statistics"
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
-if echo "$snapshot" | grep -qi "[0-9]\+.*book\|total\|lend\|discuss"; then
+if echo "$snapshot" | grep -qiE "showing [0-9]+ of [0-9]+ books|[0-9]+ books"; then
   pass "Biblio statistics visible"
 else
-  info "Statistics format may vary"
+  fail "Biblio book-count statistics not found"
 fi
 
 echo ""
