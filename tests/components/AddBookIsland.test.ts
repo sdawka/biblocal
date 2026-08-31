@@ -25,6 +25,11 @@ vi.mock('../../src/stores/topics', () => ({
 vi.mock('../../src/stores/sync-status', () => ({
   reportSyncError: vi.fn(),
 }));
+// AddBookIsland lazy-imports ScannerIsland on scan-button click; substitute a
+// test double that immediately "scans" VALID_ISBN (no camera in jsdom).
+vi.mock('../../src/components/ScannerIsland.svelte', async () => {
+  return await import('./FakeScannerIsland.svelte');
+});
 
 import AddBookIsland from '../../src/components/AddBookIsland.svelte';
 import { shelf, addBook } from '../../src/stores/shelf';
@@ -430,10 +435,41 @@ describe('AddBookIsland', () => {
       expect(Object.keys(shelf.get())).toHaveLength(0);
     });
 
-    it('shows "Book not found" and clears loading state when the network call throws', async () => {
+    it('shows a retryable network error and clears loading state when the network call throws', async () => {
       vi.mocked(fetch).mockImplementation(async (url: string | URL | Request) => {
         if (String(url).includes('openlibrary.org/isbn/')) {
           throw new TypeError('Failed to fetch');
+        }
+        return makeRes(true);
+      });
+
+      render(AddBookIsland, { props: { lang: 'en' } });
+
+      const isbnInput = screen.getByPlaceholderText('Enter ISBN (e.g., 9780465026562)');
+      fireEvent.input(isbnInput, { target: { value: VALID_ISBN } });
+      fireEvent.submit(isbnInput.closest('form')!);
+
+      // A network failure is not "not found": the user must be told to retry,
+      // and the component must stay in ISBN mode so retrying is possible.
+      await waitFor(() => {
+        expect(
+          screen.getByText('Could not reach the book database. Check your connection and try again.'),
+        ).toBeTruthy();
+      });
+      expect(screen.getByText('Look Up Book')).toBeTruthy();
+
+      // "Looking up…" text (loading=true state) must be gone
+      expect(screen.queryByText('Looking up…')).toBeNull();
+
+      // Store untouched
+      expect(Object.keys(shelf.get())).toHaveLength(0);
+    });
+
+    it('carries the scanned/typed ISBN into the manual-entry fallback book', async () => {
+      // Lookup returns not-found → component falls back to manual mode.
+      vi.mocked(fetch).mockImplementation(async (url: string | URL | Request) => {
+        if (String(url).includes('openlibrary.org/isbn/')) {
+          return makeRes(false);
         }
         return makeRes(true);
       });
@@ -448,11 +484,108 @@ describe('AddBookIsland', () => {
         expect(screen.getByText('Book not found. Try manual entry.')).toBeTruthy();
       });
 
-      // "Looking up…" text (loading=true state) must be gone
-      expect(screen.queryByText('Looking up…')).toBeNull();
+      const titleInput = screen.getByPlaceholderText('Book title');
+      fireEvent.input(titleInput, { target: { value: 'Obscure Book' } });
+      fireEvent.input(screen.getByPlaceholderText('Author'), { target: { value: 'Nobody Knows' } });
+      fireEvent.submit(titleInput.closest('form')!);
 
-      // Store untouched
-      expect(Object.keys(shelf.get())).toHaveLength(0);
+      await waitFor(() => expect(screen.getByText('Obscure Book')).toBeTruthy());
+      fireEvent.click(screen.getByText('Add to Shelf'));
+
+      await waitFor(() => {
+        const [book] = Object.values(shelf.get());
+        expect(book.isbn).toBe(VALID_ISBN);
+      });
+    });
+  });
+
+  // ── 7. ISBN-10 with X check digit ────────────────────────────────────────
+
+  describe('ISBN-10 with X check digit', () => {
+    it('accepts an ISBN-10 ending in x, uppercases it, and looks it up', async () => {
+      wireFetchForIsbn();
+      render(AddBookIsland, { props: { lang: 'en' } });
+
+      const isbnInput = screen.getByPlaceholderText('Enter ISBN (e.g., 9780465026562)');
+      // 080442957X is a real ISBN-10 (check digit 10 → X); lowercase x must
+      // pass validation too and be uppercased for Open Library.
+      fireEvent.input(isbnInput, { target: { value: '080442957x' } });
+      fireEvent.submit(isbnInput.closest('form')!);
+
+      // No validation rejection — the lookup proceeds to the preview
+      await waitFor(() => {
+        expect(screen.getByText('Crime and Punishment')).toBeTruthy();
+      });
+      expect(screen.queryByText('Please enter a valid 10 or 13 digit ISBN')).toBeNull();
+
+      fireEvent.click(screen.getByText('Add to Shelf'));
+
+      await waitFor(() => {
+        const [book] = Object.values(shelf.get());
+        expect(book.isbn).toBe('080442957X');
+      });
+
+      // The OL request must carry the cleaned, uppercased ISBN
+      const olCall = vi.mocked(fetch).mock.calls.find(([url]) =>
+        String(url).includes('openlibrary.org/isbn/'),
+      );
+      expect(String(olCall?.[0])).toContain('/isbn/080442957X.json');
+    });
+  });
+
+  // ── 8. Scan provenance through the manual fallback ───────────────────────
+
+  describe('scan provenance', () => {
+    it('preserves the scanned ISBN and addedVia: "scan" when the lookup falls back to manual entry', async () => {
+      // The (mocked) scanner scans VALID_ISBN, but Open Library has no record
+      // → component falls back to manual mode. The scanned ISBN and its scan
+      // provenance must survive onto the manually-completed book.
+      vi.mocked(fetch).mockImplementation(async (url: string | URL | Request) => {
+        if (String(url).includes('openlibrary.org/isbn/')) {
+          return makeRes(false);
+        }
+        return makeRes(true);
+      });
+
+      render(AddBookIsland, { props: { lang: 'en' } });
+
+      // Open the scanner; the FakeScannerIsland double fires onScan(VALID_ISBN)
+      // on mount, driving handleScanResult → isbnSource = 'scan' → lookup.
+      fireEvent.click(screen.getByText('Scan barcode'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Book not found. Try manual entry.')).toBeTruthy();
+      });
+
+      const titleInput = screen.getByPlaceholderText('Book title');
+      fireEvent.input(titleInput, { target: { value: 'Scanned Obscurity' } });
+      fireEvent.input(screen.getByPlaceholderText('Author'), { target: { value: 'A. Nonymous' } });
+      fireEvent.submit(titleInput.closest('form')!);
+
+      await waitFor(() => expect(screen.getByText('Scanned Obscurity')).toBeTruthy());
+      fireEvent.click(screen.getByText('Add to Shelf'));
+
+      await waitFor(() => {
+        const [book] = Object.values(shelf.get());
+        expect(book.isbn).toBe(VALID_ISBN);
+        expect(book.addedVia).toBe('scan');
+      });
+    });
+
+    it('records addedVia: "scan" when a scanned ISBN resolves directly', async () => {
+      wireFetchForIsbn();
+      render(AddBookIsland, { props: { lang: 'en' } });
+
+      fireEvent.click(screen.getByText('Scan barcode'));
+
+      await waitFor(() => expect(screen.getByText('Crime and Punishment')).toBeTruthy());
+      fireEvent.click(screen.getByText('Add to Shelf'));
+
+      await waitFor(() => {
+        const [book] = Object.values(shelf.get());
+        expect(book.isbn).toBe(VALID_ISBN);
+        expect(book.addedVia).toBe('scan');
+      });
     });
   });
 });

@@ -53,6 +53,8 @@ export default {
     errors: {
       invalidIsbn: 'Introduce un ISBN válido de 10 o 13 dígitos',
       notFound: 'No se encontró el libro. Prueba la entrada manual.',
+      networkError:
+        'No se pudo conectar con la base de datos de libros. Comprueba tu conexión e inténtalo de nuevo.',
       titleAuthorRequired: 'El título y el autor son obligatorios',
     },
     duplicate: {
@@ -186,6 +188,7 @@ export default {
     skipped: 'omitidos (duplicados)',
     errorsLabel: 'errores:',
     failedBook: 'No se pudo importar {title}',
+    failedUnknownBook: 'No se pudo importar un libro',
     andMore: '...y {n} más',
     done: 'Listo',
   },

@@ -6,7 +6,7 @@
  * not the legacy books.notes column (which the read path never returns).
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { POST as importHandler } from '../../src/pages/api/books/import';
 import { GET as getBooksHandler } from '../../src/pages/api/books/index';
 import { createTestDb, seedUser } from '../helpers/test-db';
@@ -25,6 +25,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   resetTestDb();
 });
 
@@ -147,5 +148,85 @@ describe('POST /api/books/import — notes saved to bookNotes table', () => {
 
     const { results } = await db.prepare('SELECT COUNT(*) as c FROM book_notes').bind().all();
     expect((results[0] as { c: number }).c).toBe(1);
+  });
+});
+
+describe('POST /api/books/import — localized error contract', () => {
+  beforeEach(() => {
+    seedUser(db, USER_A);
+  });
+
+  it('returns the book title instead of an English validation sentence', async () => {
+    const { status, json } = await callApiAs(USER_A, importHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books/import`,
+      body: {
+        books: [
+          {
+            title: 'Incomplete Book',
+            author: '',
+            visibility: 'visible',
+            ownership: 'have',
+            intents: [],
+          },
+        ],
+      },
+    });
+
+    expect(status).toBe(200);
+    expect((json as { errors: string[] }).errors).toEqual(['Incomplete Book']);
+  });
+
+  it('returns a bounded title instead of an English length-validation sentence', async () => {
+    const longTitle = 'A'.repeat(501);
+    const { status, json } = await callApiAs(USER_A, importHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books/import`,
+      body: {
+        books: [
+          {
+            title: longTitle,
+            author: 'Author',
+            visibility: 'visible',
+            ownership: 'have',
+            intents: [],
+          },
+        ],
+      },
+    });
+
+    expect(status).toBe(200);
+    expect((json as { errors: string[] }).errors).toEqual(['A'.repeat(50)]);
+  });
+
+  it('returns only the title when a database insert fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue('00000000-0000-4000-8000-000000000000');
+
+    const { status, json } = await callApiAs(USER_A, importHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books/import`,
+      body: {
+        books: [
+          {
+            title: 'First Book',
+            author: 'Author One',
+            visibility: 'visible',
+            ownership: 'have',
+            intents: [],
+          },
+          {
+            title: 'Second Book',
+            author: 'Author Two',
+            visibility: 'visible',
+            ownership: 'have',
+            intents: [],
+          },
+        ],
+      },
+    });
+
+    expect(status).toBe(200);
+    expect((json as { errors: string[] }).errors).toEqual(['Second Book']);
   });
 });

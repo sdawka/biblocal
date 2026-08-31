@@ -22,6 +22,18 @@ interface OpenLibraryAuthor {
   name: string;
 }
 
+/**
+ * Thrown by fetchByIsbn when the lookup could not reach Open Library at all
+ * (offline, DNS failure, timeout). Distinct from a `null` return, which means
+ * Open Library answered but has no record for the ISBN.
+ */
+export class OpenLibraryNetworkError extends Error {
+  constructor(message = 'Could not reach Open Library') {
+    super(message);
+    this.name = 'OpenLibraryNetworkError';
+  }
+}
+
 const CACHE_KEY = 'biblocal:isbn-cache:v1';
 
 function getCache(): Record<string, FetchedBook> {
@@ -60,18 +72,30 @@ async function fetchAuthorName(authorKey: string): Promise<string> {
   }
 }
 
+/**
+ * Looks an ISBN up on Open Library. Returns the book, or `null` when Open
+ * Library has no record for it. Throws OpenLibraryNetworkError when the
+ * request itself fails (offline/timeout), so callers can offer a retry
+ * instead of a misleading "not found".
+ */
 export async function fetchByIsbn(isbn: string): Promise<FetchedBook | null> {
-  const cleanIsbn = isbn.replace(/[-\s]/g, '');
+  // ISBN-10 check digits can be a lowercase x; Open Library expects uppercase.
+  const cleanIsbn = isbn.replace(/[-\s]/g, '').toUpperCase();
 
   const cached = getCache()[cleanIsbn];
   if (cached) return cached;
 
+  let res: Response;
   try {
-    const res = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`, {
+    res = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`, {
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) return null;
+  } catch {
+    throw new OpenLibraryNetworkError();
+  }
+  if (!res.ok) return null;
 
+  try {
     const data: OpenLibraryBook = await res.json();
 
     const authorNames: string[] = data.authors
@@ -91,13 +115,16 @@ export async function fetchByIsbn(isbn: string): Promise<FetchedBook | null> {
     setCache(cleanIsbn, book);
     return book;
   } catch {
-    return null;
+    // Open Library answered but the body was unusable — treat as unreachable
+    // so the user is offered a retry rather than told the book doesn't exist.
+    throw new OpenLibraryNetworkError();
   }
 }
 
 export function isValidIsbn(isbn: string): boolean {
   const clean = isbn.replace(/[-\s]/g, '');
-  return /^(\d{10}|\d{13})$/.test(clean);
+  // ISBN-10 check digits may be X (representing 10), e.g. 043942089X.
+  return /^(\d{9}[\dXx]|\d{13})$/.test(clean);
 }
 
 /**

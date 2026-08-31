@@ -52,6 +52,23 @@ assert_url() {
   fi
 }
 
+# Exact-path assertion: strips the origin (scheme://host[:port]) and any
+# query/hash, then compares the remaining path exactly. Use instead of
+# assert_url when the expected value is a prefix of other routes — a substring
+# check for "/" matches every URL, making redirect assertions vacuous.
+assert_path() {
+  local expected="$1"
+  local actual path
+  actual=$(get_url)
+  path=$(printf '%s' "$actual" | sed -E 's#^[a-zA-Z][a-zA-Z0-9+.-]*://[^/?#]*##; s/[?#].*$//')
+  [ -z "$path" ] && path="/"
+  if [ "$path" = "$expected" ]; then
+    pass "URL path is '$expected'"
+  else
+    fail "Expected URL path '$expected', got '$path' (full URL: '$actual')"
+  fi
+}
+
 assert_element() {
   local pattern="$1"
   local snapshot

@@ -18,6 +18,7 @@ import {
   MAX_CITY_LEN,
   MAX_PHONE_LEN,
 } from '../../../lib/validation';
+import { readJsonBody } from '../../../lib/request';
 
 export const GET: APIRoute = async ({ params, locals }) => {
   try {
@@ -150,7 +151,33 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    const body = (await request.json()) as UpdateStoreBody;
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.body as UpdateStoreBody;
+
+    // Length checks below assume strings; a non-string (e.g. numeric name)
+    // would bypass them and be persisted raw.
+    for (const field of ['name', 'neighborhood', 'address', 'website', 'phone', 'city'] as const) {
+      const value = body[field];
+      if (value !== undefined && typeof value !== 'string') {
+        return new Response(JSON.stringify({ error: `${field} must be a string` }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+    if (body.name !== undefined && body.name.trim() === '') {
+      return new Response(JSON.stringify({ error: 'Store name cannot be empty' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (body.specialties !== undefined && !Array.isArray(body.specialties)) {
+      return new Response(JSON.stringify({ error: 'specialties must be an array' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     if (body.name !== undefined && body.name.length > MAX_STORE_NAME_LEN) {
       return new Response(JSON.stringify({ error: `Store name must be at most ${MAX_STORE_NAME_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });

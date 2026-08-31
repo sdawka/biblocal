@@ -201,7 +201,7 @@
             <p>{importResult.errors.length} {t.errorsLabel}</p>
             <ul>
               {#each importResult.errors.slice(0, 5) as err}
-                <li>{t.failedBook.replace('{title}', err)}</li>
+                <li>{err ? t.failedBook.replace('{title}', err) : t.failedUnknownBook}</li>
               {/each}
               {#if importResult.errors.length > 5}
                 <li>{t.andMore.replace('{n}', String(importResult.errors.length - 5))}</li>

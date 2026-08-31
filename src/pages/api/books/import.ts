@@ -12,7 +12,11 @@ import {
   validateIntents,
   VALID_VISIBILITY,
   VALID_OWNERSHIP,
+  MAX_BOOK_TITLE_LEN,
+  MAX_BOOK_AUTHOR_LEN,
+  MAX_NOTE_TEXT_LEN,
 } from '../../../lib/validation';
+import { readJsonBody } from '../../../lib/request';
 
 type Env = { DB: D1Database };
 
@@ -85,7 +89,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const db = getDb((env as Env).DB);
     await getOrCreateUser(db, userId);
 
-    const body = await request.json() as { books: ImportBook[] };
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.body as { books: ImportBook[] };
 
     if (!body.books || !Array.isArray(body.books)) {
       return new Response(JSON.stringify({ error: 'Books array required' }), {
@@ -123,8 +129,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // limit and leaving partial imports.
     const toImport: ImportBook[] = [];
     for (const book of body.books) {
-      if (!book.title || !book.author) {
-        result.errors.push(`Skipped book with missing title or author`);
+      if (!book.title || !book.author || typeof book.title !== 'string' || typeof book.author !== 'string') {
+        result.errors.push(typeof book.title === 'string' ? book.title : '');
+        continue;
+      }
+      if (book.title.length > MAX_BOOK_TITLE_LEN || book.author.length > MAX_BOOK_AUTHOR_LEN) {
+        result.errors.push(book.title.slice(0, 50));
         continue;
       }
       if (book.isbn && existingIsbns.has(book.isbn)) {
@@ -166,12 +176,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
           updatedAt: now,
         });
 
-        if (book.notes) {
+        if (book.notes && typeof book.notes === 'string') {
           await db.insert(bookNotes).values({
             id: crypto.randomUUID(),
             bookId,
             userId,
-            text: book.notes,
+            // Same cap as the notes endpoints; truncate rather than fail the row.
+            text: book.notes.slice(0, MAX_NOTE_TEXT_LEN),
             visibility: 'private',
             createdAt: now,
             updatedAt: now,
@@ -180,7 +191,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         result.imported++;
       } catch (e) {
-        console.error('Failed to import book:', { title: book.title, error: e });
+        // Never echo raw DB error messages to the client.
+        console.error('Import book insert error:', { title: book.title, error: e });
         result.errors.push(book.title);
       }
     }

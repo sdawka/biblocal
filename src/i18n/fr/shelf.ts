@@ -56,6 +56,8 @@ export default {
     errors: {
       invalidIsbn: 'Veuillez saisir un ISBN valide de 10 ou 13 chiffres',
       notFound: 'Livre introuvable. Essayez la saisie manuelle.',
+      networkError:
+        'Impossible de joindre la base de données de livres. Vérifiez votre connexion et réessayez.',
       titleAuthorRequired: "Le titre et l'auteur sont obligatoires",
     },
     duplicate: {
@@ -194,6 +196,7 @@ export default {
     skipped: 'ignorés (doublons)',
     errorsLabel: 'erreurs :',
     failedBook: 'Impossible d’importer {title}',
+    failedUnknownBook: 'Impossible d’importer un livre',
     andMore: '...et {n} de plus',
     done: 'Terminé',
   },

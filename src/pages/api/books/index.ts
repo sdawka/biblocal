@@ -17,6 +17,7 @@ import {
   VALID_ADDED_VIA,
 } from '../../../lib/validation';
 import { isHostedCoverUrl } from '../../../lib/coverImages';
+import { readJsonBody } from '../../../lib/request';
 
 type Env = { DB: D1Database };
 
@@ -90,9 +91,12 @@ export const GET: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    // Public - all visible books with pagination (excludes private books)
-    const limit = Math.min(parseInt(url.searchParams.get('limit') || '100', 10), 500);
-    const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+    // Public - all visible books with pagination (excludes private books).
+    // NaN/negative params must never reach the query builder (500s in drizzle).
+    const rawLimit = parseInt(url.searchParams.get('limit') || '100', 10);
+    const rawOffset = parseInt(url.searchParams.get('offset') || '0', 10);
+    const limit = Math.min(Number.isFinite(rawLimit) ? Math.max(rawLimit, 0) : 100, 500);
+    const offset = Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0;
 
     const allBooks = await db
       .select()
@@ -129,7 +133,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const db = getDb((env as Env).DB);
     await getOrCreateUser(db, userId);
 
-    const body = (await request.json()) as {
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.body as {
       id?: string;
       title?: string;
       author?: string;
