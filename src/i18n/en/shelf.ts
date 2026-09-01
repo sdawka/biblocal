@@ -20,6 +20,18 @@ export default {
     },
   },
   add: {
+    intents: {
+      have: {
+        borrowable: 'Lend',
+        discussable: 'Discuss',
+        giftable: 'Give',
+      },
+      seeking: {
+        borrowable: 'Borrow',
+        discussable: 'Discuss',
+        giftable: 'Find a copy',
+      },
+    },
     tabs: {
       isbn: 'ISBN Lookup',
       manual: 'Manual Entry',

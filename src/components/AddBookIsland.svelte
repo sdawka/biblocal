@@ -9,7 +9,7 @@
   const t = $derived(useTranslations(lang).shelf.add);
   // Localized intent options: order from lib, labels from the dict.
   const intentOptions = $derived(
-    INTENT_OPTIONS.map((opt) => ({ value: opt.value, label: useTranslations(lang).shelf.intents.labels[opt.value] }))
+    INTENT_OPTIONS.map((opt) => ({ value: opt.value, label: t.intents[ownership][opt.value] }))
   );
   const intentPrompt = $derived(useTranslations(lang).shelf.intents.prompt);
 
@@ -39,6 +39,12 @@
     } else {
       intents = [...intents, intent];
     }
+  }
+
+  function setOwnership(nextOwnership: BookOwnership) {
+    if (ownership === nextOwnership) return;
+    ownership = nextOwnership;
+    intents = [];
   }
 
   function resetForm() {
@@ -209,6 +215,41 @@
 </script>
 
 <div class="add-book card">
+  <div class="pill-section direction-section">
+    <span class="label">{t.ownership.prompt}</span>
+    <div class="segmented" role="group" aria-label={t.ownership.groupLabel}>
+      <button
+        type="button"
+        aria-pressed={ownership === 'have'}
+        onclick={() => setOwnership('have')}
+      >
+        {t.ownership.have}
+      </button>
+      <button
+        type="button"
+        aria-pressed={ownership === 'seeking'}
+        onclick={() => setOwnership('seeking')}
+      >
+        {t.ownership.seeking}
+      </button>
+    </div>
+  </div>
+
+  <div class="pill-section intent-section">
+    <span class="label">{intentPrompt}</span>
+    <div class="segmented" role="group" aria-label={t.intentGroupLabel}>
+      {#each intentOptions as opt}
+        <button
+          type="button"
+          aria-pressed={intents.includes(opt.value)}
+          onclick={() => toggleIntent(opt.value)}
+        >
+          {opt.label}
+        </button>
+      {/each}
+    </div>
+  </div>
+
   {#if previewBook}
     <!-- Preview mode -->
     <div class="preview-card">
@@ -224,43 +265,6 @@
         <p class="preview-author muted">{previewBook.author}</p>
       </div>
     </div>
-
-    <div class="pill-section">
-      <span class="label">{t.ownership.prompt}</span>
-      <div class="segmented" role="group" aria-label={t.ownership.groupLabel}>
-        <button
-          type="button"
-          aria-pressed={ownership === 'have'}
-          onclick={() => ownership = 'have'}
-        >
-          {t.ownership.have}
-        </button>
-        <button
-          type="button"
-          aria-pressed={ownership === 'seeking'}
-          onclick={() => ownership = 'seeking'}
-        >
-          {t.ownership.seeking}
-        </button>
-      </div>
-    </div>
-
-    {#if ownership === 'have'}
-      <div class="pill-section">
-        <span class="label">{intentPrompt}</span>
-        <div class="segmented" role="group" aria-label={t.intentGroupLabel}>
-          {#each intentOptions as opt}
-            <button
-              type="button"
-              aria-pressed={intents.includes(opt.value)}
-              onclick={() => toggleIntent(opt.value)}
-            >
-              {opt.label}
-            </button>
-          {/each}
-        </div>
-      </div>
-    {/if}
 
     <div class="pill-section">
       <span class="label">{t.visibility.prompt}</span>
@@ -438,6 +442,7 @@
 
   .preview-info {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -476,6 +481,7 @@
 
   .segmented {
     flex-wrap: wrap;
+    width: 100%;
   }
 
   /* Preview actions */
@@ -579,6 +585,27 @@
   }
 
   @media (max-width: 600px) {
+    .preview-card {
+      gap: var(--s-3);
+      padding: var(--s-3);
+    }
+
+    .preview-cover {
+      width: 64px;
+      height: 96px;
+      flex: 0 0 auto;
+    }
+
+    .preview-actions,
+    .duplicate-actions {
+      flex-direction: column-reverse;
+    }
+
+    .preview-actions .btn,
+    .duplicate-actions .btn {
+      width: 100%;
+    }
+
     .scan-primary {
       display: block;
       width: 100%;

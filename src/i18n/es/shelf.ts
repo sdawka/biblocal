@@ -17,6 +17,18 @@ export default {
     },
   },
   add: {
+    intents: {
+      have: {
+        borrowable: 'Prestar',
+        discussable: 'Conversar',
+        giftable: 'Regalar',
+      },
+      seeking: {
+        borrowable: 'Pedir prestado',
+        discussable: 'Conversar',
+        giftable: 'Encontrar un ejemplar',
+      },
+    },
     tabs: {
       isbn: 'Buscar ISBN',
       manual: 'Entrada manual',

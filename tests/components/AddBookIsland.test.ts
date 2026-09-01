@@ -136,6 +136,15 @@ describe('AddBookIsland', () => {
   // ── 2. Manual mode happy path ────────────────────────────────────────────
 
   describe('Manual mode happy path', () => {
+    it('shows direction before the entry method controls', () => {
+      render(AddBookIsland, { props: { lang: 'en' } });
+
+      const direction = screen.getByRole('group', { name: 'Ownership' });
+      const entryMethods = screen.getByRole('group', { name: 'Add method' });
+
+      expect(direction.compareDocumentPosition(entryMethods) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
     it('fills title/author, adds to store with the exact chosen visibility and ownership', async () => {
       render(AddBookIsland, { props: { lang: 'en' } });
 
@@ -176,7 +185,7 @@ describe('AddBookIsland', () => {
       });
     });
 
-    it('records selected intents when ownership is "have this"', async () => {
+    it('records the selected have-direction intentions using their stored values', async () => {
       render(AddBookIsland, { props: { lang: 'en' } });
 
       fireEvent.click(screen.getByText('Manual Entry'));
@@ -188,9 +197,8 @@ describe('AddBookIsland', () => {
 
       await waitFor(() => expect(screen.getByText('Neuromancer')).toBeTruthy());
 
-      // Ownership defaults to "have this" — intent buttons should be visible
-      fireEvent.click(screen.getByText('Lending'));
-      fireEvent.click(screen.getByText('Discussion'));
+      fireEvent.click(screen.getByText('Lend'));
+      fireEvent.click(screen.getByText('Discuss'));
 
       fireEvent.click(screen.getByText('Add to Shelf'));
 
@@ -202,7 +210,7 @@ describe('AddBookIsland', () => {
       });
     });
 
-    it('hides intent buttons when ownership is "am seeking"', async () => {
+    it('clears intentions when the direction changes', async () => {
       render(AddBookIsland, { props: { lang: 'en' } });
 
       fireEvent.click(screen.getByText('Manual Entry'));
@@ -214,13 +222,34 @@ describe('AddBookIsland', () => {
 
       await waitFor(() => expect(screen.getByText('Foundation')).toBeTruthy());
 
-      // Switch ownership to "am seeking"
+      fireEvent.click(screen.getByText('Lend'));
+
       fireEvent.click(screen.getByText('am seeking'));
       await tick();
 
-      // Intent buttons are only rendered when ownership === 'have'; they should be gone
-      expect(screen.queryByText('Lending')).toBeNull();
-      expect(screen.queryByText('Discussion')).toBeNull();
+      expect(screen.getByText('Borrow').getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('records selected seeking-direction intentions using their stored values', async () => {
+      render(AddBookIsland, { props: { lang: 'en' } });
+
+      fireEvent.click(screen.getByText('Manual Entry'));
+      const titleInput = screen.getByPlaceholderText('Book title');
+      fireEvent.input(titleInput, { target: { value: 'Foundation' } });
+      fireEvent.input(screen.getByPlaceholderText('Author'), { target: { value: 'Isaac Asimov' } });
+      fireEvent.submit(titleInput.closest('form')!);
+
+      await waitFor(() => expect(screen.getByText('Foundation')).toBeTruthy());
+      fireEvent.click(screen.getByText('am seeking'));
+      fireEvent.click(screen.getByText('Borrow'));
+      fireEvent.click(screen.getByText('Find a copy'));
+      fireEvent.click(screen.getByText('Add to Shelf'));
+
+      await waitFor(() => {
+        const [book] = Object.values(shelf.get());
+        expect(book.ownership).toBe('seeking');
+        expect(book.intents).toEqual(['borrowable', 'giftable']);
+      });
     });
   });
 
