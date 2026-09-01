@@ -10,6 +10,10 @@ import { safeJsonArray } from '../../lib/validation';
 export const prerender = false;
 
 type Env = { DB: D1Database };
+type DiscoveryBookRow = Pick<
+  typeof books.$inferSelect,
+  'id' | 'userId' | 'isbn' | 'title' | 'author' | 'visibility' | 'ownership' | 'intents' | 'subjects' | 'coverUrl' | 'addedVia' | 'createdAt'
+>;
 
 const isBookIntent = (value: unknown): value is BookIntent =>
   value === 'borrowable' || value === 'discussable' || value === 'giftable';
@@ -20,7 +24,7 @@ function stringArray(value: string | null): string[] {
   return safeJsonArray(value).filter((item): item is string => typeof item === 'string');
 }
 
-function projectBook(book: typeof books.$inferSelect): Book {
+function projectBook(book: DiscoveryBookRow): Book {
   return {
     id: book.id,
     isbn: book.isbn ?? undefined,
@@ -91,15 +95,32 @@ export const GET: APIRoute = async ({ locals }) => {
     const candidateUsers = await db.select().from(users).where(and(...conditions));
     if (candidateUsers.length === 0) return Response.json([]);
 
-    // D1 permits at most 100 bound parameters. Query all visible books once,
-    // then retain only discovery candidates in memory rather than expanding an
-    // `IN` list per candidate. This stays two queries and avoids N+1 reads.
-    const candidateIds = new Set(candidateUsers.map((user) => user.id));
-    const visibleBooks = await db.select().from(books).where(eq(books.visibility, 'visible'));
+    // Join against the same eligible-profile constraints rather than expanding
+    // a candidate `IN` list. This stays within D1's parameter cap, avoids N+1
+    // reads, and never hydrates irrelevant owners' books or legacy columns.
+    const bookConditions = [isNotNull(users.name), ne(users.name, ''), eq(books.visibility, 'visible')];
+    if (viewerId) bookConditions.push(ne(users.id, viewerId));
+    const visibleBooks = await db
+      .select({
+        id: books.id,
+        userId: books.userId,
+        isbn: books.isbn,
+        title: books.title,
+        author: books.author,
+        visibility: books.visibility,
+        ownership: books.ownership,
+        intents: books.intents,
+        subjects: books.subjects,
+        coverUrl: books.coverUrl,
+        addedVia: books.addedVia,
+        createdAt: books.createdAt,
+      })
+      .from(books)
+      .innerJoin(users, eq(books.userId, users.id))
+      .where(and(...bookConditions));
 
     const shelfByOwner = new Map<string, Book[]>();
     for (const book of visibleBooks) {
-      if (!candidateIds.has(book.userId)) continue;
       const shelf = shelfByOwner.get(book.userId) ?? [];
       shelf.push(projectBook(book));
       shelfByOwner.set(book.userId, shelf);

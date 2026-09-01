@@ -137,6 +137,34 @@ describe('GET /api/users.json', () => {
     expect(shelf[0].notes).toBeUndefined();
   });
 
+  it('reads only safe book columns for eligible discovery profiles', async () => {
+    insertUser('viewer');
+    insertUser('eligible');
+    insertUser('nameless', { name: null });
+    insertBook('eligible-book', 'eligible', { title: 'Eligible Book' });
+    insertBook('viewer-book', 'viewer', { title: 'Viewer Legacy Book', notes: '[{"text":"legacy"}]' });
+    insertBook('nameless-book', 'nameless', { title: 'Nameless Legacy Book', notes: '[{"text":"legacy"}]' });
+    setTestDb({
+      prepare(sql: string) {
+        if (sql.includes('from "books"') && sql.includes('"notes"')) {
+          throw new Error('discovery query selected legacy notes');
+        }
+        return db.prepare(sql);
+      },
+      batch: db.batch.bind(db),
+      exec: db.exec.bind(db),
+    });
+
+    const { status, json } = await callApiAs('viewer', getUsersJsonHandler, {
+      url: 'http://localhost/api/users.json',
+    });
+
+    expect(status).toBe(200);
+    const users = json as Record<string, unknown>[];
+    expect(users.map((user) => user.id)).toEqual(['eligible']);
+    expect((users[0].shelf as Record<string, unknown>[]).map((book) => book.title)).toEqual(['Eligible Book']);
+  });
+
   it('loads more than 100 candidates without a per-candidate D1 parameter list', async () => {
     for (let index = 0; index < 101; index++) {
       insertUser(`reader-${index}`);
