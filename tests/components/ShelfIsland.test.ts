@@ -270,6 +270,21 @@ describe('ShelfIsland', () => {
       // DELETE was issued to the API
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(`/api/books/${book.id}`, { method: 'DELETE' });
     });
+
+    it('keeps the detail sheet open when deletion fails', async () => {
+      const book = makeStoreBook({ id: 'failed-delete', title: 'Persistent Book' });
+      shelf.set({ [book.id]: book });
+      vi.mocked(fetch).mockResolvedValueOnce({ ok: false, text: async () => 'failed' } as Response);
+      render(ShelfIsland, { props: { lang: 'en' } });
+
+      await fireEvent.click(screen.getByRole('button', { name: 'View details for Persistent Book' }));
+      await fireEvent.click(screen.getByRole('button', { name: 'Delete Persistent Book from shelf' }));
+      await fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+      expect(await screen.findByRole('dialog')).toBeTruthy();
+      expect(await screen.findByRole('alert')).toBeTruthy();
+      expect(shelf.get()[book.id]).toEqual(book);
+    });
   });
 
   // ── Intent change from the detail sheet ─────────────────────────────────────

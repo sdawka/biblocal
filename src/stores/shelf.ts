@@ -9,6 +9,51 @@ const SYNC_ERROR_MESSAGE = 'Could not save your change. Please try again.';
 const LOAD_SYNC_ERROR_MESSAGE = 'Could not load your shelf from the server. Please try again.';
 const COVER_SYNC_ERROR_MESSAGE = 'Could not update the cover. Please try again.';
 
+interface PendingCreate {
+  userId: string;
+  promise: Promise<boolean>;
+}
+
+interface DeleteTombstone {
+  createdAtOperation: number;
+  absenceConfirmed: boolean;
+}
+
+const pendingCreates = new Map<string, PendingCreate>();
+const deleteTombstones = new Map<string, Map<string, DeleteTombstone>>();
+const activeLoads = new Map<string, Set<number>>();
+let operationSequence = 0;
+
+function tombstonesFor(userId: string): Map<string, DeleteTombstone> {
+  let tombstones = deleteTombstones.get(userId);
+  if (!tombstones) {
+    tombstones = new Map();
+    deleteTombstones.set(userId, tombstones);
+  }
+  return tombstones;
+}
+
+function activeLoadsFor(userId: string): Set<number> {
+  let loads = activeLoads.get(userId);
+  if (!loads) {
+    loads = new Set();
+    activeLoads.set(userId, loads);
+  }
+  return loads;
+}
+
+function clearConfirmedTombstones(userId: string): void {
+  const tombstones = deleteTombstones.get(userId);
+  if (!tombstones) return;
+  const loads = activeLoads.get(userId) ?? new Set<number>();
+  for (const [id, tombstone] of tombstones) {
+    const olderLoadStillActive = [...loads].some(
+      (loadOperation) => loadOperation < tombstone.createdAtOperation,
+    );
+    if (tombstone.absenceConfirmed && !olderLoadStillActive) tombstones.delete(id);
+  }
+}
+
 function safeJsonDecode<T>(defaultValue: T) {
   return (str: string): T => {
     try {
@@ -166,8 +211,12 @@ function rollbackFields(id: string, updates: Partial<Book>, prior: Record<string
   reportSyncError(SYNC_ERROR_MESSAGE);
 }
 
-async function syncAddBook(book: Book, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) { rollback(book.id, prior); return; }
+async function syncAddBook(
+  book: Book,
+  prior: Record<string, Book>,
+  syncingFor = currentUserId.get(),
+): Promise<boolean> {
+  if (!syncingFor) { rollback(book.id, prior); return false; }
   try {
     const res = await fetch('/api/books', {
       method: 'POST',
@@ -185,13 +234,18 @@ async function syncAddBook(book: Book, prior: Record<string, Book>): Promise<voi
         subjects: book.subjects,
       }),
     });
+    if (currentUserId.get() !== syncingFor) return false;
     if (!res.ok) {
       console.error('Failed to sync book:', await res.text());
       rollback(book.id, prior);
+      return false;
     }
+    return true;
   } catch (e) {
+    if (currentUserId.get() !== syncingFor) return false;
     console.error('Failed to sync book:', e);
     rollback(book.id, prior);
+    return false;
   }
 }
 
@@ -210,20 +264,6 @@ async function syncUpdateBook(id: string, updates: Partial<Book>, prior: Record<
   } catch (e) {
     console.error('Failed to sync book update:', e);
     rollbackFields(id, updates, prior);
-  }
-}
-
-async function syncRemoveBook(id: string, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) { rollback(id, prior); return; }
-  try {
-    const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
-    if (!res.ok) {
-      console.error('Failed to sync book removal:', await res.text());
-      rollback(id, prior);
-    }
-  } catch (e) {
-    console.error('Failed to sync book removal:', e);
-    rollback(id, prior);
   }
 }
 
@@ -290,7 +330,19 @@ export function addBook(book: Omit<Book, 'id' | 'addedAt'> & { id?: string }): B
   };
   const prior = shelf.get();
   shelf.set({ ...prior, [fullBook.id]: fullBook });
-  syncAddBook(fullBook, prior);
+  const syncingFor = currentUserId.get();
+  if (!syncingFor) {
+    void syncAddBook(fullBook, prior, syncingFor);
+    return fullBook;
+  }
+  const pending: PendingCreate = {
+    userId: syncingFor,
+    promise: syncAddBook(fullBook, prior, syncingFor),
+  };
+  pendingCreates.set(fullBook.id, pending);
+  void pending.promise.then(() => {
+    if (pendingCreates.get(fullBook.id) === pending) pendingCreates.delete(fullBook.id);
+  });
   return fullBook;
 }
 
@@ -330,12 +382,41 @@ export function toggleBookIntent(id: string, intent: BookIntent) {
   }
 }
 
-export function removeBook(id: string) {
-  const prior = shelf.get();
-  const next = { ...prior };
-  delete next[id];
-  shelf.set(next);
-  syncRemoveBook(id, prior);
+export async function removeBook(id: string): Promise<boolean> {
+  const deletingFor = currentUserId.get();
+  if (!deletingFor || !shelf.get()[id]) return false;
+
+  const pending = pendingCreates.get(id);
+  if (pending?.userId === deletingFor) {
+    const created = await pending.promise;
+    if (!created || currentUserId.get() !== deletingFor || !shelf.get()[id]) return false;
+  }
+
+  if (currentUserId.get() !== deletingFor) return false;
+  try {
+    const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
+    if (currentUserId.get() !== deletingFor) return false;
+    if (!res.ok) {
+      console.error('Failed to sync book removal:', await res.text());
+      reportSyncError(SYNC_ERROR_MESSAGE);
+      return false;
+    }
+
+    const current = shelf.get();
+    const next = { ...current };
+    delete next[id];
+    shelf.set(next);
+    tombstonesFor(deletingFor).set(id, {
+      createdAtOperation: ++operationSequence,
+      absenceConfirmed: false,
+    });
+    return true;
+  } catch (e) {
+    if (currentUserId.get() !== deletingFor) return false;
+    console.error('Failed to sync book removal:', e);
+    reportSyncError(SYNC_ERROR_MESSAGE);
+    return false;
+  }
 }
 
 // ─── Custom covers ───────────────────────────────────────────────────────────
@@ -505,6 +586,8 @@ export async function loadBooksFromServer(): Promise<void> {
     shelfHydrated.set(true);
     return;
   }
+  const loadOperation = ++operationSequence;
+  activeLoadsFor(loadingFor).add(loadOperation);
   // Snapshot local shelf before the request so legacy-only books can be recovered.
   const preLoadSnapshot = shelf.get();
   try {
@@ -543,15 +626,31 @@ export async function loadBooksFromServer(): Promise<void> {
         addedAt: new Date(b.createdAt).getTime(),
       };
     }
+    // A confirmed DELETE wins over responses from GETs that were already in
+    // flight. Only a load started after the deletion may clear its tombstone,
+    // and only when that response also confirms the row is absent.
+    const userTombstones = tombstonesFor(loadingFor);
+    for (const [id, tombstone] of userTombstones) {
+      const serverConfirmedAbsent = !serverBooks[id];
+      delete serverBooks[id];
+      if (serverConfirmedAbsent && loadOperation > tombstone.createdAtOperation) {
+        tombstone.absenceConfirmed = true;
+      }
+    }
     // Legacy recovery: books that were local-only BEFORE this request started.
     // Used for uploads only — mid-flight adds (not in preLoadSnapshot) already
     // have their own syncAddBook POST in flight and must NOT be double-posted.
-    const legacyLocalOnly = findLocalOnlyBooks(preLoadSnapshot, serverBooks);
+    const withoutDeleted = (books: Record<string, Book>): Record<string, Book> => {
+      const active = { ...books };
+      for (const id of userTombstones.keys()) delete active[id];
+      return active;
+    };
+    const legacyLocalOnly = findLocalOnlyBooks(withoutDeleted(preLoadSnapshot), serverBooks);
     // Use a fresh snapshot for the merge so books added via addBook() while the
     // GET was in flight are preserved (they were not in preLoadSnapshot and are
     // not on the server, but are now in shelf.get()).
     const postFetchSnapshot = shelf.get();
-    const allLocalOnly = findLocalOnlyBooks(postFetchSnapshot, serverBooks);
+    const allLocalOnly = findLocalOnlyBooks(withoutDeleted(postFetchSnapshot), serverBooks);
     const merged: Record<string, Book> = { ...serverBooks };
     for (const book of allLocalOnly) merged[book.id] = book;
     shelf.set(merged);
@@ -563,6 +662,8 @@ export async function loadBooksFromServer(): Promise<void> {
     console.error('Failed to load books from server:', e);
     reportSyncError(LOAD_SYNC_ERROR_MESSAGE);
   } finally {
+    activeLoadsFor(loadingFor).delete(loadOperation);
+    clearConfirmedTombstones(loadingFor);
     // Settle hydration on both success and failure so the UI never hangs on
     // a loading skeleton. Safe even on a stale mid-flight bail: the newer
     // load for the current user will also finish and set this again.

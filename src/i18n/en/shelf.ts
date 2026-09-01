@@ -161,6 +161,9 @@ export default {
     removeConfirm: 'Remove from shelf?',
     cancel: 'Cancel',
     remove: 'Remove',
+    removing: 'Removing…',
+    removeFailed: 'Could not remove this book. Try again.',
+    removeConfirmLabel: 'Confirm removal',
     // {title} interpolated
     openDetailAria: 'View details for {title}',
     closeDetailAria: 'Close',

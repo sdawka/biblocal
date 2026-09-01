@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, fireEvent, screen, within } from '@testing-library/svelte';
+import { render, fireEvent, screen, waitFor, within } from '@testing-library/svelte';
 import BookDetail from '../../src/components/BookDetail.svelte';
 import type { Book } from '../../src/lib/types';
 
@@ -17,6 +17,9 @@ vi.mock('../../src/i18n', () => ({
         removeConfirm: 'Remove from shelf?',
         cancel: 'Cancel',
         remove: 'Remove',
+        removing: 'Removing…',
+        removeFailed: 'Could not remove this book. Try again.',
+        removeConfirmLabel: 'Confirm removal',
         editDetails: 'Edit title & author',
         editTitleLabel: 'Title',
         editAuthorLabel: 'Author',
@@ -75,6 +78,58 @@ function makeBook(overrides: Partial<Book> = {}): Book {
 }
 
 describe('BookDetail', () => {
+  describe('delete confirmation', () => {
+    async function openConfirmation(onDelete: (id: string) => Promise<boolean>) {
+      render(BookDetail, { props: { book: makeBook(), lang: 'en', onDelete } });
+      await fireEvent.click(screen.getByLabelText('Delete Test Book from shelf'));
+      return screen.getByRole('region', { name: 'Confirm removal' });
+    }
+
+    it('keeps confirmation open and disables its actions while deletion is pending', async () => {
+      let resolveDelete!: (value: boolean) => void;
+      const onDelete = vi.fn(() => new Promise<boolean>((resolve) => { resolveDelete = resolve; }));
+      const confirmation = await openConfirmation(onDelete);
+
+      await fireEvent.click(within(confirmation).getByRole('button', { name: 'Remove' }));
+
+      expect(within(confirmation).getByText('Removing…')).toBeTruthy();
+      expect((within(confirmation).getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(true);
+      expect((within(confirmation).getByRole('button', { name: 'Removing…' }) as HTMLButtonElement).disabled).toBe(true);
+      resolveDelete(true);
+    });
+
+    it('shows failure feedback and keeps confirmation open for retry', async () => {
+      const confirmation = await openConfirmation(vi.fn().mockResolvedValue(false));
+
+      await fireEvent.click(within(confirmation).getByRole('button', { name: 'Remove' }));
+
+      expect((await within(confirmation).findByRole('alert')).textContent).toBe('Could not remove this book. Try again.');
+      expect((within(confirmation).getByRole('button', { name: 'Remove' }) as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it('allows retry after failure and closes confirmation only after success', async () => {
+      const onDelete = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+      const confirmation = await openConfirmation(onDelete);
+
+      await fireEvent.click(within(confirmation).getByRole('button', { name: 'Remove' }));
+      expect(await within(confirmation).findByRole('alert')).toBeTruthy();
+      await fireEvent.click(within(confirmation).getByRole('button', { name: 'Remove' }));
+
+      await waitFor(() => {
+        expect(screen.queryByRole('region', { name: 'Confirm removal' })).toBeNull();
+      });
+      expect(onDelete).toHaveBeenCalledTimes(2);
+    });
+
+    it('keeps both mobile confirmation actions reachable by keyboard', async () => {
+      const confirmation = await openConfirmation(vi.fn().mockResolvedValue(true));
+      const actions = within(confirmation).getAllByRole('button');
+
+      expect(actions.map((button) => button.textContent)).toEqual(['Cancel', 'Remove']);
+      expect(actions.every((button) => button.tabIndex === 0)).toBe(true);
+    });
+  });
+
   describe('title/author edit', () => {
     it('shows the pencil-edit affordance only when onUpdateDetails is provided and not readonly', () => {
       const { queryByLabelText, rerender } = render(BookDetail, {

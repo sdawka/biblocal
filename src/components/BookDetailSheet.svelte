@@ -11,7 +11,7 @@
     onIntentsChange?: (intents: BookIntent[]) => void;
     onVisibilityChange?: (visibility: BookVisibility) => void;
     onOwnershipChange?: (ownership: BookOwnership) => void;
-    onDelete?: (id: string) => void;
+    onDelete?: (id: string) => Promise<boolean>;
     onAddNote?: (text: string, visibility: BookVisibility) => void;
     onUpdateNote?: (noteId: string, updates: { text?: string; visibility?: BookVisibility }) => void;
     onDeleteNote?: (noteId: string) => void;

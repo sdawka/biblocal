@@ -23,6 +23,7 @@ import {
   updateBook,
   updateBookStatus,
   removeBook,
+  loadBooksFromServer,
   getBookCount,
   getShelfStats,
   getInferredTopics,
@@ -124,7 +125,7 @@ describe('Shelf Store', () => {
   });
 
   describe('removeBook', () => {
-    it('removes book from shelf', () => {
+    it('removes book from shelf after the server confirms deletion', async () => {
       const book = addBook({
         title: 'To Remove',
         author: 'Author',
@@ -134,12 +135,13 @@ describe('Shelf Store', () => {
 
       expect(shelf.get()[book.id]).toBeDefined();
 
-      removeBook(book.id);
+      const removed = await removeBook(book.id);
 
+      expect(removed).toBe(true);
       expect(shelf.get()[book.id]).toBeUndefined();
     });
 
-    it('syncs deletion to server', () => {
+    it('syncs deletion to server', async () => {
       const book = addBook({
         title: 'Test',
         author: 'Author',
@@ -148,9 +150,105 @@ describe('Shelf Store', () => {
       });
 
       vi.clearAllMocks();
-      removeBook(book.id);
+      await removeBook(book.id);
 
       expect(fetch).toHaveBeenCalledWith(`/api/books/${book.id}`, { method: 'DELETE' });
+    });
+
+    it('waits for a pending create of the same book before deleting it', async () => {
+      let releaseCreate!: () => void;
+      const createGate = new Promise<void>((resolve) => { releaseCreate = resolve; });
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        if (url === '/api/books' && init?.method === 'POST') {
+          await createGate;
+        }
+        return { ok: true, json: async () => ({}) } as Response;
+      });
+
+      const book = addBook({ id: 'pending-create', title: 'New Book', author: 'Author', addedVia: 'manual' });
+      const deletePromise = removeBook(book.id);
+
+      expect(vi.mocked(fetch)).not.toHaveBeenCalledWith(`/api/books/${book.id}`, { method: 'DELETE' });
+      expect(shelf.get()[book.id]).toEqual(book);
+
+      releaseCreate();
+      await expect(deletePromise).resolves.toBe(true);
+      expect(vi.mocked(fetch)).toHaveBeenCalledWith(`/api/books/${book.id}`, { method: 'DELETE' });
+      expect(shelf.get()[book.id]).toBeUndefined();
+    });
+
+    it('keeps a confirmed deletion hidden from a stale load until a later load confirms absence', async () => {
+      const book: Book = {
+        id: 'stale-book', title: 'Stale Book', author: 'Author', visibility: 'visible',
+        ownership: 'have', intents: [], addedVia: 'manual', addedAt: 1,
+      };
+      shelf.set({ [book.id]: book });
+      let releaseLoad!: () => void;
+      const loadGate = new Promise<void>((resolve) => { releaseLoad = resolve; });
+      let loadCount = 0;
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        if (url === '/api/books?mine=true') {
+          const requestNumber = ++loadCount;
+          if (requestNumber === 1) await loadGate;
+          const books = requestNumber === 2 ? [] : [{
+            id: book.id, title: book.title, author: book.author, isbn: null,
+            coverUrl: null, fetchedCoverUrl: null, status: 'visible', visibility: 'visible',
+            ownership: 'have', intents: '[]', addedVia: 'manual', subjects: null,
+            createdAt: new Date(1).toISOString(),
+          }];
+          return { ok: true, json: async () => ({ books }) } as Response;
+        }
+        if (init?.method === 'DELETE') return { ok: true } as Response;
+        return { ok: true, json: async () => ({}) } as Response;
+      });
+
+      const staleLoad = loadBooksFromServer();
+      await expect(removeBook(book.id)).resolves.toBe(true);
+
+      await loadBooksFromServer(); // a newer request confirms absence first
+      expect(shelf.get()[book.id]).toBeUndefined();
+
+      releaseLoad();
+      await staleLoad;
+      expect(shelf.get()[book.id]).toBeUndefined();
+
+      await loadBooksFromServer(); // after stale work settles, a genuine copy may appear again
+      expect(shelf.get()[book.id]?.title).toBe('Stale Book');
+    });
+
+    it('keeps the book on failed DELETE and allows a successful retry', async () => {
+      const book: Book = {
+        id: 'retry-book', title: 'Retry Book', author: 'Author', visibility: 'visible',
+        ownership: 'have', intents: [], addedVia: 'manual', addedAt: 1,
+      };
+      shelf.set({ [book.id]: book });
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({ ok: false, text: async () => 'temporary failure' } as Response)
+        .mockResolvedValueOnce({ ok: true } as Response);
+
+      await expect(removeBook(book.id)).resolves.toBe(false);
+      expect(shelf.get()[book.id]).toEqual(book);
+
+      await expect(removeBook(book.id)).resolves.toBe(true);
+      expect(shelf.get()[book.id]).toBeUndefined();
+    });
+
+    it('does not finish an old user deletion after identity changes while create is pending', async () => {
+      let releaseCreate!: () => void;
+      const createGate = new Promise<void>((resolve) => { releaseCreate = resolve; });
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        if (url === '/api/books' && init?.method === 'POST') await createGate;
+        return { ok: true, json: async () => ({}) } as Response;
+      });
+      const book = addBook({ id: 'shared-id', title: 'Old User Book', author: 'Author', addedVia: 'manual' });
+      const deletion = removeBook(book.id);
+
+      _mockUserId = 'different-user';
+      releaseCreate();
+
+      await expect(deletion).resolves.toBe(false);
+      expect(vi.mocked(fetch)).not.toHaveBeenCalledWith(`/api/books/${book.id}`, { method: 'DELETE' });
+      _mockUserId = 'test-user-123';
     });
   });
 
