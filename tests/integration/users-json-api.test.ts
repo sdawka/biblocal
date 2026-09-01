@@ -41,7 +41,7 @@ function insertUser(id: string, fields: Record<string, unknown> = {}): void {
 }
 
 function insertBook(id: string, userId: string, fields: Record<string, unknown> = {}): void {
-  const now = Date.now();
+  const now = fields.createdAt ?? Date.now();
   db.prepare(
     `INSERT INTO books (id, user_id, title, author, isbn, cover_url, status, visibility, ownership, intents, subjects, added_via, notes, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, 'visible', ?, ?, ?, ?, 'manual', ?, ?, ?)`
@@ -113,6 +113,16 @@ describe('GET /api/users.json', () => {
     expect(users[0].latitude).toBe(45.5017);
     expect(users[0].longitude).toBe(-73.5673);
     expect(users[0].locationPrecision).toBe('city');
+  });
+
+  it('keeps recognized-city people without stored coordinates unlocated', async () => {
+    insertUser('reader', { city: 'Montreal' });
+
+    const users = await fetchUsers();
+
+    expect(users[0].latitude).toBeUndefined();
+    expect(users[0].longitude).toBeUndefined();
+    expect(users[0].locationPrecision).toBeUndefined();
   });
 
   it('projects only map-safe fields and public contact details', async () => {
@@ -225,12 +235,92 @@ describe('GET /api/users.json', () => {
     const users = await fetchUsers();
 
     expect(users.map((user) => user.id)).toEqual(['alpha', 'beta']);
-    expect(((users[1].shelf as Record<string, unknown>[]).map((book) => book.id))).toEqual(['beta-a', 'beta-z']);
+    expect(((users[1].shelf as Record<string, unknown>[]).map((book) => book.id))).toEqual(['beta-z', 'beta-a']);
     const booksQuery = statements.find((sql) => sql.includes('from "books"'))!;
     expect(booksQuery).toContain('inner join (select "id" from "users"');
-    expect(booksQuery).toContain('order by "books"."user_id" asc, "books"."created_at" asc, "books"."id" asc');
-    expect(booksQuery).toContain('limit ?');
-    expect(boundParameters.flat()).toEqual(expect.arrayContaining([500, 5000]));
+    expect(booksQuery).toContain('row_number() over (partition by "books"."user_id" order by "books"."created_at" desc, "books"."id" desc)');
+    expect(boundParameters.every((parameters) => parameters.length <= 3)).toBe(true);
+    expect(boundParameters.flat()).toEqual(expect.arrayContaining([500, 100]));
+  });
+
+  it('reads bounded candidates and ranked books through one D1 batch snapshot', async () => {
+    insertUser('reader');
+    insertBook('reader-book', 'reader');
+    let batchCalls = 0;
+    setTestDb({
+      prepare: db.prepare.bind(db),
+      batch(statements) {
+        batchCalls++;
+        return db.batch(statements);
+      },
+      exec: db.exec.bind(db),
+    });
+
+    const users = await fetchUsers();
+
+    expect(users.map((user) => user.id)).toEqual(['reader']);
+    expect(batchCalls).toBe(1);
+  });
+
+  it('keeps later owners books when an earlier owner exceeds the per-owner cap', async () => {
+    insertUser('early', { name: 'Alpha' });
+    insertUser('later', { name: 'Zulu' });
+    for (let index = 0; index < 5001; index++) {
+      insertBook(`early-${String(index).padStart(4, '0')}`, 'early', { createdAt: index });
+    }
+    insertBook('later-book', 'later', { createdAt: 6000 });
+
+    const users = await fetchUsers();
+    const earlyShelf = users.find((user) => user.id === 'early')!.shelf as Record<string, unknown>[];
+    const laterShelf = users.find((user) => user.id === 'later')!.shelf as Record<string, unknown>[];
+
+    expect(earlyShelf).toHaveLength(100);
+    expect(earlyShelf[0].id).toBe('early-5000');
+    expect(earlyShelf.at(-1)?.id).toBe('early-4901');
+    expect(laterShelf.map((book) => book.id)).toEqual(['later-book']);
+  });
+
+  it('applies discovery indexes through the migrated test database', async () => {
+    const userIndexes = (await db.prepare("SELECT name FROM pragma_index_list('users')").bind().all()).results as { name: string }[];
+    const bookIndexes = (await db.prepare("SELECT name FROM pragma_index_list('books')").bind().all()).results as { name: string }[];
+
+    expect(userIndexes.map((index) => index.name)).toContain('users_discovery_named_name_id_idx');
+    expect(bookIndexes.map((index) => index.name)).toContain('books_discovery_visible_owner_created_id_idx');
+
+    const bookIndex = (await db.prepare(
+      "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = ?"
+    ).bind('books_discovery_visible_owner_created_id_idx').all()).results[0] as { sql: string };
+    expect(bookIndex.sql.replace(/\s+/g, ' ').trim()).toBe(
+      "CREATE INDEX books_discovery_visible_owner_created_id_idx ON books (user_id, created_at DESC, id DESC) WHERE visibility = 'visible'"
+    );
+  });
+
+  it('uses the owner-led visible-books index for the shipped ranked-book query', async () => {
+    insertUser('reader');
+    insertBook('reader-book', 'reader');
+    const statements: Array<{ sql: string; params: unknown[] }> = [];
+    setTestDb({
+      prepare(sql: string) {
+        const statement = db.prepare(sql);
+        return {
+          bind(...params: unknown[]) {
+            statements.push({ sql, params });
+            return statement.bind(...params);
+          },
+        };
+      },
+      batch: db.batch.bind(db),
+      exec: db.exec.bind(db),
+    });
+
+    await fetchUsers();
+
+    const rankedBooksQuery = statements.find(({ sql }) => sql.includes('row_number() over'))!;
+    const plan = (await db.prepare(`EXPLAIN QUERY PLAN ${rankedBooksQuery.sql}`)
+      .bind(...rankedBooksQuery.params).all()).results as { detail: string }[];
+    expect(plan.map(({ detail }) => detail).join('\n')).toContain(
+      'USING INDEX books_discovery_visible_owner_created_id_idx'
+    );
   });
 
   it('returns an empty list when no complete named profiles exist', async () => {

@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { and, asc, eq, isNotNull, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, lte, ne, sql } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { getDb } from '../../db/client';
 import { books, users } from '../../db/schema';
@@ -12,7 +12,7 @@ export const prerender = false;
 
 type Env = { DB: D1Database };
 const PROFILE_LIMIT = 500;
-const BOOK_LIMIT = 5000;
+const BOOKS_PER_OWNER_LIMIT = 100;
 type DiscoveryUserRow = Pick<
   typeof users.$inferSelect,
   'id' | 'name' | 'city' | 'radiusKm' | 'borrowStyle' | 'currentObsessions' | 'topicsCurated' | 'topicsFreeform' | 'type' | 'address' | 'neighborhood' | 'website' | 'specialties' | 'latitude' | 'longitude' | 'locationPrecision' | 'contactMethod' | 'contactValue' | 'contactVisibility'
@@ -76,11 +76,13 @@ function projectUser(user: DiscoveryUserRow, shelf: Book[]): UserProfile {
         ? user.locationPrecision
         : undefined;
   } else {
-    const cityCoordinates = getCityCoordinates(profile.city);
-    if (cityCoordinates) {
-      profile.latitude = cityCoordinates.lat;
-      profile.longitude = cityCoordinates.lng;
-      profile.locationPrecision = 'city';
+    if (user.latitude !== null && user.longitude !== null) {
+      const cityCoordinates = getCityCoordinates(profile.city);
+      if (cityCoordinates) {
+        profile.latitude = cityCoordinates.lat;
+        profile.longitude = cityCoordinates.lng;
+        profile.locationPrecision = 'city';
+      }
     }
   }
 
@@ -106,7 +108,7 @@ export const GET: APIRoute = async ({ locals }) => {
     const conditions = [isNotNull(users.name), sql`trim(${users.name}) <> ''`];
     if (viewerId) conditions.push(ne(users.id, viewerId));
 
-    const candidateUsers = await db
+    const candidateUsersQuery = db
       .select({
         id: users.id,
         name: users.name,
@@ -132,7 +134,6 @@ export const GET: APIRoute = async ({ locals }) => {
       .where(and(...conditions))
       .orderBy(asc(users.name), asc(users.id))
       .limit(PROFILE_LIMIT);
-    if (candidateUsers.length === 0) return Response.json([]);
 
     // Reuse the bounded eligible-user query as a SQL subquery. This stays
     // below D1's parameter cap, avoids N+1 reads, and never reads books from
@@ -144,7 +145,7 @@ export const GET: APIRoute = async ({ locals }) => {
       .orderBy(asc(users.name), asc(users.id))
       .limit(PROFILE_LIMIT)
       .as('eligible_candidates');
-    const visibleBooks = await db
+    const rankedVisibleBooks = db
       .select({
         id: books.id,
         userId: books.userId,
@@ -158,12 +159,32 @@ export const GET: APIRoute = async ({ locals }) => {
         coverUrl: books.coverUrl,
         addedVia: books.addedVia,
         createdAt: books.createdAt,
+        ownerBookRank: sql<number>`row_number() over (partition by ${books.userId} order by ${books.createdAt} desc, ${books.id} desc)`.as('owner_book_rank'),
       })
       .from(books)
       .innerJoin(eligibleCandidates, eq(books.userId, eligibleCandidates.id))
       .where(eq(books.visibility, 'visible'))
-      .orderBy(asc(books.userId), asc(books.createdAt), asc(books.id))
-      .limit(BOOK_LIMIT);
+      .as('ranked_visible_books');
+    const visibleBooksQuery = db
+      .select({
+        id: rankedVisibleBooks.id,
+        userId: rankedVisibleBooks.userId,
+        isbn: rankedVisibleBooks.isbn,
+        title: rankedVisibleBooks.title,
+        author: rankedVisibleBooks.author,
+        visibility: rankedVisibleBooks.visibility,
+        ownership: rankedVisibleBooks.ownership,
+        intents: rankedVisibleBooks.intents,
+        subjects: rankedVisibleBooks.subjects,
+        coverUrl: rankedVisibleBooks.coverUrl,
+        addedVia: rankedVisibleBooks.addedVia,
+        createdAt: rankedVisibleBooks.createdAt,
+      })
+      .from(rankedVisibleBooks)
+      .where(lte(rankedVisibleBooks.ownerBookRank, BOOKS_PER_OWNER_LIMIT))
+      .orderBy(asc(rankedVisibleBooks.userId), desc(rankedVisibleBooks.createdAt), desc(rankedVisibleBooks.id));
+    const [candidateUsers, visibleBooks] = await db.batch([candidateUsersQuery, visibleBooksQuery]);
+    if (candidateUsers.length === 0) return Response.json([]);
 
     const shelfByOwner = new Map<string, Book[]>();
     for (const book of visibleBooks) {

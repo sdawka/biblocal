@@ -79,11 +79,13 @@ beforeEach(() => {
   });
   insertUser('toronto-sharer', { name: 'Toronto Sharer', city: 'Toronto', latitude: 43.6532, longitude: -79.3832 });
   insertUser('unlocated-sharer', { name: 'Unlocated Sharer', city: 'Unknown City' });
+  insertUser('known-city-unlocated', { name: 'Known City Unlocated', city: 'Montreal' });
   insertBook('montreal-dune', 'montreal-sharer', {
     title: 'Dune', isbn: '9780441172719', intents: '["borrowable"]', subjects: '["science fiction"]',
   });
   insertBook('toronto-book', 'toronto-sharer', { title: 'Toronto Offer', intents: '["giftable"]' });
   insertBook('unlocated-book', 'unlocated-sharer', { title: 'Unlocated Offer', intents: '["discussable"]' });
+  insertBook('known-city-unlocated-book', 'known-city-unlocated', { title: 'Known City Offer', intents: '["discussable"]' });
   insertBook('private-book', 'montreal-sharer', { title: 'Private Diary', visibility: 'private', intents: '["borrowable"]' });
 });
 
@@ -109,7 +111,9 @@ describe('live locality discovery simulation', () => {
     expect(hasLocation(unlocated)).toBe(false);
     const { people } = splitDiscovery(discovery);
     const peopleUnlocated = people.filter((match) => !hasLocation(match));
-    expect(peopleUnlocated.map((match) => match.user.id)).toEqual(['unlocated-sharer']);
+    expect(peopleUnlocated.map((match) => match.user.id)).toEqual(['known-city-unlocated', 'unlocated-sharer']);
+    const knownCityUnlocated = discovery.find((match) => match.user.id === 'known-city-unlocated')!;
+    expect(hasLocation(knownCityUnlocated)).toBe(false);
 
     const montrealMatch = discovery.find((match) => match.user.id === 'montreal-sharer')!;
     expect(montrealMatch.user.latitude).toBe(45.5017);
