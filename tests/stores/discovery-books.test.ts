@@ -1,21 +1,21 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { shelf } from '../../src/stores/shelf';
 import { profile, DEFAULT_PROFILE } from '../../src/stores/profile';
-import { seedUsers } from '../../src/stores/users';
+import { discoveryUsers } from '../../src/stores/users';
 import { discoveryBooks } from '../../src/stores/matches';
 
 beforeEach(() => {
   shelf.set({});
   profile.set(DEFAULT_PROFILE);
-  seedUsers.set([]);
+  discoveryUsers.set([]);
 });
 
-it('is empty with no seed users', () => {
+it('is empty with no discovery users', () => {
   expect(discoveryBooks.get()).toEqual([]);
 });
 
 it('surfaces a nearby sharable book as a LocalBook row', () => {
-  seedUsers.set([
+  discoveryUsers.set([
     {
       id: 'bob', name: 'Bob', city: 'X', radiusKm: 10,
       topics: { curated: [], freeform: [], inferred: [] },
