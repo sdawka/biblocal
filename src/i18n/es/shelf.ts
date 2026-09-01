@@ -82,6 +82,7 @@ export default {
     cameraUnavailable: 'Cámara no disponible',
     scanning: 'Escaneando…',
     uploadPhoto: 'Subir foto',
+    retryCamera: 'Intentar la cámara de nuevo',
     cancel: 'Cancelar',
     uploadAriaScanning: 'Escaneando la imagen del código de barras',
     uploadAriaIdle: 'Subir una foto del código de barras ISBN',

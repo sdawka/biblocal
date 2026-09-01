@@ -85,6 +85,7 @@ export default {
     cameraUnavailable: 'Camera not available',
     scanning: 'Scanning…',
     uploadPhoto: 'Upload Photo',
+    retryCamera: 'Try camera again',
     cancel: 'Cancel',
     uploadAriaScanning: 'Scanning barcode image',
     uploadAriaIdle: 'Upload a photo of ISBN barcode',

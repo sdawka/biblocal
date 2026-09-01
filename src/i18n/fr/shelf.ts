@@ -85,6 +85,7 @@ export default {
     cameraUnavailable: 'Caméra indisponible',
     scanning: 'Analyse…',
     uploadPhoto: 'Téléverser une photo',
+    retryCamera: 'Réessayer la caméra',
     cancel: 'Annuler',
     uploadAriaScanning: "Analyse de l'image du code-barres",
     uploadAriaIdle: 'Téléverser une photo du code-barres ISBN',
