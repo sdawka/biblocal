@@ -303,7 +303,7 @@ describe('ScannerIsland', () => {
     expect(vi.mocked(Quagga.start)).not.toHaveBeenCalled();
 
     firstScanner.unmount();
-    renderScanner();
+    const retriedScanner = renderScanner();
 
     await waitFor(() => expect(vi.mocked(Quagga.init)).toHaveBeenCalledTimes(1));
     expect(screen.getByText('Camera permission denied. Allow camera access or upload a photo.')).toBeTruthy();
@@ -311,6 +311,14 @@ describe('ScannerIsland', () => {
 
     await fireEvent.click(screen.getByRole('button', { name: 'Try camera again' }));
     await waitFor(() => expect(vi.mocked(Quagga.init)).toHaveBeenCalledTimes(2));
-    await getDetectionHandler();
+    await waitFor(() => {
+      expect(screen.queryByText('Camera permission denied. Allow camera access or upload a photo.')).toBeNull();
+    });
+    expect(screen.queryByRole('button', { name: 'Try camera again' })).toBeNull();
+
+    const handler = await getDetectionHandler();
+    retriedScanner.unmount();
+    expect(vi.mocked(Quagga.offDetected)).toHaveBeenLastCalledWith(handler);
+    expect(vi.mocked(Quagga.stop)).toHaveBeenCalled();
   });
 });

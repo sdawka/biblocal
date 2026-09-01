@@ -140,6 +140,8 @@
       if (!mounted) return;
 
       cameraAccess = 'granted';
+      cameraDenied = false;
+      error = '';
       Quagga.start();
 
       const handler = (result: QuaggaJSResultObject) => {
@@ -199,6 +201,7 @@
   }
 
   function retryCamera() {
+    cameraAccess = 'unknown';
     cameraDenied = false;
     hasCamera = true;
     error = '';
