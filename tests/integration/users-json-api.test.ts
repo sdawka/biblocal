@@ -82,6 +82,12 @@ describe('GET /api/users.json', () => {
     expect((users[0].shelf as Record<string, unknown>[]).map((book) => book.title)).toEqual(['Live Book']);
   });
 
+  it('excludes whitespace-only names', async () => {
+    insertUser('blank', { name: '   ' });
+
+    expect(await fetchUsers()).toEqual([]);
+  });
+
   it('excludes the authenticated viewer at the query boundary', async () => {
     insertUser('viewer');
     insertUser('other');
@@ -95,12 +101,18 @@ describe('GET /api/users.json', () => {
   });
 
   it('keeps anonymous discovery privacy-safe while including candidates', async () => {
-    insertUser('reader', { contactVisibility: 'public', contactMethod: 'email', contactValue: 'reader@example.test' });
+    insertUser('reader', {
+      contactVisibility: 'public', contactMethod: 'email', contactValue: 'reader@example.test',
+      latitude: 45.523456, longitude: -73.581234, locationPrecision: 'exact',
+    });
 
     const users = await fetchUsers();
 
     expect(users.map((user) => user.id)).toEqual(['reader']);
     expect(users[0].contactValue).toBe('reader@example.test');
+    expect(users[0].latitude).toBe(45.5017);
+    expect(users[0].longitude).toBe(-73.5673);
+    expect(users[0].locationPrecision).toBe('city');
   });
 
   it('projects only map-safe fields and public contact details', async () => {
@@ -186,6 +198,39 @@ describe('GET /api/users.json', () => {
     const users = await fetchUsers();
 
     expect(users).toHaveLength(101);
+  });
+
+  it('orders and bounds eligible profiles and their SQL-restricted visible books', async () => {
+    insertUser('beta', { name: 'Beta' });
+    insertUser('alpha', { name: 'Alpha' });
+    insertBook('beta-z', 'beta', { title: 'Z' });
+    insertBook('beta-a', 'beta', { title: 'A' });
+    const statements: string[] = [];
+    const boundParameters: unknown[][] = [];
+    setTestDb({
+      prepare(sql: string) {
+        statements.push(sql);
+        const statement = db.prepare(sql);
+        return {
+          bind(...params: unknown[]) {
+            boundParameters.push(params);
+            return statement.bind(...params);
+          },
+        };
+      },
+      batch: db.batch.bind(db),
+      exec: db.exec.bind(db),
+    });
+
+    const users = await fetchUsers();
+
+    expect(users.map((user) => user.id)).toEqual(['alpha', 'beta']);
+    expect(((users[1].shelf as Record<string, unknown>[]).map((book) => book.id))).toEqual(['beta-a', 'beta-z']);
+    const booksQuery = statements.find((sql) => sql.includes('from "books"'))!;
+    expect(booksQuery).toContain('inner join (select "id" from "users"');
+    expect(booksQuery).toContain('order by "books"."user_id" asc, "books"."created_at" asc, "books"."id" asc');
+    expect(booksQuery).toContain('limit ?');
+    expect(boundParameters.flat()).toEqual(expect.arrayContaining([500, 5000]));
   });
 
   it('returns an empty list when no complete named profiles exist', async () => {

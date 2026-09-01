@@ -1,15 +1,22 @@
 import type { APIRoute } from 'astro';
-import { and, eq, isNotNull, ne } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, ne, sql } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { getDb } from '../../db/client';
 import { books, users } from '../../db/schema';
 import { getUserId } from '../../lib/auth';
 import type { Book, BookIntent, BookOwnership, BookVisibility, UserProfile } from '../../lib/types';
 import { safeJsonArray } from '../../lib/validation';
+import { getCityCoordinates } from '../../lib/geo';
 
 export const prerender = false;
 
 type Env = { DB: D1Database };
+const PROFILE_LIMIT = 500;
+const BOOK_LIMIT = 5000;
+type DiscoveryUserRow = Pick<
+  typeof users.$inferSelect,
+  'id' | 'name' | 'city' | 'radiusKm' | 'borrowStyle' | 'currentObsessions' | 'topicsCurated' | 'topicsFreeform' | 'type' | 'address' | 'neighborhood' | 'website' | 'specialties' | 'latitude' | 'longitude' | 'locationPrecision' | 'contactMethod' | 'contactValue' | 'contactVisibility'
+>;
 type DiscoveryBookRow = Pick<
   typeof books.$inferSelect,
   'id' | 'userId' | 'isbn' | 'title' | 'author' | 'visibility' | 'ownership' | 'intents' | 'subjects' | 'coverUrl' | 'addedVia' | 'createdAt'
@@ -40,18 +47,12 @@ function projectBook(book: DiscoveryBookRow): Book {
   };
 }
 
-function projectUser(user: typeof users.$inferSelect, shelf: Book[]): UserProfile {
+function projectUser(user: DiscoveryUserRow, shelf: Book[]): UserProfile {
   const profile: UserProfile = {
     id: user.id,
     name: user.name!,
     city: user.city ?? '',
     radiusKm: user.radiusKm ?? 5,
-    latitude: user.latitude ?? undefined,
-    longitude: user.longitude ?? undefined,
-    locationPrecision:
-      user.locationPrecision === 'exact' || user.locationPrecision === 'approximate' || user.locationPrecision === 'city'
-        ? user.locationPrecision
-        : undefined,
     topics: {
       curated: stringArray(user.topicsCurated),
       freeform: stringArray(user.topicsFreeform),
@@ -68,6 +69,19 @@ function projectUser(user: typeof users.$inferSelect, shelf: Book[]): UserProfil
     profile.address = user.address ?? undefined;
     profile.website = user.website ?? undefined;
     profile.specialties = stringArray(user.specialties);
+    profile.latitude = user.latitude ?? undefined;
+    profile.longitude = user.longitude ?? undefined;
+    profile.locationPrecision =
+      user.locationPrecision === 'exact' || user.locationPrecision === 'approximate' || user.locationPrecision === 'city'
+        ? user.locationPrecision
+        : undefined;
+  } else {
+    const cityCoordinates = getCityCoordinates(profile.city);
+    if (cityCoordinates) {
+      profile.latitude = cityCoordinates.lat;
+      profile.longitude = cityCoordinates.lng;
+      profile.locationPrecision = 'city';
+    }
   }
 
   if (user.contactVisibility === 'public') {
@@ -89,17 +103,47 @@ export const GET: APIRoute = async ({ locals }) => {
   try {
     const db = getDb((env as Env).DB);
     const viewerId = getUserId(locals);
-    const conditions = [isNotNull(users.name), ne(users.name, '')];
+    const conditions = [isNotNull(users.name), sql`trim(${users.name}) <> ''`];
     if (viewerId) conditions.push(ne(users.id, viewerId));
 
-    const candidateUsers = await db.select().from(users).where(and(...conditions));
+    const candidateUsers = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        city: users.city,
+        radiusKm: users.radiusKm,
+        borrowStyle: users.borrowStyle,
+        currentObsessions: users.currentObsessions,
+        topicsCurated: users.topicsCurated,
+        topicsFreeform: users.topicsFreeform,
+        type: users.type,
+        address: users.address,
+        neighborhood: users.neighborhood,
+        website: users.website,
+        specialties: users.specialties,
+        latitude: users.latitude,
+        longitude: users.longitude,
+        locationPrecision: users.locationPrecision,
+        contactMethod: users.contactMethod,
+        contactValue: users.contactValue,
+        contactVisibility: users.contactVisibility,
+      })
+      .from(users)
+      .where(and(...conditions))
+      .orderBy(asc(users.name), asc(users.id))
+      .limit(PROFILE_LIMIT);
     if (candidateUsers.length === 0) return Response.json([]);
 
-    // Join against the same eligible-profile constraints rather than expanding
-    // a candidate `IN` list. This stays within D1's parameter cap, avoids N+1
-    // reads, and never hydrates irrelevant owners' books or legacy columns.
-    const bookConditions = [isNotNull(users.name), ne(users.name, ''), eq(books.visibility, 'visible')];
-    if (viewerId) bookConditions.push(ne(users.id, viewerId));
+    // Reuse the bounded eligible-user query as a SQL subquery. This stays
+    // below D1's parameter cap, avoids N+1 reads, and never reads books from
+    // owners outside the discovery profile limit.
+    const eligibleCandidates = db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(...conditions))
+      .orderBy(asc(users.name), asc(users.id))
+      .limit(PROFILE_LIMIT)
+      .as('eligible_candidates');
     const visibleBooks = await db
       .select({
         id: books.id,
@@ -116,8 +160,10 @@ export const GET: APIRoute = async ({ locals }) => {
         createdAt: books.createdAt,
       })
       .from(books)
-      .innerJoin(users, eq(books.userId, users.id))
-      .where(and(...bookConditions));
+      .innerJoin(eligibleCandidates, eq(books.userId, eligibleCandidates.id))
+      .where(eq(books.visibility, 'visible'))
+      .orderBy(asc(books.userId), asc(books.createdAt), asc(books.id))
+      .limit(BOOK_LIMIT);
 
     const shelfByOwner = new Map<string, Book[]>();
     for (const book of visibleBooks) {

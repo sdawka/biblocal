@@ -77,8 +77,8 @@ beforeEach(() => {
     phone: '555-private', addedBy: 'internal-import', contactMethod: 'email',
     contactValue: 'montreal@example.test', contactVisibility: 'public',
   });
-  insertUser('toronto-sharer', { name: 'Toronto Sharer', latitude: 43.6532, longitude: -79.3832 });
-  insertUser('unlocated-sharer', { name: 'Unlocated Sharer' });
+  insertUser('toronto-sharer', { name: 'Toronto Sharer', city: 'Toronto', latitude: 43.6532, longitude: -79.3832 });
+  insertUser('unlocated-sharer', { name: 'Unlocated Sharer', city: 'Unknown City' });
   insertBook('montreal-dune', 'montreal-sharer', {
     title: 'Dune', isbn: '9780441172719', intents: '["borrowable"]', subjects: '["science fiction"]',
   });
@@ -110,6 +110,13 @@ describe('live locality discovery simulation', () => {
     const { people } = splitDiscovery(discovery);
     const peopleUnlocated = people.filter((match) => !hasLocation(match));
     expect(peopleUnlocated.map((match) => match.user.id)).toEqual(['unlocated-sharer']);
+
+    const montrealMatch = discovery.find((match) => match.user.id === 'montreal-sharer')!;
+    expect(montrealMatch.user.latitude).toBe(45.5017);
+    expect(montrealMatch.user.longitude).toBe(-73.5673);
+    expect(montrealMatch.user.locationPrecision).toBe('city');
+    expect(JSON.stringify(montrealMatch.user)).not.toContain('45.52');
+    expect(JSON.stringify(montrealMatch.user)).not.toContain('-73.58');
 
     expect(JSON.stringify(users)).not.toContain('Private Diary');
     const montreal = users.find((user) => user.id === 'montreal-sharer') as Record<string, unknown>;
