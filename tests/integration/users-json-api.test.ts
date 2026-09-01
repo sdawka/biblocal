@@ -137,6 +137,29 @@ describe('GET /api/users.json', () => {
     expect(shelf[0].notes).toBeUndefined();
   });
 
+  it('loads more than 100 candidates without a per-candidate D1 parameter list', async () => {
+    for (let index = 0; index < 101; index++) {
+      insertUser(`reader-${index}`);
+    }
+    setTestDb({
+      prepare(sql: string) {
+        const statement = db.prepare(sql);
+        return {
+          bind(...params: unknown[]) {
+            if (params.length > 100) throw new Error('D1 parameter limit exceeded');
+            return statement.bind(...params);
+          },
+        };
+      },
+      batch: db.batch.bind(db),
+      exec: db.exec.bind(db),
+    });
+
+    const users = await fetchUsers();
+
+    expect(users).toHaveLength(101);
+  });
+
   it('returns an empty list when no complete named profiles exist', async () => {
     insertUser('unnamed', { name: null });
 

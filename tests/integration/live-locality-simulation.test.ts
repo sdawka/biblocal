@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GET as getUsersJsonHandler } from '../../src/pages/api/users.json';
 import { calculateDiscovery } from '../../src/lib/matching';
 import { pivotToBooks } from '../../src/lib/discoveryBooks';
-import { hasLocation, isWithinBounds } from '../../src/lib/localHub';
+import { hasLocation, isWithinBounds, splitDiscovery } from '../../src/lib/localHub';
 import type { Book, UserProfile } from '../../src/lib/types';
 import { callApiAs } from '../helpers/api';
 import { createTestDb } from '../helpers/test-db';
@@ -107,6 +107,9 @@ describe('live locality discovery simulation', () => {
     expect(isWithinBounds(toronto.user.latitude!, toronto.user.longitude!, MONTREAL_BOUNDS)).toBe(false);
     const unlocated = discovery.find((match) => match.user.id === 'unlocated-sharer')!;
     expect(hasLocation(unlocated)).toBe(false);
+    const { people } = splitDiscovery(discovery);
+    const peopleUnlocated = people.filter((match) => !hasLocation(match));
+    expect(peopleUnlocated.map((match) => match.user.id)).toEqual(['unlocated-sharer']);
 
     expect(JSON.stringify(users)).not.toContain('Private Diary');
     const montreal = users.find((user) => user.id === 'montreal-sharer') as Record<string, unknown>;

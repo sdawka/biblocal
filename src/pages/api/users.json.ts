@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { and, eq, inArray, isNotNull, ne } from 'drizzle-orm';
+import { and, eq, isNotNull, ne } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { getDb } from '../../db/client';
 import { books, users } from '../../db/schema';
@@ -91,14 +91,15 @@ export const GET: APIRoute = async ({ locals }) => {
     const candidateUsers = await db.select().from(users).where(and(...conditions));
     if (candidateUsers.length === 0) return Response.json([]);
 
-    const candidateIds = candidateUsers.map((user) => user.id);
-    const visibleBooks = await db
-      .select()
-      .from(books)
-      .where(and(inArray(books.userId, candidateIds), eq(books.visibility, 'visible')));
+    // D1 permits at most 100 bound parameters. Query all visible books once,
+    // then retain only discovery candidates in memory rather than expanding an
+    // `IN` list per candidate. This stays two queries and avoids N+1 reads.
+    const candidateIds = new Set(candidateUsers.map((user) => user.id));
+    const visibleBooks = await db.select().from(books).where(eq(books.visibility, 'visible'));
 
     const shelfByOwner = new Map<string, Book[]>();
     for (const book of visibleBooks) {
+      if (!candidateIds.has(book.userId)) continue;
       const shelf = shelfByOwner.get(book.userId) ?? [];
       shelf.push(projectBook(book));
       shelfByOwner.set(book.userId, shelf);
