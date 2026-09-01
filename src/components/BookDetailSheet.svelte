@@ -44,6 +44,7 @@
 
   let fileInputRef: HTMLInputElement | null = $state(null);
   let uploading = $state(false);
+  let deleting = $state(false);
 
   // Explicit transient-state reset keyed on the book id: if the sheet ever
   // switches books while open (e.g. a future next/prev affordance), a stale
@@ -75,6 +76,15 @@
     uploading = false;
   }
 
+  async function handleDelete(id: string): Promise<boolean> {
+    if (!onDelete || deleting) return false;
+    deleting = true;
+    const removed = await onDelete(id);
+    deleting = false;
+    if (removed) onClose();
+    return removed;
+  }
+
   // Focus trap and restoration, following the ScannerIsland pattern.
   $effect(() => {
     previousActiveElement = document.activeElement;
@@ -89,7 +99,7 @@
 
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
-      onClose();
+      if (!deleting) onClose();
       return;
     }
 
@@ -111,7 +121,7 @@
   }
 
   function handleScrimClick(event: MouseEvent) {
-    if (event.target === event.currentTarget) {
+    if (!deleting && event.target === event.currentTarget) {
       onClose();
     }
   }
@@ -163,7 +173,8 @@
       <h2 id="book-detail-sheet-title" class="visually-hidden">{book.title}</h2>
       <button
         class="close-btn"
-        onclick={onClose}
+        onclick={() => { if (!deleting) onClose(); }}
+        disabled={deleting}
         aria-label={t.closeDetailAria}
         bind:this={closeBtnRef}
       >
@@ -180,7 +191,7 @@
         {onIntentsChange}
         {onVisibilityChange}
         {onOwnershipChange}
-        {onDelete}
+        onDelete={onDelete ? handleDelete : undefined}
         {onAddNote}
         {onUpdateNote}
         {onDeleteNote}

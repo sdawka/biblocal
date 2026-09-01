@@ -1,10 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-let _mockUserId: string | null = 'test-user-123';
+const mockAuth = vi.hoisted(() => ({
+  userId: 'test-user-123' as string | null,
+  listeners: new Set<(userId: string | null) => void>(),
+}));
+
+function setMockUserId(userId: string | null) {
+  mockAuth.userId = userId;
+  for (const listener of mockAuth.listeners) listener(userId);
+}
 
 // Must mock auth before importing shelf
 vi.mock('../../src/stores/auth', () => ({
-  currentUserId: { get: () => _mockUserId },
+  currentUserId: {
+    get: () => mockAuth.userId,
+    subscribe: (listener: (userId: string | null) => void) => {
+      mockAuth.listeners.add(listener);
+      listener(mockAuth.userId);
+      return () => mockAuth.listeners.delete(listener);
+    },
+  },
 }));
 
 vi.mock('../../src/stores/topics', () => ({
@@ -177,6 +192,31 @@ describe('Shelf Store', () => {
       expect(shelf.get()[book.id]).toBeUndefined();
     });
 
+    it('waits for a legacy-recovery create before deleting the same book', async () => {
+      const book: Book = {
+        id: 'legacy-recovery', title: 'Recovered Book', author: 'Author', visibility: 'visible',
+        ownership: 'have', intents: [], addedVia: 'manual', addedAt: 1,
+      };
+      shelf.set({ [book.id]: book });
+      let releaseCreate!: () => void;
+      const createGate = new Promise<void>((resolve) => { releaseCreate = resolve; });
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        if (url === '/api/books?mine=true') {
+          return { ok: true, json: async () => ({ books: [] }) } as Response;
+        }
+        if (url === '/api/books' && init?.method === 'POST') await createGate;
+        return { ok: true, json: async () => ({}) } as Response;
+      });
+
+      await loadBooksFromServer();
+      const deletion = removeBook(book.id);
+
+      expect(vi.mocked(fetch)).not.toHaveBeenCalledWith(`/api/books/${book.id}`, { method: 'DELETE' });
+      releaseCreate();
+      await expect(deletion).resolves.toBe(true);
+      expect(vi.mocked(fetch)).toHaveBeenCalledWith(`/api/books/${book.id}`, { method: 'DELETE' });
+    });
+
     it('keeps a confirmed deletion hidden from a stale load until a later load confirms absence', async () => {
       const book: Book = {
         id: 'stale-book', title: 'Stale Book', author: 'Author', visibility: 'visible',
@@ -243,12 +283,34 @@ describe('Shelf Store', () => {
       const book = addBook({ id: 'shared-id', title: 'Old User Book', author: 'Author', addedVia: 'manual' });
       const deletion = removeBook(book.id);
 
-      _mockUserId = 'different-user';
+      setMockUserId('different-user');
       releaseCreate();
 
       await expect(deletion).resolves.toBe(false);
       expect(vi.mocked(fetch)).not.toHaveBeenCalledWith(`/api/books/${book.id}`, { method: 'DELETE' });
-      _mockUserId = 'test-user-123';
+      setMockUserId('test-user-123');
+    });
+
+    it('does not finish deletion after an A to B to A identity transition', async () => {
+      const book: Book = {
+        id: 'aba-book', title: 'ABA Book', author: 'Author', visibility: 'visible',
+        ownership: 'have', intents: [], addedVia: 'manual', addedAt: 1,
+      };
+      shelf.set({ [book.id]: book });
+      let releaseDelete!: () => void;
+      const deleteGate = new Promise<void>((resolve) => { releaseDelete = resolve; });
+      vi.mocked(fetch).mockImplementation(async (_url, init) => {
+        if (init?.method === 'DELETE') await deleteGate;
+        return { ok: true, json: async () => ({}) } as Response;
+      });
+
+      const deletion = removeBook(book.id);
+      setMockUserId('different-user');
+      setMockUserId('test-user-123');
+      releaseDelete();
+
+      await expect(deletion).resolves.toBe(false);
+      expect(shelf.get()[book.id]).toEqual(book);
     });
   });
 
@@ -320,13 +382,13 @@ describe('Shelf Store', () => {
 
   describe('null userId: optimistic mutations are rolled back', () => {
     beforeEach(() => {
-      _mockUserId = null;
+      setMockUserId(null);
       shelf.set({});
       vi.mocked(reportSyncError).mockClear();
     });
 
     afterEach(() => {
-      _mockUserId = 'test-user-123';
+      setMockUserId('test-user-123');
     });
 
     it('addBook rolls back and reports a sync error when user is not authenticated', () => {

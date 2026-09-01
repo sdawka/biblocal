@@ -9,8 +9,13 @@ const SYNC_ERROR_MESSAGE = 'Could not save your change. Please try again.';
 const LOAD_SYNC_ERROR_MESSAGE = 'Could not load your shelf from the server. Please try again.';
 const COVER_SYNC_ERROR_MESSAGE = 'Could not update the cover. Please try again.';
 
-interface PendingCreate {
+interface UserSession {
   userId: string;
+  generation: number;
+}
+
+interface PendingCreate {
+  session: UserSession;
   promise: Promise<boolean>;
 }
 
@@ -19,10 +24,39 @@ interface DeleteTombstone {
   absenceConfirmed: boolean;
 }
 
-const pendingCreates = new Map<string, PendingCreate>();
+const pendingCreates = new Map<string, Set<PendingCreate>>();
 const deleteTombstones = new Map<string, Map<string, DeleteTombstone>>();
 const activeLoads = new Map<string, Set<number>>();
 let operationSequence = 0;
+let observedUserId: string | null | undefined;
+let userSessionGeneration = 0;
+
+const subscribeToUserId = (currentUserId as unknown as {
+  subscribe?: (listener: (userId: string | null) => void) => () => void;
+}).subscribe;
+if (subscribeToUserId) {
+  subscribeToUserId.call(currentUserId, (userId) => {
+    if (userId === observedUserId) return;
+    observedUserId = userId;
+    userSessionGeneration += 1;
+  });
+}
+
+function captureUserSession(): UserSession | null {
+  const userId = currentUserId.get();
+  // Preserve compatibility with lightweight store mocks that expose get()
+  // without subscribe(); production auth transitions are observed eagerly.
+  if (userId !== observedUserId) {
+    observedUserId = userId;
+    userSessionGeneration += 1;
+  }
+  return userId ? { userId, generation: userSessionGeneration } : null;
+}
+
+function isCurrentUserSession(session: UserSession): boolean {
+  const current = captureUserSession();
+  return current?.userId === session.userId && current.generation === session.generation;
+}
 
 function tombstonesFor(userId: string): Map<string, DeleteTombstone> {
   let tombstones = deleteTombstones.get(userId);
@@ -214,7 +248,7 @@ function rollbackFields(id: string, updates: Partial<Book>, prior: Record<string
 async function syncAddBook(
   book: Book,
   prior: Record<string, Book>,
-  syncingFor = currentUserId.get(),
+  syncingFor = captureUserSession(),
 ): Promise<boolean> {
   if (!syncingFor) { rollback(book.id, prior); return false; }
   try {
@@ -234,7 +268,7 @@ async function syncAddBook(
         subjects: book.subjects,
       }),
     });
-    if (currentUserId.get() !== syncingFor) return false;
+    if (!isCurrentUserSession(syncingFor)) return false;
     if (!res.ok) {
       console.error('Failed to sync book:', await res.text());
       rollback(book.id, prior);
@@ -242,11 +276,34 @@ async function syncAddBook(
     }
     return true;
   } catch (e) {
-    if (currentUserId.get() !== syncingFor) return false;
+    if (!isCurrentUserSession(syncingFor)) return false;
     console.error('Failed to sync book:', e);
     rollback(book.id, prior);
     return false;
   }
+}
+
+function trackCreate(
+  book: Book,
+  prior: Record<string, Book>,
+  syncingFor = captureUserSession(),
+): Promise<boolean> {
+  const promise = syncAddBook(book, prior, syncingFor);
+  if (!syncingFor) return promise;
+
+  const pending: PendingCreate = { session: syncingFor, promise };
+  let bookCreates = pendingCreates.get(book.id);
+  if (!bookCreates) {
+    bookCreates = new Set();
+    pendingCreates.set(book.id, bookCreates);
+  }
+  bookCreates.add(pending);
+  void promise.then(() => {
+    const currentCreates = pendingCreates.get(book.id);
+    currentCreates?.delete(pending);
+    if (currentCreates?.size === 0) pendingCreates.delete(book.id);
+  });
+  return promise;
 }
 
 async function syncUpdateBook(id: string, updates: Partial<Book>, prior: Record<string, Book>): Promise<void> {
@@ -330,19 +387,7 @@ export function addBook(book: Omit<Book, 'id' | 'addedAt'> & { id?: string }): B
   };
   const prior = shelf.get();
   shelf.set({ ...prior, [fullBook.id]: fullBook });
-  const syncingFor = currentUserId.get();
-  if (!syncingFor) {
-    void syncAddBook(fullBook, prior, syncingFor);
-    return fullBook;
-  }
-  const pending: PendingCreate = {
-    userId: syncingFor,
-    promise: syncAddBook(fullBook, prior, syncingFor),
-  };
-  pendingCreates.set(fullBook.id, pending);
-  void pending.promise.then(() => {
-    if (pendingCreates.get(fullBook.id) === pending) pendingCreates.delete(fullBook.id);
-  });
+  void trackCreate(fullBook, prior);
   return fullBook;
 }
 
@@ -383,19 +428,22 @@ export function toggleBookIntent(id: string, intent: BookIntent) {
 }
 
 export async function removeBook(id: string): Promise<boolean> {
-  const deletingFor = currentUserId.get();
+  const deletingFor = captureUserSession();
   if (!deletingFor || !shelf.get()[id]) return false;
 
-  const pending = pendingCreates.get(id);
-  if (pending?.userId === deletingFor) {
-    const created = await pending.promise;
-    if (!created || currentUserId.get() !== deletingFor || !shelf.get()[id]) return false;
+  const pending = [...(pendingCreates.get(id) ?? [])].filter(
+    (create) => create.session.userId === deletingFor.userId
+      && create.session.generation === deletingFor.generation,
+  );
+  if (pending.length > 0) {
+    const created = await Promise.all(pending.map((create) => create.promise));
+    if (created.some((success) => !success) || !isCurrentUserSession(deletingFor) || !shelf.get()[id]) return false;
   }
 
-  if (currentUserId.get() !== deletingFor) return false;
+  if (!isCurrentUserSession(deletingFor)) return false;
   try {
     const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
-    if (currentUserId.get() !== deletingFor) return false;
+    if (!isCurrentUserSession(deletingFor)) return false;
     if (!res.ok) {
       console.error('Failed to sync book removal:', await res.text());
       reportSyncError(SYNC_ERROR_MESSAGE);
@@ -406,13 +454,13 @@ export async function removeBook(id: string): Promise<boolean> {
     const next = { ...current };
     delete next[id];
     shelf.set(next);
-    tombstonesFor(deletingFor).set(id, {
+    tombstonesFor(deletingFor.userId).set(id, {
       createdAtOperation: ++operationSequence,
       absenceConfirmed: false,
     });
     return true;
   } catch (e) {
-    if (currentUserId.get() !== deletingFor) return false;
+    if (!isCurrentUserSession(deletingFor)) return false;
     console.error('Failed to sync book removal:', e);
     reportSyncError(SYNC_ERROR_MESSAGE);
     return false;
@@ -581,24 +629,25 @@ export async function loadBooksFromServer(): Promise<void> {
   // Capture the user this load is for; if it changes mid-flight (fast re-login
   // as a different user), bail before set() so a slow response can't overwrite
   // the newer user's freshly-loaded shelf.
-  const loadingFor = currentUserId.get();
-  if (!loadingFor) {
+  const loadingSession = captureUserSession();
+  if (!loadingSession) {
     shelfHydrated.set(true);
     return;
   }
+  const loadingFor = loadingSession.userId;
   const loadOperation = ++operationSequence;
   activeLoadsFor(loadingFor).add(loadOperation);
   // Snapshot local shelf before the request so legacy-only books can be recovered.
   const preLoadSnapshot = shelf.get();
   try {
     const res = await fetch('/api/books?mine=true');
-    if (currentUserId.get() !== loadingFor) return;
+    if (!isCurrentUserSession(loadingSession)) return;
     if (!res.ok) {
       reportSyncError(LOAD_SYNC_ERROR_MESSAGE);
       return;
     }
     const data = await res.json() as { books: ServerBook[] };
-    if (currentUserId.get() !== loadingFor) return;
+    if (!isCurrentUserSession(loadingSession)) return;
     const serverBooks: Record<string, Book> = {};
     for (const b of data.books) {
       serverBooks[b.id] = {
@@ -657,7 +706,7 @@ export async function loadBooksFromServer(): Promise<void> {
     // Upload each legacy-local-only book fire-and-forget. `merged` (not
     // `serverBooks`) must be the prior snapshot: on upload failure, rollback
     // restores the book instead of deleting the only surviving copy from localStorage.
-    for (const book of legacyLocalOnly) syncAddBook(book, merged);
+    for (const book of legacyLocalOnly) void trackCreate(book, merged, loadingSession);
   } catch (e) {
     console.error('Failed to load books from server:', e);
     reportSyncError(LOAD_SYNC_ERROR_MESSAGE);

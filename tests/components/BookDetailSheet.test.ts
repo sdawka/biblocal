@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, fireEvent, screen } from '@testing-library/svelte';
+import { render, fireEvent, screen, waitFor } from '@testing-library/svelte';
 import BookDetailSheet from '../../src/components/BookDetailSheet.svelte';
 import type { Book } from '../../src/lib/types';
 
@@ -80,6 +80,43 @@ function makeFile(name = 'cover.png') {
 }
 
 describe('BookDetailSheet', () => {
+  describe('delete dismissal', () => {
+    async function startDelete(onDelete: (id: string) => Promise<boolean>, onClose = vi.fn()) {
+      render(BookDetailSheet, { props: { book: makeBook(), lang: 'en', onClose, onDelete } });
+      await fireEvent.click(screen.getByLabelText('Delete Test Book from shelf'));
+      await fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+      return { onClose, dialog: screen.getByRole('dialog') };
+    }
+
+    it('ignores Escape, scrim, and close-button dismissal while delete is pending', async () => {
+      let resolveDelete!: (removed: boolean) => void;
+      const onDelete = vi.fn(() => new Promise<boolean>((resolve) => { resolveDelete = resolve; }));
+      const { onClose, dialog } = await startDelete(onDelete);
+      const close = screen.getByRole('button', { name: 'Close' }) as HTMLButtonElement;
+
+      expect(close.disabled).toBe(true);
+      await fireEvent.keyDown(dialog, { key: 'Escape' });
+      await fireEvent.click(dialog);
+      await fireEvent.click(close);
+      expect(onClose).not.toHaveBeenCalled();
+
+      resolveDelete(false);
+      await screen.findByRole('alert');
+    });
+
+    it('does not close after failure and closes after a successful retry', async () => {
+      const onDelete = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+      const onClose = vi.fn();
+      await startDelete(onDelete, onClose);
+
+      await screen.findByRole('alert');
+      expect(onClose).not.toHaveBeenCalled();
+      await fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+      await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    });
+  });
+
   describe('cover upload', () => {
     it('does not render a "Change cover" button when onUploadCover is not provided', () => {
       render(BookDetailSheet, { props: { book: makeBook(), lang: 'en', onClose: vi.fn() } });

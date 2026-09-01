@@ -89,9 +89,7 @@
   }
 
   async function handleDeleteBook(id: string): Promise<boolean> {
-    const removed = await removeBook(id);
-    if (removed) openBookId = null;
-    return removed;
+    return removeBook(id);
   }
 </script>
 
