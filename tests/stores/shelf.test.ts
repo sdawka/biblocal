@@ -217,6 +217,49 @@ describe('Shelf Store', () => {
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(`/api/books/${book.id}`, { method: 'DELETE' });
     });
 
+    it('fences stale-load legacy recovery once deletion has begun', async () => {
+      const book: Book = {
+        id: 'fenced-recovery', title: 'Fenced Book', author: 'Author', visibility: 'visible',
+        ownership: 'have', intents: [], addedVia: 'manual', addedAt: 1,
+      };
+      shelf.set({ [book.id]: book });
+      let releaseLoad!: () => void;
+      let releaseDelete!: () => void;
+      const loadGate = new Promise<void>((resolve) => { releaseLoad = resolve; });
+      const deleteGate = new Promise<void>((resolve) => { releaseDelete = resolve; });
+      const requests: string[] = [];
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        if (url === '/api/books?mine=true') {
+          requests.push('GET');
+          await loadGate;
+          return { ok: true, json: async () => ({ books: [] }) } as Response;
+        }
+        if (url === '/api/books' && init?.method === 'POST') {
+          requests.push('POST');
+          return { ok: true, json: async () => ({}) } as Response;
+        }
+        if (init?.method === 'DELETE') {
+          requests.push('DELETE');
+          await deleteGate;
+          return { ok: true } as Response;
+        }
+        return { ok: true, json: async () => ({}) } as Response;
+      });
+
+      const staleLoad = loadBooksFromServer();
+      const deletion = removeBook(book.id);
+      releaseLoad();
+      await staleLoad;
+
+      expect(requests).toEqual(['GET', 'DELETE']);
+      expect(shelf.get()[book.id]).toEqual(book);
+
+      releaseDelete();
+      await expect(deletion).resolves.toBe(true);
+      expect(requests).toEqual(['GET', 'DELETE']);
+      expect(shelf.get()[book.id]).toBeUndefined();
+    });
+
     it('keeps a confirmed deletion hidden from a stale load until a later load confirms absence', async () => {
       const book: Book = {
         id: 'stale-book', title: 'Stale Book', author: 'Author', visibility: 'visible',
@@ -273,6 +316,44 @@ describe('Shelf Store', () => {
       expect(shelf.get()[book.id]).toBeUndefined();
     });
 
+    it('treats retry 404 as converged success and blocks a stale load from resurrection', async () => {
+      const book: Book = {
+        id: 'lost-response', title: 'Lost Response', author: 'Author', visibility: 'visible',
+        ownership: 'have', intents: [], addedVia: 'manual', addedAt: 1,
+      };
+      shelf.set({ [book.id]: book });
+      let releaseLoad!: () => void;
+      const loadGate = new Promise<void>((resolve) => { releaseLoad = resolve; });
+      let deleteAttempt = 0;
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        if (url === '/api/books?mine=true') {
+          await loadGate;
+          return { ok: true, json: async () => ({ books: [{
+            id: book.id, title: book.title, author: book.author, isbn: null,
+            coverUrl: null, fetchedCoverUrl: null, status: 'visible', visibility: 'visible',
+            ownership: 'have', intents: '[]', addedVia: 'manual', subjects: null,
+            createdAt: new Date(1).toISOString(),
+          }] }) } as Response;
+        }
+        if (init?.method === 'DELETE') {
+          deleteAttempt += 1;
+          if (deleteAttempt === 1) throw new Error('response lost');
+          return { ok: false, status: 404, text: async () => 'already absent' } as Response;
+        }
+        return { ok: true, json: async () => ({}) } as Response;
+      });
+
+      await expect(removeBook(book.id)).resolves.toBe(false);
+      expect(shelf.get()[book.id]).toEqual(book);
+
+      const staleLoad = loadBooksFromServer();
+      await expect(removeBook(book.id)).resolves.toBe(true);
+      expect(shelf.get()[book.id]).toBeUndefined();
+      releaseLoad();
+      await staleLoad;
+      expect(shelf.get()[book.id]).toBeUndefined();
+    });
+
     it('does not finish an old user deletion after identity changes while create is pending', async () => {
       let releaseCreate!: () => void;
       const createGate = new Promise<void>((resolve) => { releaseCreate = resolve; });
@@ -311,6 +392,9 @@ describe('Shelf Store', () => {
 
       await expect(deletion).resolves.toBe(false);
       expect(shelf.get()[book.id]).toEqual(book);
+
+      vi.mocked(fetch).mockResolvedValue({ ok: true } as Response);
+      await expect(removeBook(book.id)).resolves.toBe(true);
     });
   });
 

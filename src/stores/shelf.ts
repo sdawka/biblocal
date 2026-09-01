@@ -19,12 +19,17 @@ interface PendingCreate {
   promise: Promise<boolean>;
 }
 
+interface DeletionFence {
+  session: UserSession;
+}
+
 interface DeleteTombstone {
   createdAtOperation: number;
   absenceConfirmed: boolean;
 }
 
 const pendingCreates = new Map<string, Set<PendingCreate>>();
+const deletionFences = new Map<string, DeletionFence>();
 const deleteTombstones = new Map<string, Map<string, DeleteTombstone>>();
 const activeLoads = new Map<string, Set<number>>();
 let operationSequence = 0;
@@ -56,6 +61,21 @@ function captureUserSession(): UserSession | null {
 function isCurrentUserSession(session: UserSession): boolean {
   const current = captureUserSession();
   return current?.userId === session.userId && current.generation === session.generation;
+}
+
+function isDeletionFenced(id: string, session: UserSession): boolean {
+  const fence = deletionFences.get(id);
+  return fence?.session.userId === session.userId
+    && fence.session.generation === session.generation;
+}
+
+function fencedBookIds(session: UserSession): string[] {
+  const ids: string[] = [];
+  for (const [id, fence] of deletionFences) {
+    if (fence.session.userId === session.userId
+      && fence.session.generation === session.generation) ids.push(id);
+  }
+  return ids;
 }
 
 function tombstonesFor(userId: string): Map<string, DeleteTombstone> {
@@ -288,6 +308,9 @@ function trackCreate(
   prior: Record<string, Book>,
   syncingFor = captureUserSession(),
 ): Promise<boolean> {
+  if (syncingFor && isDeletionFenced(book.id, syncingFor)) {
+    return Promise.resolve(false);
+  }
   const promise = syncAddBook(book, prior, syncingFor);
   if (!syncingFor) return promise;
 
@@ -431,20 +454,36 @@ export async function removeBook(id: string): Promise<boolean> {
   const deletingFor = captureUserSession();
   if (!deletingFor || !shelf.get()[id]) return false;
 
-  const pending = [...(pendingCreates.get(id) ?? [])].filter(
-    (create) => create.session.userId === deletingFor.userId
-      && create.session.generation === deletingFor.generation,
-  );
-  if (pending.length > 0) {
-    const created = await Promise.all(pending.map((create) => create.promise));
-    if (created.some((success) => !success) || !isCurrentUserSession(deletingFor) || !shelf.get()[id]) return false;
-  }
+  if (isDeletionFenced(id, deletingFor)) return false;
+  const fence: DeletionFence = { session: deletingFor };
+  deletionFences.set(id, fence);
 
-  if (!isCurrentUserSession(deletingFor)) return false;
   try {
-    const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
+    // Snapshot creates only after installing the fence: pre-fence work drains
+    // before DELETE, while reconciliation cannot enqueue new same-book work.
+    const pending = [...(pendingCreates.get(id) ?? [])].filter(
+      (create) => create.session.userId === deletingFor.userId
+        && create.session.generation === deletingFor.generation,
+    );
+    if (pending.length > 0) {
+      const created = await Promise.all(pending.map((create) => create.promise));
+      if (created.some((success) => !success) || !isCurrentUserSession(deletingFor) || !shelf.get()[id]) return false;
+    }
+
     if (!isCurrentUserSession(deletingFor)) return false;
-    if (!res.ok) {
+    let res: Response;
+    try {
+      res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
+    } catch (e) {
+      if (!isCurrentUserSession(deletingFor)) return false;
+      console.error('Failed to sync book removal:', e);
+      reportSyncError(SYNC_ERROR_MESSAGE);
+      return false;
+    }
+    if (!isCurrentUserSession(deletingFor)) return false;
+    // A retry may see 404 when the first DELETE committed but its response was
+    // lost. For the same authenticated session, absence is the desired state.
+    if (!res.ok && res.status !== 404) {
       console.error('Failed to sync book removal:', await res.text());
       reportSyncError(SYNC_ERROR_MESSAGE);
       return false;
@@ -459,11 +498,8 @@ export async function removeBook(id: string): Promise<boolean> {
       absenceConfirmed: false,
     });
     return true;
-  } catch (e) {
-    if (!isCurrentUserSession(deletingFor)) return false;
-    console.error('Failed to sync book removal:', e);
-    reportSyncError(SYNC_ERROR_MESSAGE);
-    return false;
+  } finally {
+    if (deletionFences.get(id) === fence) deletionFences.delete(id);
   }
 }
 
@@ -686,12 +722,15 @@ export async function loadBooksFromServer(): Promise<void> {
         tombstone.absenceConfirmed = true;
       }
     }
+    const fencedIds = fencedBookIds(loadingSession);
+    for (const id of fencedIds) delete serverBooks[id];
     // Legacy recovery: books that were local-only BEFORE this request started.
     // Used for uploads only — mid-flight adds (not in preLoadSnapshot) already
     // have their own syncAddBook POST in flight and must NOT be double-posted.
     const withoutDeleted = (books: Record<string, Book>): Record<string, Book> => {
       const active = { ...books };
       for (const id of userTombstones.keys()) delete active[id];
+      for (const id of fencedIds) delete active[id];
       return active;
     };
     const legacyLocalOnly = findLocalOnlyBooks(withoutDeleted(preLoadSnapshot), serverBooks);
@@ -702,6 +741,12 @@ export async function loadBooksFromServer(): Promise<void> {
     const allLocalOnly = findLocalOnlyBooks(withoutDeleted(postFetchSnapshot), serverBooks);
     const merged: Record<string, Book> = { ...serverBooks };
     for (const book of allLocalOnly) merged[book.id] = book;
+    // A pending delete is not optimistic: keep its current local copy visible,
+    // but never classify it as recoverable or start a POST behind the fence.
+    for (const id of fencedIds) {
+      const fencedBook = postFetchSnapshot[id];
+      if (fencedBook) merged[id] = fencedBook;
+    }
     shelf.set(merged);
     // Upload each legacy-local-only book fire-and-forget. `merged` (not
     // `serverBooks`) must be the prior snapshot: on upload failure, rollback
