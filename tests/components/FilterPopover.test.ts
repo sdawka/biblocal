@@ -109,20 +109,55 @@ describe('FilterPopover mobile dialog', () => {
     expect(document.body.style.overflow).toBe('scroll');
   });
 
-  it('keeps the dialog usable above fixed navigation layers', async () => {
+  it('cycles Tab within the dialog after a chip mutation adds the Clear filters control', async () => {
+    render(FilterPopover, { props: { lang: 'en' } });
+    const dialog = await openMobileFilters();
+    const ownership = within(dialog).getByRole('group', { name: 'Filter by ownership' });
+
+    await fireEvent.click(within(ownership).getByRole('button', { name: 'have' }));
+    const controls = within(dialog).getAllByRole('button');
+    const first = controls[0];
+    const last = within(dialog).getByRole('button', { name: 'Clear filters' });
+
+    last.focus();
+    await fireEvent.keyDown(window, { key: 'Tab' });
+    expect(document.activeElement).toBe(first);
+
+    first.focus();
+    await fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(last);
+  });
+
+  it('keeps its fixed modal controls reachable instead of fixed navigation while open', async () => {
     const header = document.createElement('header');
     header.style.position = 'fixed';
     header.style.zIndex = '100';
+    const headerLink = document.createElement('button');
+    headerLink.textContent = 'Header destination';
+    header.append(headerLink);
     const tabbar = document.createElement('nav');
     tabbar.style.position = 'fixed';
     tabbar.style.zIndex = '90';
+    const tabLink = document.createElement('button');
+    tabLink.textContent = 'Tab destination';
+    tabbar.append(tabLink);
     document.body.append(header, tabbar);
 
     render(FilterPopover, { props: { lang: 'en' } });
     const dialog = await openMobileFilters();
 
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(window.getComputedStyle(dialog).position).toBe('fixed');
     expect(Number(window.getComputedStyle(dialog).zIndex)).toBeGreaterThan(Number(window.getComputedStyle(header).zIndex));
     expect(Number(window.getComputedStyle(dialog).zIndex)).toBeGreaterThan(Number(window.getComputedStyle(tabbar).zIndex));
+
+    const firstControl = within(dialog).getAllByRole('button')[0];
+    const lastControl = within(dialog).getAllByRole('button').at(-1)!;
+    lastControl.focus();
+    await fireEvent.keyDown(window, { key: 'Tab' });
+    expect(document.activeElement).toBe(firstControl);
+    expect(document.activeElement).not.toBe(headerLink);
+    expect(document.activeElement).not.toBe(tabLink);
     header.remove();
     tabbar.remove();
   });
