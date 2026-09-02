@@ -153,8 +153,9 @@
       </p>
     </div>
   {:else}
-    {#if booksIHave.length > 0}
-      <section class="shelf-section">
+    <div class="bookcase">
+      {#if booksIHave.length > 0}
+        <section class="shelf-section">
         <button
           class="section-header"
           onclick={() => haveExpanded = !haveExpanded}
@@ -191,11 +192,11 @@
             </div>
           {/if}
         {/if}
-      </section>
-    {/if}
+        </section>
+      {/if}
 
-    {#if booksImSeeking.length > 0}
-      <section class="shelf-section seeking">
+      {#if booksImSeeking.length > 0}
+        <section class="shelf-section seeking">
         <button
           class="section-header"
           onclick={() => seekingExpanded = !seekingExpanded}
@@ -232,8 +233,9 @@
             </div>
           {/if}
         {/if}
-      </section>
-    {/if}
+        </section>
+      {/if}
+    </div>
   {/if}
 </section>
 
@@ -350,6 +352,34 @@
     font-weight: 590;
     color: var(--ink-faint);
     letter-spacing: 0;
+  }
+
+  .bookcase {
+    position: relative;
+    padding-inline: var(--s-4);
+  }
+
+  .bookcase::before,
+  .bookcase::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    width: 12px;
+    border-radius: 3px;
+    box-shadow: 0 2px 10px -3px var(--drop-shadow-color);
+    pointer-events: none;
+  }
+
+  .bookcase::before {
+    left: 0;
+    background: linear-gradient(90deg, var(--surface), var(--hairline-strong) 55%, var(--hairline));
+  }
+
+  .bookcase::after {
+    right: 0;
+    background: linear-gradient(90deg, var(--hairline), var(--hairline-strong) 45%, var(--surface));
   }
 
   /* Ownership sections */
@@ -517,6 +547,15 @@
   }
 
   @media (max-width: 600px) {
+    .bookcase {
+      padding-inline: var(--s-3);
+    }
+
+    .bookcase::before,
+    .bookcase::after {
+      width: 7px;
+    }
+
     .toolbar {
       align-items: flex-start;
     }
