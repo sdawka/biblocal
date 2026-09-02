@@ -529,7 +529,9 @@ describe('ShelfIsland', () => {
         expect(container.querySelector('[data-book-id="b1"]')).toBeTruthy();
       });
 
-      const bookcase = container.querySelector('.bookcase');
+      const bookcases = container.querySelectorAll('.bookcase');
+      expect(bookcases).toHaveLength(1);
+      const bookcase = bookcases[0];
       expect(bookcase).toBeTruthy();
       expect(bookcase?.querySelectorAll(':scope > .shelf-section')).toHaveLength(2);
 
@@ -538,7 +540,7 @@ describe('ShelfIsland', () => {
       });
     });
 
-    it('the ShelfIsland source defines .covers-row as the scroll container (overflow-x: auto, flex)', async () => {
+    it('the ShelfIsland source keeps covers-row as the only horizontal scroll container', async () => {
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
       const src = await fs.readFile(
@@ -552,6 +554,10 @@ describe('ShelfIsland', () => {
       expect(rowRule).toMatch(/display:\s*flex/);
       expect(rowRule).toMatch(/overflow-x:\s*auto/);
       expect(rowRule).toMatch(/width:\s*100%/);
+
+      const bookcaseRuleMatch = styleBlock.match(/\.bookcase\s*\{[^}]*\}/);
+      expect(bookcaseRuleMatch).toBeTruthy();
+      expect(bookcaseRuleMatch![0]).not.toMatch(/\boverflow(?:-x)?\s*:/);
     });
   });
 });
