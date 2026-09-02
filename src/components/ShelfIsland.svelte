@@ -3,57 +3,90 @@
     shelf,
     activeFilters,
     bookMatchesFilters,
-    updateBookIntents,
-    toggleOwnershipFilter,
-    toggleIntentFilter,
-    toggleVisibilityFilter,
     clearAllFilters,
+    updateBookIntents,
+    updateBook,
+    updateBookOwnership,
+    updateBookVisibility,
+    uploadCover,
+    resetCover,
     removeBook,
     addNote,
     updateNote,
     removeNote,
   } from '../stores/shelf';
+  import {
+    shelfView,
+    shelfSort,
+    resolveShelfView,
+    setShelfView,
+    setShelfSort,
+    type ShelfSort,
+  } from '../stores/shelf-view';
   import BookCard from './BookCard.svelte';
-  import type { BookIntent } from '../lib/types';
-  import { INTENT_OPTIONS } from '../lib/intents';
+  import BookSpine from './BookSpine.svelte';
+  import BookDetailSheet from './BookDetailSheet.svelte';
+  import FilterPopover from './FilterPopover.svelte';
   import { useTranslations, type Lang } from '../i18n';
 
   let { lang = 'en' as Lang } = $props();
   const t = $derived(useTranslations(lang).shelf.list);
-  // Localized intent options: order from lib, labels from the dict.
-  const intentOptions = $derived(
-    INTENT_OPTIONS.map((opt) => ({ value: opt.value, label: useTranslations(lang).shelf.intents.labels[opt.value] }))
-  );
-  const intentPrompt = $derived(useTranslations(lang).shelf.intents.prompt);
+  let viewPreference = $derived($shelfView);
+  let sort = $derived($shelfSort);
+  let isMobile = $state(false);
+  let view = $derived(resolveShelfView(viewPreference, isMobile));
+  let query = $state('');
 
   let filters = $derived($activeFilters);
   let allBooks = $derived(Object.values($shelf));
-  let filteredBooks = $derived(
-    allBooks.filter(book => bookMatchesFilters(book, filters))
+  let activeFilterCount = $derived(
+    filters.visibility.length + filters.ownership.length + filters.intents.length
+  );
+  let normalizedQuery = $derived(query.trim().toLocaleLowerCase());
+  let filteredBooks = $derived(allBooks
+    .filter(book => bookMatchesFilters(book, filters))
+    .filter(book => !normalizedQuery || `${book.title} ${book.author}`.toLocaleLowerCase().includes(normalizedQuery))
+    .sort((a, b) => compareBooks(a, b, sort))
   );
   let booksIHave = $derived(filteredBooks.filter(b => b.ownership === 'have'));
   let booksImSeeking = $derived(filteredBooks.filter(b => b.ownership === 'seeking'));
   let totalBooks = $derived(allBooks.length);
-  let showClear = $derived(
-    filters.visibility.length > 0 || filters.ownership.length > 0 || filters.intents.length > 0
-  );
-
-  let ownershipCounts = $derived({
-    have: allBooks.filter(b => b.ownership === 'have').length,
-    seeking: allBooks.filter(b => b.ownership === 'seeking').length,
-  });
-
-  let intentCounts = $derived(
-    INTENT_OPTIONS.reduce((acc, opt) => {
-      acc[opt.value] = allBooks.filter(b => b.intents.includes(opt.value)).length;
-      return acc;
-    }, {} as Record<BookIntent, number>)
-  );
-
-  let privateCount = $derived(allBooks.filter(b => b.visibility === 'private').length);
 
   let haveExpanded = $state(true);
   let seekingExpanded = $state(true);
+
+  let openBookId = $state<string | null>(null);
+  let openBook = $derived(openBookId ? $shelf[openBookId] : null);
+
+  $effect(() => {
+    const mobileQuery = window.matchMedia('(max-width: 600px)');
+    const updateMobileState = () => (isMobile = mobileQuery.matches);
+    updateMobileState();
+    mobileQuery.addEventListener('change', updateMobileState);
+    return () => mobileQuery.removeEventListener('change', updateMobileState);
+  });
+
+  function compareBooks(a: typeof allBooks[number], b: typeof allBooks[number], order: ShelfSort) {
+    if (order === 'title') {
+      return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+    }
+    if (order === 'shareable') {
+      const shareability = (book: typeof a) =>
+        book.visibility === 'visible' && book.ownership === 'have' && book.intents.length > 0 ? 1 : 0;
+      const difference = shareability(b) - shareability(a);
+      if (difference) return difference;
+    }
+    return b.addedAt - a.addedAt;
+  }
+
+  function clearSearchAndFilters() {
+    query = '';
+    clearAllFilters();
+  }
+
+  function moreCount(books: typeof allBooks) {
+    return Math.max(books.length - 2, 0);
+  }
 
   function handleDeleteBook(id: string) {
     removeBook(id);
@@ -61,64 +94,47 @@
 </script>
 
 <section class="shelf">
-  <div class="header">
+  <div class="toolbar">
     <h2 class="serif">{t.title} <span class="count-tag">{totalBooks} {t.countSuffix}</span></h2>
+    <div class="toolbar-controls">
+      <div class="segmented" role="group" aria-label={t.viewToggleGroup}>
+        <button type="button" aria-pressed={view === 'covers'} onclick={() => setShelfView('covers')}>
+          {t.viewCovers}
+        </button>
+        <button type="button" aria-pressed={view === 'details'} onclick={() => setShelfView('details')}>
+          {t.viewDetails}
+        </button>
+      </div>
+      <FilterPopover {lang} />
+    </div>
   </div>
 
-  <div class="filter-groups card">
-    <div class="filter-row">
-      <span class="filter-label">{t.filterOwnershipLabel}</span>
-      <div class="chip-group" role="group" aria-label={t.filterOwnershipGroup}>
-        <button
-          class="chip"
-          aria-pressed={filters.ownership.includes('have')}
-          onclick={() => toggleOwnershipFilter('have')}
-        >
-          {t.have} {#if ownershipCounts.have > 0}<span class="count">{ownershipCounts.have}</span>{/if}
-        </button>
-        <button
-          class="chip"
-          aria-pressed={filters.ownership.includes('seeking')}
-          onclick={() => toggleOwnershipFilter('seeking')}
-        >
-          {t.seeking} {#if ownershipCounts.seeking > 0}<span class="count">{ownershipCounts.seeking}</span>{/if}
-        </button>
-      </div>
+  {#if totalBooks > 0}
+    <div class="library-tools">
+      <label class="search-field">
+        <span class="visually-hidden">{t.searchAria}</span>
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+          <circle cx="8.5" cy="8.5" r="5.5" />
+          <path d="m13 13 4 4" stroke-linecap="round" />
+        </svg>
+        <input class="input" type="search" bind:value={query} placeholder={t.searchPlaceholder} />
+      </label>
+      <label class="sort-field">
+        <span>{t.sort}</span>
+        <select class="input" value={sort} onchange={(event) => setShelfSort((event.currentTarget as HTMLSelectElement).value as ShelfSort)}>
+          <option value="recent">{t.sortRecent}</option>
+          <option value="title">{t.sortTitle}</option>
+          <option value="shareable">{t.sortShareable}</option>
+        </select>
+      </label>
     </div>
-
-    <div class="filter-row">
-      <span class="filter-label">{intentPrompt}</span>
-      <div class="chip-group" role="group" aria-label={t.filterIntentGroup}>
-        {#each intentOptions as opt}
-          <button
-            class="chip"
-            aria-pressed={filters.intents.includes(opt.value)}
-            onclick={() => toggleIntentFilter(opt.value)}
-          >
-            {opt.label} {#if intentCounts[opt.value] > 0}<span class="count">{intentCounts[opt.value]}</span>{/if}
-          </button>
-        {/each}
-      </div>
-    </div>
-
-    <div class="filter-row">
-      <span class="filter-label" aria-hidden="true"></span>
-      <div class="chip-group" role="group" aria-label={t.filterVisibilityGroup}>
-        <button
-          class="chip"
-          aria-pressed={filters.visibility.includes('private')}
-          onclick={() => toggleVisibilityFilter('private')}
-        >
-          {t.privateOnly} {#if privateCount > 0}<span class="count">{privateCount}</span>{/if}
-        </button>
-      </div>
-      {#if showClear}
-        <button class="btn btn-plain btn-sm clear-link" onclick={() => clearAllFilters()}>
-          {t.clearFilters}
-        </button>
+    <div class="result-summary" aria-live="polite">
+      <span>{t.showing.replace('{shown}', String(filteredBooks.length)).replace('{total}', String(totalBooks))}</span>
+      {#if normalizedQuery || activeFilterCount > 0}
+        <button class="btn btn-plain btn-sm" onclick={clearSearchAndFilters}>{t.clearResults}</button>
       {/if}
     </div>
-  </div>
+  {/if}
 
   {#if filteredBooks.length === 0}
     <div class="empty card">
@@ -138,8 +154,8 @@
     </div>
   {:else}
     <div class="bookcase">
-    {#if booksIHave.length > 0}
-      <section class="shelf-section">
+      {#if booksIHave.length > 0}
+        <section class="shelf-section">
         <button
           class="section-header"
           onclick={() => haveExpanded = !haveExpanded}
@@ -155,27 +171,32 @@
           <h3 class="serif">{t.booksIHave} <span class="count-tag">{booksIHave.length}</span></h3>
         </button>
         {#if haveExpanded}
-          <div class="grid" id="books-i-have-grid">
-            {#each booksIHave as book, i (book.id)}
-              <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                <BookCard
-                  {book}
-                  {lang}
-                  onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
-                  onDelete={handleDeleteBook}
-                  onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
-                  onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
-                  onDeleteNote={(noteId) => removeNote(book.id, noteId)}
-                />
-              </div>
-            {/each}
-          </div>
+          {#if view === 'covers'}
+            <div class="covers-row" id="books-i-have-grid">
+              {#each booksIHave as book, i (book.id)}
+                <div class="spine-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                </div>
+              {/each}
+            </div>
+            {#if moreCount(booksIHave) > 0}
+              <p class="swipe-cue" aria-hidden="true">{t.swipeMore.replace('{n}', String(moreCount(booksIHave)))}</p>
+            {/if}
+          {:else}
+            <div class="grid" id="books-i-have-grid">
+              {#each booksIHave as book, i (book.id)}
+                <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookCard {book} {lang} onOpen={(id) => (openBookId = id)} />
+                </div>
+              {/each}
+            </div>
+          {/if}
         {/if}
-      </section>
-    {/if}
+        </section>
+      {/if}
 
-    {#if booksImSeeking.length > 0}
-      <section class="shelf-section seeking">
+      {#if booksImSeeking.length > 0}
+        <section class="shelf-section seeking">
         <button
           class="section-header"
           onclick={() => seekingExpanded = !seekingExpanded}
@@ -191,35 +212,134 @@
           <h3 class="serif">{t.booksImSeeking} <span class="count-tag">{booksImSeeking.length}</span></h3>
         </button>
         {#if seekingExpanded}
-          <div class="grid" id="books-seeking-grid">
-            {#each booksImSeeking as book, i (book.id)}
-              <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
-                <BookCard
-                  {book}
-                  {lang}
-                  onIntentsChange={(intents) => updateBookIntents(book.id, intents)}
-                  onDelete={handleDeleteBook}
-                  onAddNote={(text, visibility) => addNote(book.id, text, visibility)}
-                  onUpdateNote={(noteId, updates) => updateNote(book.id, noteId, updates)}
-                  onDeleteNote={(noteId) => removeNote(book.id, noteId)}
-                />
-              </div>
-            {/each}
-          </div>
+          {#if view === 'covers'}
+            <div class="covers-row" id="books-seeking-grid">
+              {#each booksImSeeking as book, i (book.id)}
+                <div class="spine-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookSpine {book} {lang} onOpen={(id) => (openBookId = id)} />
+                </div>
+              {/each}
+            </div>
+            {#if moreCount(booksImSeeking) > 0}
+              <p class="swipe-cue" aria-hidden="true">{t.swipeMore.replace('{n}', String(moreCount(booksImSeeking)))}</p>
+            {/if}
+          {:else}
+            <div class="grid" id="books-seeking-grid">
+              {#each booksImSeeking as book, i (book.id)}
+                <div class="book-wrapper" style="animation-delay: {Math.min(i * 0.04, 0.3)}s">
+                  <BookCard {book} {lang} onOpen={(id) => (openBookId = id)} />
+                </div>
+              {/each}
+            </div>
+          {/if}
         {/if}
-      </section>
-    {/if}
+        </section>
+      {/if}
     </div>
   {/if}
 </section>
+
+{#if openBook}
+  <BookDetailSheet
+    book={openBook}
+    {lang}
+    onClose={() => (openBookId = null)}
+    onIntentsChange={(intents) => updateBookIntents(openBook.id, intents)}
+    onOwnershipChange={(ownership) => updateBookOwnership(openBook.id, ownership)}
+    onVisibilityChange={(visibility) => updateBookVisibility(openBook.id, visibility)}
+    onUpdateDetails={(updates) => updateBook(openBook.id, updates)}
+    onUploadCover={(file) => uploadCover(openBook.id, file)}
+    onResetCover={() => resetCover(openBook.id)}
+    onDelete={(id) => {
+      handleDeleteBook(id);
+      openBookId = null;
+    }}
+    onAddNote={(text, visibility) => addNote(openBook.id, text, visibility)}
+    onUpdateNote={(noteId, updates) => updateNote(openBook.id, noteId, updates)}
+    onDeleteNote={(noteId) => removeNote(openBook.id, noteId)}
+  />
+{/if}
 
 <style>
   .shelf {
     margin-top: var(--s-7);
   }
 
-  .header {
-    margin-bottom: var(--s-4);
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-bottom: var(--s-5);
+  }
+
+  .toolbar-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+
+  .library-tools {
+    display: flex;
+    align-items: end;
+    gap: var(--s-3);
+    margin: calc(-1 * var(--s-2)) 0 var(--s-2);
+  }
+
+  .search-field {
+    position: relative;
+    flex: 1;
+    min-width: 12rem;
+  }
+
+  .search-field svg {
+    position: absolute;
+    top: 50%;
+    left: var(--s-3);
+    color: var(--ink-muted);
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  .search-field .input {
+    width: 100%;
+    padding-left: calc(var(--s-3) + 20px);
+  }
+
+  .sort-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 0.75rem;
+    font-weight: 590;
+    color: var(--ink-muted);
+  }
+
+  .sort-field select {
+    min-width: 7.5rem;
+  }
+
+  .result-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 30px;
+    margin-bottom: var(--s-3);
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   h2 {
@@ -237,63 +357,6 @@
     letter-spacing: 0;
   }
 
-  /* Filter groups */
-  .filter-groups {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-4);
-    margin-bottom: var(--s-6);
-  }
-
-  .filter-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--s-3);
-  }
-
-  .filter-label {
-    font-family: var(--font-ui);
-    font-size: 0.8125rem;
-    font-weight: 590;
-    color: var(--ink-muted);
-    min-width: 3rem;
-  }
-
-  .chip-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2);
-  }
-
-  .count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.2rem;
-    height: 1.2rem;
-    padding: 0 0.3rem;
-    margin-left: 0.3rem;
-    font-size: 0.7rem;
-    font-weight: 640;
-    background: var(--surface-sunken);
-    color: var(--ink-muted);
-    border-radius: var(--r-full);
-  }
-
-  .chip[aria-pressed="true"] .count {
-    background: var(--accent-tint);
-    color: var(--accent);
-  }
-
-  .clear-link {
-    margin-left: auto;
-  }
-
-  /* Bookcase carcass: two wooden side uprights frame the shelves into bays,
-     the books resting on the per-row planks between the posts. Posts are lit
-     from the outside so they read as rounded wood; they tuck the plank ends
-     underneath. All themed tokens → dark mode recomputes. */
   .bookcase {
     position: relative;
     padding-inline: var(--s-4);
@@ -305,8 +368,8 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 12px;
     z-index: 1;
+    width: 12px;
     border-radius: 3px;
     box-shadow: 0 2px 10px -3px var(--drop-shadow-color);
     pointer-events: none;
@@ -322,25 +385,9 @@
     background: linear-gradient(90deg, var(--hairline), var(--hairline-strong) 45%, var(--surface));
   }
 
-  @media (max-width: 600px) {
-    .bookcase {
-      padding-inline: var(--s-3);
-    }
-    .bookcase::before,
-    .bookcase::after {
-      width: 7px;
-    }
-  }
-
   /* Ownership sections */
   .shelf-section {
     margin-bottom: var(--s-6);
-  }
-
-  .shelf-section.seeking {
-    /* Framing now comes from the bookcase uprights; the heading dot + card
-       wash carry the seeking cue. Extra top room reads as a shelf gap. */
-    margin-top: var(--s-6);
   }
 
   .section-header {
@@ -417,23 +464,77 @@
 
   .grid {
     display: grid;
-    column-gap: var(--s-4);
-    row-gap: var(--s-6);
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--s-3);
+    /* Fixed tracks: every card the same size, matching the covers view's
+       uniform spines. */
+    grid-template-columns: repeat(auto-fill, 232px);
   }
 
-  /* Tablet guard: lower the floor so the wider column still wraps cleanly
-     and never forces horizontal scroll. */
-  @media (max-width: 820px) {
+  @media (max-width: 560px) {
     .grid {
-      column-gap: var(--s-3);
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     }
   }
 
-  /* Each card in a row stretches to a shared height so their ledges line up. */
+  /* Covers view: a single horizontal row of fixed-width spines that scrolls
+     sideways within the normal content column — no wrapping. The row itself
+     is the scroll container: it never exceeds its parent's width, so when
+     the spines' total width overflows, the row scrolls (trackpad, shift+wheel,
+     scrollbar) instead of the page body. */
+  .covers-row {
+    display: flex;
+    width: 100%;
+    gap: 20px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x proximity;
+    padding-block: 0 var(--s-3);
+    scrollbar-width: thin;
+    scrollbar-color: var(--hairline-strong) transparent;
+  }
+
+  .covers-row::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .covers-row::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .covers-row::-webkit-scrollbar-thumb {
+    background: var(--hairline-strong);
+    border-radius: var(--r-full);
+  }
+
+  .covers-row > :global(*) {
+    flex: 0 0 132px;
+    width: 132px;
+    scroll-snap-align: start;
+  }
+
+  .swipe-cue {
+    display: none;
+    margin: calc(-1 * var(--s-2)) 0 0;
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+  }
+
+  /* Spine entrance: mirrors the Details cards' staggered rise (small
+     translateY + fade, capped stagger), keyed by book.id like the cards so
+     re-filtering doesn't re-fire it on items already on screen. */
+  .spine-wrapper {
+    display: flex;
+    opacity: 0;
+    animation: spine-rise var(--dur-3) var(--ease-out) forwards;
+  }
+
+  @keyframes spine-rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Details is a plain card grid — no shelf furniture; each card just rises in. */
   .book-wrapper {
-    position: relative;
     display: flex;
     opacity: 0;
     animation: rise var(--dur-3) var(--ease-out) forwards;
@@ -443,36 +544,52 @@
     flex: 1;
   }
 
-  /* Shelf plank: a solid wooden board beneath each row. The negative insets
-     pull adjacent boards together so a row reads as one continuous shelf; the
-     lit top lip + darker front face + cast shadow give it physical depth, and
-     the books sit directly on it. */
-  .book-wrapper::after {
-    content: '';
-    position: absolute;
-    left: calc(var(--s-4) / -2);
-    right: calc(var(--s-4) / -2);
-    bottom: -10px;
-    height: 8px;
-    border-radius: 1px 1px 2px 2px;
-    background: var(--shelf-wood);
-    box-shadow:
-      0 4px 9px -5px var(--drop-shadow-color),
-      inset 0 1px 0 var(--surface);
+  @media (prefers-reduced-motion: reduce) {
+    .book-wrapper { opacity: 1; animation: none; }
+    .spine-wrapper { opacity: 1; animation: none; }
   }
 
   @media (max-width: 600px) {
-    .filter-row {
-      flex-direction: column;
+    .bookcase {
+      padding-inline: var(--s-3);
+    }
+
+    .bookcase::before,
+    .bookcase::after {
+      width: 7px;
+    }
+
+    .toolbar {
       align-items: flex-start;
     }
 
-    .clear-link {
-      margin-left: 0;
+    .toolbar-controls {
+      width: 100%;
+      justify-content: space-between;
     }
-  }
 
-  @media (prefers-reduced-motion: reduce) {
-    .book-wrapper { opacity: 1; animation: none; }
+    .library-tools {
+      align-items: stretch;
+      flex-direction: column;
+      gap: var(--s-2);
+    }
+
+    .search-field, .sort-field {
+      width: 100%;
+    }
+
+    .sort-field {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sort-field select {
+      width: min(13rem, 70%);
+    }
+
+    .swipe-cue {
+      display: block;
+    }
   }
 </style>

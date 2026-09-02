@@ -8,7 +8,7 @@
     sendConnectionRequest,
   } from '../stores/connections';
   import { connectButtonState } from '../lib/connection-ui';
-  import { useTranslations, type Lang } from '../i18n';
+  import { localizePath, localizeTopicLabel, useTranslations, type Lang } from '../i18n';
 
   interface Props {
     match: Match;
@@ -53,7 +53,7 @@
     const result = await sendConnectionRequest(match.user.id);
     requesting = false;
     if (!result.success) {
-      requestError = result.error || t.failedToSend;
+      requestError = t.failedToSend;
     }
   }
 
@@ -106,6 +106,15 @@
     activeFacets.reduce((m, { facet }) => Math.max(m, facet.count), 0)
   );
 
+  // Top 1-2 non-zero facets (by count) for the compact "why you match" line.
+  let topFacets = $derived(
+    [...activeFacets].sort((a, b) => b.facet.count - a.facet.count).slice(0, 2)
+  );
+
+  let whyMatchText = $derived(
+    topFacets.map(({ meta }) => meta.label).join(' · ')
+  );
+
   // People who appear only because they're sharing books (no taste-match facet)
   // still show what they're offering, so the card isn't blank.
   let offeringCount = $derived(match.offering?.count ?? 0);
@@ -131,7 +140,7 @@
         {/if}
         <h3 class="serif">{match.user.name}</h3>
       </div>
-      <span class="distance">
+      <span class="distance" class:prominent={match.distanceKm != null}>
         {#if isStore && match.user.neighborhood}
           {match.user.neighborhood}
         {:else}
@@ -140,10 +149,19 @@
       </span>
     </header>
 
+    {#if !isStore && whyMatchText}
+      <p class="why-match">
+        <span class="why-match-icons" aria-hidden="true">
+          {#each topFacets as { meta }}{meta.icon}{/each}
+        </span>
+        {whyMatchText}
+      </p>
+    {/if}
+
     {#if isStore && specialties.length > 0}
       <div class="specialties">
         {#each specialties.slice(0, 4) as specialty}
-          <span class="specialty-tag">{specialty}</span>
+          <span class="specialty-tag">{localizeTopicLabel(specialty, lang)}</span>
         {/each}
         {#if specialties.length > 4}
           <span class="specialty-tag more">+{specialties.length - 4}</span>
@@ -173,6 +191,42 @@
     </div>
   </button>
 
+  {#if !isStore && match.user.contactVisibility !== 'hidden'}
+    <div class="connect-section">
+      {#if match.user.contactVisibility === 'public' && match.user.contactValue}
+        <p class="contact-info">
+          {#if match.user.contactMethod === 'email'}
+            <a href={`mailto:${match.user.contactValue}`} onclick={(e) => e.stopPropagation()}>
+              📧 {match.user.contactValue}
+            </a>
+          {:else}
+            {match.user.contactValue}
+          {/if}
+        </p>
+      {:else}
+        <button
+          class="btn btn-filled btn-connect"
+          onclick={handleConnect}
+          disabled={!connectState.actionable}
+          aria-busy={requesting}
+        >
+          {connectLabel}
+        </button>
+        {#if requestError}
+          <p class="connect-error" role="alert">{requestError}</p>
+        {/if}
+      {/if}
+    </div>
+  {/if}
+
+  {#if isStore}
+    <div class="store-quicklinks">
+      <a href={localizePath(`/store/${match.user.id}`, lang)} onclick={(e) => e.stopPropagation()}>
+        {t.viewStoreDetails}
+      </a>
+    </div>
+  {/if}
+
   {#if expanded}
     <div class="details">
       {#if isStore}
@@ -187,11 +241,6 @@
               </a>
             </p>
           {/if}
-          <p class="view-store">
-            <a href={`/store/${match.user.id}`} onclick={(e) => e.stopPropagation()}>
-              {t.viewStoreDetails}
-            </a>
-          </p>
         </div>
       {/if}
 
@@ -225,34 +274,6 @@
 
       {#if !isStore && match.user.borrowStyle}
         <p class="borrow-style">"{match.user.borrowStyle}"</p>
-      {/if}
-
-      {#if !isStore && match.user.contactVisibility !== 'hidden'}
-        <div class="connect-section">
-          {#if match.user.contactVisibility === 'public' && match.user.contactValue}
-            <p class="contact-info">
-              {#if match.user.contactMethod === 'email'}
-                <a href={`mailto:${match.user.contactValue}`} onclick={(e) => e.stopPropagation()}>
-                  📧 {match.user.contactValue}
-                </a>
-              {:else}
-                {match.user.contactValue}
-              {/if}
-            </p>
-          {:else}
-            <button
-              class="btn btn-filled btn-connect"
-              onclick={handleConnect}
-              disabled={!connectState.actionable}
-              aria-busy={requesting}
-            >
-              {connectLabel}
-            </button>
-            {#if requestError}
-              <p class="connect-error" role="alert">{requestError}</p>
-            {/if}
-          {/if}
-        </div>
       {/if}
     </div>
   {/if}
@@ -319,6 +340,32 @@
     background: var(--surface-sunken);
     border-radius: var(--r-full);
     white-space: nowrap;
+  }
+
+  /* When we have a real computed distance (vs. a city-name fallback), give it
+     more visual weight so it reads at a glance. */
+  .distance.prominent {
+    font-size: 0.8125rem;
+    font-weight: 650;
+    color: var(--accent);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+  }
+
+  .why-match {
+    margin: 0 0 var(--s-3);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 540;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .why-match-icons {
+    flex-shrink: 0;
+    letter-spacing: 0.15rem;
   }
 
   .facets {
@@ -484,14 +531,21 @@
     color: var(--accent-hover);
   }
 
-  .view-store {
+  .store-quicklinks {
     margin-top: var(--s-3);
     padding-top: var(--s-3);
     border-top: 1px solid var(--hairline);
   }
 
-  .view-store a {
+  .store-quicklinks a {
+    font-family: var(--font-ui);
     font-weight: 590;
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .store-quicklinks a:hover {
+    color: var(--accent-hover);
   }
 
   .connect-section {

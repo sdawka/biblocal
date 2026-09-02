@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import BookCard from './BookCard.svelte';
+  import BookCardShell from './BookCardShell.svelte';
+  import BookDetail from './BookDetail.svelte';
   import { safeExternalUrl } from '../lib/url';
-  import { useTranslations, type Lang } from '../i18n';
+  import { localizeTopicLabel, useTranslations, type Lang } from '../i18n';
+  import type { BookVisibility, BookOwnership, BookIntent } from '../lib/types';
 
   interface Props {
     storeId: string;
@@ -27,10 +29,16 @@
     title: string;
     author: string;
     coverUrl?: string;
-    status: string;
+    // Matches the shape actually returned by GET /api/stores/[id] — needed
+    // for the readonly BookDetail badges (seeking / private / intents).
+    visibility: BookVisibility;
+    ownership: BookOwnership;
+    intents: BookIntent[];
   }
 
   let store = $state<StoreData | null>(null);
+  // Derived in script (not {@const}) so TS narrows the null check in the template.
+  const websiteUrl = $derived(store ? safeExternalUrl(store.website) : null);
   let books = $state<BookData[]>([]);
   let canEdit = $state(false);
   let loading = $state(true);
@@ -46,15 +54,18 @@
     try {
       const res = await fetch(`/api/stores/${storeId}`);
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || t.detail.errorLoadFailed);
+        const data: { error?: string } = await res.json();
+        console.error('Failed to load store:', data.error);
+        error = t.detail.errorLoadFailed;
+        return;
       }
-      const data = await res.json();
+      const data: { store: StoreData; books: BookData[]; canEdit: boolean } = await res.json();
       store = data.store;
       books = data.books;
       canEdit = data.canEdit;
     } catch (e) {
-      error = e instanceof Error ? e.message : t.detail.errorGeneric;
+      console.error('Failed to load store:', e);
+      error = t.detail.errorGeneric;
     } finally {
       loading = false;
     }
@@ -79,18 +90,21 @@
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || t.detail.errorAddBookFailed);
+        const data: { error?: string } = await res.json();
+        console.error('Failed to add store book:', data.error);
+        error = t.detail.errorAddBookFailed;
+        return;
       }
 
-      const data = await res.json();
+      const data: { book: BookData } = await res.json();
       books = [...books, data.book];
       newBookTitle = '';
       newBookAuthor = '';
       newBookIsbn = '';
       showAddBook = false;
     } catch (e) {
-      error = e instanceof Error ? e.message : t.detail.errorAddBookFailed;
+      console.error('Failed to add store book:', e);
+      error = t.detail.errorAddBookFailed;
     } finally {
       addingBook = false;
     }
@@ -118,8 +132,7 @@
       {#if store.address}
         <p class="address muted">📍 {store.address}</p>
       {/if}
-      {#if safeExternalUrl(store.website)}
-        {@const websiteUrl = safeExternalUrl(store.website)}
+      {#if websiteUrl}
         <p class="website">
           <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
             {websiteUrl.replace(/^https?:\/\//, '')} →
@@ -136,7 +149,7 @@
         <h3>{t.detail.specialtiesHeading}</h3>
         <div class="specialty-tags">
           {#each store.specialties as specialty}
-            <span class="tag">{specialty.replace(/-/g, ' ')}</span>
+            <span class="tag">{localizeTopicLabel(specialty, lang)}</span>
           {/each}
         </div>
       </div>
@@ -193,7 +206,18 @@
       {:else}
         <div class="books-grid">
           {#each books as book (book.id)}
-            <BookCard {book} readonly />
+            <!-- Read-only card: store pages show other people's books, so there
+                 is no click-to-open detail sheet here (that contract belongs to
+                 the owner-only Biblio shelf). -->
+            <BookCardShell
+              bookId={book.id}
+              title={book.title}
+              coverUrl={book.coverUrl}
+              coverAlt="{book.title} cover"
+              seeking={book.ownership === 'seeking'}
+            >
+              <BookDetail {book} {lang} readonly />
+            </BookCardShell>
           {/each}
         </div>
       {/if}
@@ -342,5 +366,12 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: var(--s-4);
+  }
+
+  /* BookCardShell owns the card surface; the readonly BookDetail inside it
+     just needs to fill the remaining row space. */
+  .books-grid :global(.book-detail) {
+    flex: 1;
+    min-width: 0;
   }
 </style>

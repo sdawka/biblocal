@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Journey: Biblio (shelf) operations
-# Tests: add book (ISBN/manual), intent pills, filter pills, empty state / add slot
+# Tests: add book (ISBN/manual), intent badges, filter popover, edit modal, empty state / add slot
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/helpers.sh"
@@ -87,13 +87,43 @@ else
   info "No intent controls visible (may need books first)"
 fi
 
-# Test 6: Filter pills
-info "Test: Filter pill options"
+# Test 6: Filter popover (filters moved off the page into a popover)
+info "Test: Filter popover"
 snapshot=$(agent-browser snapshot -i 2>/dev/null)
-if echo "$snapshot" | grep -qi "all\|lending\|discussing\|gifting\|seeking\|private"; then
-  pass "Filter pills present"
+filter_ref=$(echo "$snapshot" | grep -i "filter" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
+if [ -n "$filter_ref" ]; then
+  agent-browser click "$filter_ref" >/dev/null 2>&1
+  sleep 1
+  snapshot=$(agent-browser snapshot -i 2>/dev/null)
+  if echo "$snapshot" | grep -qi "lending\|discussion\|gifting\|private only"; then
+    pass "Filter popover opens with filter chips"
+  else
+    info "Filter popover content not detected"
+  fi
+  agent-browser press Escape >/dev/null 2>&1
 else
-  info "Filter pills not found in current state"
+  info "Filter button not found"
+fi
+
+# Test 7: Book card opens the edit modal (details view)
+info "Test: Card opens edit modal"
+snapshot=$(agent-browser snapshot -i 2>/dev/null)
+details_ref=$(echo "$snapshot" | grep -i "\"Details\"" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
+[ -n "$details_ref" ] && agent-browser click "$details_ref" >/dev/null 2>&1 && sleep 1
+snapshot=$(agent-browser snapshot -i 2>/dev/null)
+card_ref=$(echo "$snapshot" | grep -i "view details for" | grep -o '\[ref=e[0-9]*\]' | sed 's/\[ref=//;s/\]//' | head -1)
+if [ -n "$card_ref" ]; then
+  agent-browser click "$card_ref" >/dev/null 2>&1
+  sleep 1
+  snapshot=$(agent-browser snapshot -i 2>/dev/null)
+  if echo "$snapshot" | grep -qi "change cover\|upload a custom cover"; then
+    pass "Edit modal opens from details-view card with cover controls"
+  else
+    info "Modal opened but cover controls not detected"
+  fi
+  agent-browser press Escape >/dev/null 2>&1
+else
+  info "No book card found (shelf may be empty)"
 fi
 
 echo ""

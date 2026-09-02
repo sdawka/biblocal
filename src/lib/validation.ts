@@ -19,6 +19,14 @@ export const MAX_ADDRESS_LEN = 200;
 export const MAX_CITY_LEN = 120;
 export const MAX_PHONE_LEN = 30;
 
+// Book field length caps, shared by PATCH /api/books/[id] and the import endpoint.
+export const MAX_BOOK_TITLE_LEN = 500;
+export const MAX_BOOK_AUTHOR_LEN = 300;
+export const MAX_BOOK_ISBN_LEN = 32;
+export const MAX_COVER_URL_LEN = 2048;
+// Same cap as the notes endpoints (src/pages/api/books/[id]/notes/).
+export const MAX_NOTE_TEXT_LEN = 5000;
+
 export type Visibility = (typeof VALID_VISIBILITY)[number];
 export type Ownership = (typeof VALID_OWNERSHIP)[number];
 export type Intent = (typeof VALID_INTENTS)[number];

@@ -53,7 +53,7 @@ A separate Cloudflare Workers deployment (`biblocal-qa`) with:
 
 This will:
 1. Run migrations on `biblocal-qa-db`
-2. Seed test data (4 users, 14 books, 3 bookstores)
+2. Seed test data (10 people, 5 bookstores, 40 books)
 3. Deploy to `biblocal-qa` worker
 
 ### QA Test Data
@@ -64,6 +64,7 @@ This will:
 | Jane Reader | 3 books | Shelf twin match (shares Crime & Punishment) |
 | Bob Collector | 2 books | Local source (has Dune, which QA user seeks) |
 | Alice Lender | 2 books | Reading mentor (discussable science books) |
+| 5 global readers (New York, London, Paris, Lyon, Tokyo) | 2 books each | World→country→city map clustering |
 
 ### Run Tests Against QA
 

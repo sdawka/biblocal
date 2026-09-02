@@ -1,5 +1,8 @@
 <script lang="ts">
-  import Quagga from '@ericblade/quagga2';
+  import Quagga, {
+    type QuaggaJSCodeReader,
+    type QuaggaJSResultObject,
+  } from '@ericblade/quagga2';
   import { isBookEan13 } from '../lib/openLibrary';
   import { useTranslations, type Lang } from '../i18n';
 
@@ -22,7 +25,7 @@
 
   // ISBNs are 13-digit EAN only. Dropping ean_8 stops the scanner from locking
   // onto short, non-book codes.
-  const BARCODE_READERS = ['ean_reader'];
+  const BARCODE_READERS: QuaggaJSCodeReader[] = ['ean_reader'];
 
   // A book's back cover usually has two barcodes and a single frame can misread,
   // so accept a code only after it reads cleanly on consecutive frames.
@@ -33,13 +36,26 @@
 
   let mounted = false;
 
+  // Quagga is a module singleton, so a handler left registered would survive
+  // this component and re-fire onScan the next time the scanner opens. Keep a
+  // reference so we can offDetected() it on cleanup and before invoking onScan.
+  let detectionHandler: ((result: QuaggaJSResultObject) => void) | null = null;
+
+  function removeDetectionHandler() {
+    if (detectionHandler) {
+      Quagga.offDetected(detectionHandler);
+      detectionHandler = null;
+    }
+  }
+
   $effect(() => {
     mounted = true;
     if (videoRef) {
-      initScanner();
+      initScanner(videoRef);
     }
     return () => {
       mounted = false;
+      removeDetectionHandler();
       Quagga.stop();
     };
   });
@@ -87,12 +103,14 @@
     }
   }
 
-  async function initScanner() {
+  // Takes the container as a parameter so TS sees a non-null element (the
+  // $effect only calls this once `videoRef` is bound).
+  async function initScanner(target: HTMLDivElement) {
     try {
       await Quagga.init({
         inputStream: {
           type: 'LiveStream',
-          target: videoRef,
+          target,
           constraints: {
             facingMode: 'environment',
             width: { ideal: 1280 },
@@ -111,7 +129,11 @@
 
       Quagga.start();
 
-      Quagga.onDetected((result) => {
+      const handler = (result: QuaggaJSResultObject) => {
+        // Ignore live detections while a photo decode is in flight so the two
+        // paths can't race each other into onScan.
+        if (decoding) return;
+
         const code = result?.codeResult?.code;
         if (!code) return;
 
@@ -140,10 +162,13 @@
           confirmCount = 1;
         }
         if (confirmCount >= REQUIRED_CONFIRMATIONS) {
+          removeDetectionHandler();
           Quagga.stop();
           onScan(code);
         }
-      });
+      };
+      detectionHandler = handler;
+      Quagga.onDetected(handler);
     } catch (err) {
       hasCamera = false;
       const name = err instanceof Error ? err.name : '';
@@ -170,30 +195,36 @@
     reader.readAsDataURL(file);
   }
 
-  function decodeFromImage(imageSrc: string) {
+  async function decodeFromImage(imageSrc: string) {
+    if (decoding) return;
     decoding = true;
     error = '';
-    Quagga.decodeSingle(
-      {
+    try {
+      const result = await Quagga.decodeSingle({
         src: imageSrc,
         numOfWorkers: 0,
         decoder: {
           readers: BARCODE_READERS,
         },
         locate: true,
-      },
-      (result) => {
-        decoding = false;
-        const code = result?.codeResult?.code;
-        if (code && isBookEan13(code)) {
-          onScan(code);
-        } else if (code) {
-          error = t.errors.notIsbn;
-        } else {
-          error = t.errors.noDetect;
-        }
+      });
+      const code = result?.codeResult?.code;
+      if (code && isBookEan13(code)) {
+        removeDetectionHandler();
+        Quagga.stop();
+        onScan(code);
+      } else if (code) {
+        error = t.errors.notIsbn;
+      } else {
+        error = t.errors.noDetect;
       }
-    );
+    } catch {
+      // decodeSingle rejects without calling back on an undecodable image
+      // (e.g. HEIC); surface the same "nothing detected" message.
+      error = t.errors.noDetect;
+    } finally {
+      decoding = false;
+    }
   }
 
   function triggerFileInput() {
@@ -214,6 +245,7 @@
   role="dialog"
   aria-modal="true"
   aria-labelledby="scanner-title"
+  tabindex="-1"
   bind:this={dialogRef}
 >
   <div class="scanner-sheet glass" role="document">
@@ -264,10 +296,12 @@
       </button>
     </div>
 
+    <!-- No `capture` attribute: it would force the camera on iOS/Android,
+         but this input is the fallback for when the camera is unavailable
+         or denied — the photo library must stay reachable. -->
     <input
       type="file"
       accept="image/*"
-      capture="environment"
       bind:this={fileInputRef}
       onchange={handleFileUpload}
       hidden

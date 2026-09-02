@@ -70,15 +70,6 @@
   --glass-bg: oklch(0.992 0.006 82 / 0.72);
   --drop-shadow-color: oklch(0.28 0.025 55 / 0.28);
 
-  /* Shelf furniture — plank ledge + upright share one wood recipe.
-     Built from themed tokens, so dark mode recomputes for free. */
-  --shelf-wood: linear-gradient(
-    180deg,
-    var(--surface) 0%,
-    var(--hairline-strong) 55%,
-    var(--hairline) 100%
-  );
-
   /* Radii */
   --r-sm: 8px;
   --r-md: 12px;
@@ -503,6 +494,24 @@ main {
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Highlight pulse: fires on any element carrying a book identity (data-book-id),
+   regardless of which view renders it (Details card, Covers tile, etc.). */
+[data-book-id].highlight-pulse {
+  animation: highlightPulse 1s var(--ease-out);
+}
+
+@keyframes highlightPulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--focus-ring);
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--focus-ring);
+  }
+  100% {
+    box-shadow: var(--shadow-1);
+  }
+}
 
 .rise { animation: rise var(--dur-3) var(--ease-out) both; }
 .fade { animation: fade var(--dur-3) var(--ease-soft) both; }

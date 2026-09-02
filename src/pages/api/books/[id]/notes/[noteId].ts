@@ -7,6 +7,7 @@ import { getDb } from '../../../../../db/client';
 import { bookNotes } from '../../../../../db/schema';
 import { getUserId } from '../../../../../lib/auth';
 import { validateEnum, VALID_VISIBILITY } from '../../../../../lib/validation';
+import { readJsonBody } from '../../../../../lib/request';
 
 type Env = { DB: D1Database };
 
@@ -45,10 +46,15 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       .limit(1);
     if (existing.length === 0) return json({ error: 'Note not found' }, 404);
 
-    const updates = (await request.json()) as { text?: string; visibility?: string };
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const updates = parsed.body as { text?: unknown; visibility?: unknown };
     const filtered: Record<string, unknown> = { updatedAt: new Date() };
 
     if (updates.text !== undefined) {
+      if (typeof updates.text !== 'string') {
+        return json({ error: 'Note text must be a string' }, 400);
+      }
       const text = updates.text.trim();
       if (!text) return json({ error: 'Note text required' }, 400);
       if (text.length > MAX_NOTE_TEXT_LEN) {

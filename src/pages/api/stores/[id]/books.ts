@@ -9,7 +9,9 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../../../../db/client';
 import { users, books } from '../../../../db/schema';
 import { getUserId } from '../../../../lib/auth';
-import { validateEnum, validateIntents, VALID_OWNERSHIP } from '../../../../lib/validation';
+import { validateEnum, validateIntents, VALID_OWNERSHIP, VALID_STATUS } from '../../../../lib/validation';
+import { isHostedCoverUrl } from '../../../../lib/coverImages';
+import { readJsonBody } from '../../../../lib/request';
 
 interface AddBookBody {
   title: string;
@@ -66,13 +68,29 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    const body = (await request.json()) as AddBookBody;
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.body as AddBookBody;
 
     if (!body.title || !body.author) {
       return new Response(JSON.stringify({ error: 'Title and author are required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    // Validate status: default when omitted, reject when present-but-invalid
+    // (matches POST /api/books).
+    let status: string = 'visible';
+    if (body.status !== undefined) {
+      const valid = validateEnum(body.status, VALID_STATUS);
+      if (valid === null) {
+        return new Response(
+          JSON.stringify({ error: `Invalid status value. Must be one of: ${VALID_STATUS.join(', ')}` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      status = valid;
     }
 
     const now = new Date();
@@ -87,8 +105,10 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       title: body.title,
       author: body.author,
       isbn: body.isbn || null,
-      coverUrl: body.coverUrl || null,
-      status: body.status || 'visible',
+      // Hosted delivery URLs may only originate from the owner cover-upload
+      // endpoint; rejecting them here keeps cleanup paths unspoofable.
+      coverUrl: body.coverUrl && !isHostedCoverUrl(body.coverUrl) ? body.coverUrl : null,
+      status,
       // New three-dimension model.
       // Store inventory is inherently public — force visible regardless of input.
       visibility: 'visible',

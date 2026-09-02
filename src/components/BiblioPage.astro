@@ -5,13 +5,14 @@ import PromptIsland from './PromptIsland.svelte';
 import SyncErrorToast from './SyncErrorToast.svelte';
 import { UserButton } from '@clerk/astro/components';
 import { env } from 'cloudflare:workers';
-import { useTranslations, type Lang } from '../i18n';
+import { localizePath, useTranslations, type Lang } from '../i18n';
 
 interface Props {
   lang?: Lang;
 }
 const { lang = 'en' } = Astro.props;
 const t = useTranslations(lang).shelf;
+const p = (path: string) => localizePath(path, lang);
 
 const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
 ---
@@ -23,7 +24,7 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
           <p class="eyebrow">{t.page.eyebrow}</p>
           <h1>{t.page.title}</h1>
         </div>
-        {!isQaMode && <UserButton />}
+        {!isQaMode && <UserButton signInUrl={p('/')} />}
       </div>
 
       <SyncErrorToast lang={lang} client:load />
@@ -41,6 +42,7 @@ const isQaMode = (env as { QA_MODE?: string })?.QA_MODE === 'true';
   main.wide {
     max-width: var(--maxw-shelf);
     padding-inline: clamp(var(--s-5), 5vw, var(--s-8));
+    overflow-x: clip;
   }
 
   /* Header spans the wide column so the eyebrow + H1 stay left-aligned with

@@ -4,7 +4,7 @@
   import type { UserProfile, ContactMethod, ContactVisibility } from '../lib/types';
   import TopicPickerIsland from './TopicPickerIsland.svelte';
   import InterestConstellation from './InterestConstellation.svelte';
-  import { useTranslations, type Lang } from '../i18n';
+  import { localizeLendingPersonality, useTranslations, type Lang } from '../i18n';
 
   let { lang = 'en' as Lang } = $props();
   const t = $derived(useTranslations(lang).profile);
@@ -110,7 +110,7 @@
     const result = await requestGeolocation('approximate');
     requestingLocation = false;
     if (!result.success) {
-      locationError = result.error || t.edit.couldNotGetLocation;
+      locationError = t.edit.couldNotGetLocation;
       // Fall back to city center
       if (profileData.city) {
         setLocationFromCity(profileData.city);
@@ -322,7 +322,7 @@
         </div>
       {:else}
         <div class="derived-value">
-          <span class="value">{$profile.lendingPersonality || t.lendingStyle.emptyPrompt}</span>
+          <span class="value">{localizeLendingPersonality($profile.lendingPersonality || '', lang, $profile.lendingPersonalityOverride) || t.lendingStyle.emptyPrompt}</span>
           {#if $profile.lendingPersonality}
             <button class="btn btn-outline btn-sm" onclick={startEditPersonality}>{t.lendingStyle.edit}</button>
             {#if $profile.lendingPersonalityOverride}
@@ -387,7 +387,7 @@
     {#if $profile.lendingPersonality}
       <section class="profile-details lending-personality-view card rise rise-4">
         <p class="eyebrow personality-label">{t.view.lendingPersonality}</p>
-        <p class="personality-value serif">{$profile.lendingPersonality}</p>
+        <p class="personality-value serif">{localizeLendingPersonality($profile.lendingPersonality, lang, $profile.lendingPersonalityOverride)}</p>
         {#if $profile.lendingPersonalityOverride}
           <span class="override-badge">{t.view.customBadge}</span>
         {/if}

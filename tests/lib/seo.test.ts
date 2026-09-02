@@ -5,6 +5,7 @@ import {
   absoluteUrl,
   resolveSeo,
   organizationJsonLd,
+  webApplicationJsonLd,
   articleJsonLd,
   breadcrumbJsonLd,
 } from '../../src/lib/seo';
@@ -39,6 +40,12 @@ describe('json-ld builders', () => {
     expect(o['@context']).toBe('https://schema.org');
     expect(o['@type']).toBe('Organization');
     expect(o.url).toBe(SITE_ORIGIN);
+  });
+  it('accepts localized descriptions for site and app structured data', () => {
+    const description = 'Organiza tu estantería viva.';
+
+    expect((organizationJsonLd(description) as any).description).toBe(description);
+    expect((webApplicationJsonLd(description) as any).description).toBe(description);
   });
   it('article carries dates as ISO strings and an absolute url', () => {
     const a = articleJsonLd({

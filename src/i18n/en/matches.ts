@@ -12,6 +12,7 @@ export default {
   views: {
     books: 'Books',
     people: 'People',
+    list: 'List',
     map: 'Map',
   },
   groups: {
@@ -38,6 +39,19 @@ export default {
     errorTitle: "Couldn't load nearby matches.",
     empty: 'Add some books to find matches!',
     locationNotShared: 'Location not shared',
+    chooseView: 'Choose discovery view',
+  },
+  hub: {
+    panelBooks: 'Books',
+    panelPeople: 'People',
+    panelStores: 'Bookstores',
+    inView: 'in view',
+    search: 'Search title, author, or name',
+    loading: 'Finding what’s nearby…',
+    errorTitle: "Couldn't load nearby matches.",
+    emptyBooks: 'No books in view. Try panning or zooming out.',
+    emptyPeople: 'No people in view. Try panning or zooming out.',
+    emptyStores: 'No bookstores in view. Try panning or zooming out.',
   },
   card: {
     facets: {

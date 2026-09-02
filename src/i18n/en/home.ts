@@ -4,25 +4,26 @@ export default {
   meta: {
     title: 'biblocal: Lend, Borrow & Discuss Books with Neighbours',
     description:
-      'Build a living bookshelf, then meet nearby readers who share your taste. Lend, borrow, discuss, and discover books with people in your neighbourhood.',
+      'Build a living bookshelf and put it into circulation: lend, borrow, gift, and discuss books with readers in your neighbourhood. Good ideas travel on foot.',
   },
   hero: {
-    eyebrow: 'The local network for readers',
+    eyebrow: 'Ideas want to be shared',
     titleLines: ['You are what', 'you read.'],
-    titleAccent: 'So are they.',
+    titleAccent: 'Pass it on.',
     lede:
-      'Build a living bookshelf. Then meet the people around you who read like you do: to lend, borrow, and actually talk about the books.',
+      'Books are how ideas get around. Open your shelf, lend a few, and your street becomes a library. For people who love ideas (and people).',
     start: 'Start your shelf',
     how: 'How it works',
     meta: ['Lend', 'Borrow', 'Discuss', 'Gift', 'Hunt'],
     scroll: 'Keep reading',
+    scrollAria: 'Scroll to learn more',
   },
   shelf: {
-    eyebrow: 'Your shelf',
-    titleLead: 'Your shelf tells people ',
-    titleAccent: 'who you are.',
+    eyebrow: 'Your branch',
+    titleLead: 'Every shelf is a branch of ',
+    titleAccent: 'the library.',
     desc:
-      "Every shelf is a branch of the neighborhood library. Add your books, mark what you'll share. That's how matches find you.",
+      "A shelf is dormant infrastructure, not clutter. Add your books, mark what you'll share. That's how your books find their next reader.",
     scanHint: 'Point your phone at the barcode on the back of any book. It appears.',
     caption: 'Hover a cover to see the marginalia',
     demo: {
@@ -41,14 +42,14 @@ export default {
     },
   },
   facets: {
-    eyebrow: 'Find your people',
-    titleLead: 'Five ways we match you with ',
-    titleAccent: 'the right people.',
+    eyebrow: 'The company your books keep',
+    titleLead: 'Five ways your shelf ',
+    titleAccent: 'overlaps with theirs.',
     lede:
-      'Not just who’s nearby. Who actually gets the reference. Each signal adds weight; together they find the readers worth meeting.',
+      'The ideas on your shelf are already circulating nearby. Where shelves overlap, the conversations tend to be waiting.',
     exampleLabel: 'Example',
-    note: 'More dots, stronger connection. Simple as that.',
-    strength: 'Connection strength {n} of 3',
+    note: "More dots, more shelf in common. That's the whole algorithm.",
+    strength: 'Shelf overlap {n} of 3',
     items: {
       shelfTwin: {
         name: 'Shelf Twin',
@@ -78,16 +79,16 @@ export default {
     },
   },
   midCta: {
-    kicker: 'Your shelf is already an introduction',
-    titleLead: 'Stop reading alone. ',
-    titleAccent: 'Meet them.',
+    kicker: 'The sequel to a great book is lending it',
+    titleLead: 'Set your books ',
+    titleAccent: 'loose.',
   },
   map: {
     eyebrow: 'Right next door',
-    titleLines: ['The people who read like you', 'are'],
-    titleAccent: 'closer than you think',
+    titleLines: ['Your neighbourhood is already', 'a library'],
+    titleAccent: 'without a building',
     desc:
-      'biblocal lines up your shelf with the readers and bookshops around you, so a new book, and maybe a new friend, is only a short walk away.',
+      'biblocal maps the shelves and bookshops around you, so the next book you want to read is a short walk away, not a shipping label.',
     legendReaders: 'Readers nearby',
     legendStores: 'Local bookshops',
     legendYou: 'You',
@@ -97,10 +98,10 @@ export default {
     caption: 'Your neighbourhood, quietly full of fellow readers.',
   },
   signin: {
-    eyebrow: 'Your shelf is ready',
+    eyebrow: 'The library is open',
     titleLead: 'Ready when ',
     titleAccent: 'you are.',
     desc:
-      'Add a few books. See who’s nearby. The rest tends to happen on its own: quietly, locally, one book at a time.',
+      'Add a few books. Open your shelf. The rest tends to happen on its own, one neighbour at a time.',
   },
 };

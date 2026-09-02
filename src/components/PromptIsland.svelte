@@ -6,7 +6,7 @@
     isPromptDismissed,
     updateProfile,
   } from '../stores/profile';
-  import { useTranslations, type Lang } from '../i18n';
+  import { localizePath, useTranslations, type Lang } from '../i18n';
 
   interface Prompt {
     id: string;
@@ -54,6 +54,7 @@
 
   let { context = 'shelf', lang = 'en' as Lang }: Props = $props();
   const t = $derived(useTranslations(lang).matches.prompts);
+  const profilePath = $derived(localizePath('/profile', lang));
 
   let activePrompt = $state<Prompt | null>(null);
   let inputValue = $state('');
@@ -127,7 +128,7 @@
       {:else}
         <p class="hint muted">{t.profileHint}</p>
         <div class="actions">
-          <a class="btn btn-filled btn-sm" href="/profile">{t.editProfile}</a>
+          <a class="btn btn-filled btn-sm" href={profilePath}>{t.editProfile}</a>
           <button class="btn btn-plain btn-sm" onclick={handleDismiss}>{t.later}</button>
         </div>
       {/if}

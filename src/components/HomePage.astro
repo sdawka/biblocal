@@ -20,14 +20,18 @@ const t = useTranslations(lang).home;
 <LandingLayout
   lang={lang}
   title={t.meta.title}
-  seo={{ description: t.meta.description, jsonLd: [webApplicationJsonLd()] }}
+  seo={{
+    description: t.meta.description,
+    organizationDescription: t.meta.description,
+    jsonLd: [webApplicationJsonLd(t.meta.description)],
+  }}
 >
   <main>
     <LandingHero lang={lang} client:load />
     <BookshelfDemo lang={lang} client:visible />
+    <LocalMapPreview lang={lang} client:visible />
     <FacetShowcase lang={lang} client:visible />
     <MidPageCTA lang={lang} client:visible />
-    <LocalMapPreview lang={lang} client:visible />
     <SignInSection lang={lang} />
     <Footer lang={lang} />
   </main>

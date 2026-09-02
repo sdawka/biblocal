@@ -13,9 +13,20 @@ import {
   VALID_OWNERSHIP,
   VALID_INTENTS,
   VALID_STATUS,
+  MAX_BOOK_TITLE_LEN,
+  MAX_BOOK_AUTHOR_LEN,
+  MAX_BOOK_ISBN_LEN,
+  MAX_COVER_URL_LEN,
+  MAX_NOTE_TEXT_LEN,
 } from '../../../lib/validation';
+import { isHostedCoverUrl, hostedImageIdFromUrl } from '../../../lib/coverImages';
+import { readJsonBody } from '../../../lib/request';
 
 type Env = { DB: D1Database };
+
+type ImagesEnv = {
+  IMAGES?: { hosted: { image(id: string): { delete(): Promise<boolean> } } };
+};
 
 // PATCH /api/books/:id - update book (owner only)
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
@@ -51,7 +62,54 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    const updates = (await request.json()) as Record<string, unknown>;
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const updates = parsed.body as Record<string, unknown>;
+
+    // Text fields must be strings before they reach the update. A null/non-string
+    // title or author would violate the NOT NULL constraint (500) or corrupt the row.
+    const requiredTextFields = [
+      ['title', MAX_BOOK_TITLE_LEN],
+      ['author', MAX_BOOK_AUTHOR_LEN],
+    ] as const;
+    for (const [field, maxLen] of requiredTextFields) {
+      const value = updates[field];
+      if (value === undefined) continue;
+      if (typeof value !== 'string' || value.trim() === '') {
+        return new Response(JSON.stringify({ error: `${field} must be a non-empty string` }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (value.length > maxLen) {
+        return new Response(
+          JSON.stringify({ error: `${field} must be at most ${maxLen} characters` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    // Nullable text fields: null clears them, anything else must be a capped string.
+    const optionalTextFields = [
+      ['isbn', MAX_BOOK_ISBN_LEN],
+      ['coverUrl', MAX_COVER_URL_LEN],
+      ['notes', MAX_NOTE_TEXT_LEN],
+    ] as const;
+    for (const [field, maxLen] of optionalTextFields) {
+      const value = updates[field];
+      if (value === undefined || value === null) continue;
+      if (typeof value !== 'string') {
+        return new Response(JSON.stringify({ error: `${field} must be a string` }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (value.length > maxLen) {
+        return new Response(
+          JSON.stringify({ error: `${field} must be at most ${maxLen} characters` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // Validate enum fields before processing
     if (updates.visibility !== undefined) {
@@ -99,6 +157,22 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     if (updates.subjects !== undefined && !Array.isArray(updates.subjects)) {
       return new Response(
         JSON.stringify({ error: 'subjects must be an array' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    // Hosted cover URLs (Cloudflare Images) may only be set by the cover upload
+    // endpoint, which verifies ownership of the underlying asset. Allowing a
+    // client to PATCH coverUrl to an arbitrary imagedelivery.net URL would let
+    // them redirect later delete-on-change/delete-on-reset cleanup at a
+    // victim's hosted image. Echoing back the unchanged value is fine (mobile
+    // client round-trips full book objects).
+    if (
+      typeof updates.coverUrl === 'string' &&
+      isHostedCoverUrl(updates.coverUrl) &&
+      updates.coverUrl !== existing[0].coverUrl
+    ) {
+      return new Response(
+        JSON.stringify({ error: 'coverUrl cannot point at hosted images; use the cover upload endpoint' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -194,6 +268,20 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
       db.delete(bookNotes).where(and(eq(bookNotes.bookId, bookId), eq(bookNotes.userId, userId))),
       db.delete(books).where(and(eq(books.id, bookId), eq(books.userId, userId))),
     ]);
+
+    // Best-effort: free the hosted cover's storage. Never fails the delete.
+    const coverUrl = existing[0].coverUrl;
+    if (coverUrl && isHostedCoverUrl(coverUrl)) {
+      const images = (env as ImagesEnv).IMAGES;
+      const imageId = hostedImageIdFromUrl(coverUrl);
+      if (images && imageId) {
+        try {
+          await images.hosted.image(imageId).delete();
+        } catch (err) {
+          console.error('Hosted cover cleanup failed:', err);
+        }
+      }
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

@@ -18,6 +18,7 @@ import {
   MAX_CITY_LEN,
   MAX_PHONE_LEN,
 } from '../../lib/validation';
+import { readJsonBody } from '../../lib/request';
 
 interface CreateStoreBody {
   name: string;
@@ -38,8 +39,12 @@ export const GET: APIRoute = async ({ url }) => {
     const city = url.searchParams.get('city');
     const neighborhood = url.searchParams.get('neighborhood');
     const search = url.searchParams.get('search');
-    const page = parseInt(url.searchParams.get('page') || '1', 10);
-    const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 100);
+    // NaN or non-positive params must never reach the query builder
+    // (page=0/-5 gives a negative offset, which 500s in drizzle).
+    const rawPage = parseInt(url.searchParams.get('page') || '1', 10);
+    const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);
+    const page = Number.isFinite(rawPage) ? Math.max(rawPage, 1) : 1;
+    const limit = Math.min(Number.isFinite(rawLimit) ? Math.max(rawLimit, 1) : 20, 100);
     const offset = (page - 1) * limit;
 
     // Build conditions
@@ -113,13 +118,33 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const body = (await request.json()) as CreateStoreBody;
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.body as CreateStoreBody;
 
     if (!body.name || !body.neighborhood || !body.address) {
       return new Response(
         JSON.stringify({ error: 'Name, neighborhood, and address are required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Length checks below assume strings; a non-string (e.g. numeric name)
+    // would bypass them and be persisted raw.
+    for (const field of ['name', 'neighborhood', 'address', 'website', 'phone', 'city'] as const) {
+      const value = body[field];
+      if (value !== undefined && typeof value !== 'string') {
+        return new Response(JSON.stringify({ error: `${field} must be a string` }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+    if (body.specialties !== undefined && !Array.isArray(body.specialties)) {
+      return new Response(JSON.stringify({ error: 'specialties must be an array' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     if (body.name.length > MAX_STORE_NAME_LEN) {

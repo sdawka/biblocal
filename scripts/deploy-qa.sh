@@ -30,13 +30,7 @@ npm run build
 # Patch generated wrangler.json for QA deployment
 # Astro's cloudflare adapter doesn't respect env-specific names, so we patch it
 echo "→ Patching wrangler config for QA..."
-jq '.name = "biblocal-qa" |
-    .vars.QA_MODE = "true" |
-    .vars.ENVIRONMENT = "qa" |
-    .vars.QA_USER_ID = "qa-test-user" |
-    .d1_databases[0].database_name = "biblocal-qa-db" |
-    .d1_databases[0].database_id = "44e7e517-033b-40ea-a540-ca66ee777ea1"' \
-    dist/server/wrangler.json > dist/server/wrangler-qa.json
+bash scripts/prepare-qa-deploy-config.sh
 
 # Deploy to QA environment using patched config
 echo "→ Deploying to Cloudflare Workers (biblocal-qa)..."
@@ -51,8 +45,8 @@ echo "Features:"
 echo "  • No authentication required (QA_MODE=true)"
 echo "  • Pre-seeded test data:"
 echo "    - 1 QA user with 6 books"
-echo "    - 3 other users for matching tests"
-echo "    - 3 bookstores"
+echo "    - 9 other users for matching tests (incl. 5 global cities)"
+echo "    - 5 bookstores"
 echo ""
 echo "To re-seed data:"
 echo "  npx wrangler d1 execute biblocal-qa-db --env qa --remote --file=scripts/seed-qa.sql"

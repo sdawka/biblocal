@@ -1,37 +1,115 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { Spring } from 'svelte/motion';
   // Self-hosted (bundled) instead of a render-blocking unpkg stylesheet.
   import 'leaflet/dist/leaflet.css';
-  import { discovery } from '../stores/matches';
+  import 'leaflet.markercluster/dist/MarkerCluster.css';
+  import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+  import { discovery, discoveryBooks } from '../stores/matches';
   import { profile } from '../stores/profile';
-  import { loadSeedUsers, usersLoading, usersError } from '../stores/users';
-  import type { Match } from '../lib/types';
+  import { loadDiscoveryUsers, usersLoading, usersError } from '../stores/users';
+  import type { Match, LocalBook } from '../lib/types';
   import { CITY_COORDINATES, formatDistance } from '../lib/geo';
-  import MatchCardIsland from './MatchCardIsland.svelte';
+  import LocalPanel from './LocalPanel.svelte';
+  import { groupByIntent } from '../lib/discoveryBooks';
+  import {
+    splitDiscovery,
+    sortByDistance,
+    bookOwnerLocated,
+    isWithinBounds,
+    hasLocation,
+    type MapBounds,
+  } from '../lib/localHub';
   import { useTranslations, type Lang } from '../i18n';
 
   let { lang = 'en' as Lang }: { lang?: Lang } = $props();
-  const t = $derived(useTranslations(lang).matches.map);
+  const matchesT = $derived(useTranslations(lang).matches);
+  const t = $derived(matchesT.map);
 
-  let matchList = $state<Match[]>([]);
+  // readonly: mirror the nanostores' readonly arrays; never mutated here.
+  let matchList = $state<readonly Match[]>([]);
+  let books = $state<readonly LocalBook[]>([]);
 
-  // People with coordinates get map pins; people who haven't shared a location
-  // still appear, in a separate list below the map.
-  const hasLocation = (m: Match) =>
-    m.user.latitude != null && m.user.longitude != null;
-  let locatedList = $derived(matchList.filter(hasLocation));
-  let unlocatedList = $derived(matchList.filter((m) => !hasLocation(m)));
+  type Panel = 'books' | 'people' | 'bookstores';
+  // Books are the most direct route into local discovery. People and shops
+  // remain one tap away, but aren't the first thing a mobile visitor has to
+  // parse.
+  let panel = $state<Panel>('books');
+  let query = $state('');
+  let viewBounds = $state<MapBounds | null>(null);
+  let isMobile = $state(false);
+  let mobileView = $state<'list' | 'map'>('list');
+
   let loadingUsers = $state(usersLoading.get());
   let loadError = $state<string | null>(usersError.get());
   let expandedId = $state<string | null>(null);
 
-  // Track the seed-user fetch so the panel can tell loading/error apart from a
+  // Panel derivations: three filtered + sorted lists synced to the current
+  // map viewport (viewBounds === null before the map reports its first
+  // bounds, so nothing is filtered out yet).
+  const q = $derived(query.trim().toLowerCase());
+  // `$derived` destructuring isn't reactive-safe in Svelte 5 — derive the
+  // split object once, then read each field via its own `$derived`.
+  let ps = $derived(splitDiscovery(matchList));
+  const people = $derived(ps.people);
+  const stores = $derived(ps.stores);
+
+  const matchesSearch = (m: Match) => !q || m.user.name.toLowerCase().includes(q);
+  const bookMatchesSearch = (row: LocalBook) =>
+    !q || (row.book.title + ' ' + row.book.author).toLowerCase().includes(q);
+
+  const peopleInView = $derived(
+    sortByDistance(
+      people.filter(
+        (m) =>
+          hasLocation(m) &&
+          (isMobile || viewBounds == null || isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds)) &&
+          matchesSearch(m)
+      )
+    )
+  );
+  // Owner shares no location at all — always shown, regardless of viewport,
+  // in a separate "Location not shared" group (no distance, so no sort).
+  const peopleUnlocated = $derived(people.filter((m) => !hasLocation(m) && matchesSearch(m)));
+
+  const storesInView = $derived(
+    sortByDistance(
+      stores.filter(
+        (m) =>
+          hasLocation(m) &&
+          (isMobile || viewBounds == null || isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds)) &&
+          matchesSearch(m)
+      )
+    )
+  );
+  const storesUnlocated = $derived(stores.filter((m) => !hasLocation(m) && matchesSearch(m)));
+
+  const booksInView = $derived(
+    books.filter(
+      (row) =>
+        bookOwnerLocated(row, isMobile ? null : viewBounds) &&
+        !(row.owner.latitude == null || row.owner.longitude == null) &&
+        bookMatchesSearch(row)
+    )
+  );
+  const booksUnlocated = $derived(
+    books.filter(
+      (row) => (row.owner.latitude == null || row.owner.longitude == null) && bookMatchesSearch(row)
+    )
+  );
+  const bookGroups = $derived(groupByIntent(booksInView));
+  const bookGroupsUnlocated = $derived(groupByIntent(booksUnlocated));
+  const inViewCount = $derived(
+    panel === 'books' ? booksInView.length : panel === 'people' ? peopleInView.length : storesInView.length
+  );
+
+  // Track the discovery-user fetch so the panel can tell loading/error apart from a
   // genuinely empty match list.
   $effect(() => usersLoading.subscribe((v) => (loadingUsers = v)));
   $effect(() => usersError.subscribe((v) => (loadError = v)));
   let mapContainer: HTMLDivElement;
   let map: any;
+  let clusterGroup: any;
   // markerId -> { marker, isStore, baseRadius }
   let markerMap = new Map<string, { marker: any; isStore: boolean; baseRadius: number }>();
 
@@ -105,9 +183,10 @@
   async function updateMarkers() {
     if (!map) return;
     const L = await import('leaflet');
+    await import('leaflet.markercluster');
 
     // Clear existing markers
-    markerMap.forEach(({ marker }) => marker.remove());
+    clusterGroup?.clearLayers();
     markerMap.clear();
 
     matchList.forEach((match) => {
@@ -129,16 +208,20 @@
       })
         .bindTooltip(`${isStore ? '🏪 ' : ''}${user.name}${distanceLabel}`, {
           className: isStore ? 'map-tip map-tip-store' : 'map-tip',
-        })
-        .addTo(map);
+        });
 
-      // Selecting a card flies + emphasizes its pin; clicking a pin expands the card.
-      marker.on('click', () => toggleExpanded(user.id));
+      // Selecting a card flies + emphasizes its pin; clicking a pin expands
+      // the card AND switches the panel so the pin's row is visible there.
+      marker.on('click', () => {
+        panel = isStore ? 'bookstores' : 'people';
+        toggleExpanded(user.id);
+      });
       marker.on('mouseover', () => marker.setStyle({ weight: 3, fillOpacity: 1 }));
       marker.on('mouseout', () =>
         marker.setStyle({ weight: 2, fillOpacity: expandedId === user.id ? 1 : 0.92 })
       );
 
+      clusterGroup?.addLayer(marker);
       markerMap.set(user.id, { marker, isStore, baseRadius });
       springPinIn(marker, baseRadius);
     });
@@ -162,13 +245,77 @@
     });
   }
 
-  onMount(async () => {
-    await loadSeedUsers();
+  // onMount ignores a cleanup function returned from an async callback, so the
+  // map/init teardown is registered via `mapCleanup` and run from a sync onMount
+  // return instead (previously the teardown never ran on unmount).
+  let mapDestroyed = false;
+  let mapCleanup: (() => void) | null = null;
+  let mapInitPromise: Promise<void> | null = null;
 
+  function updateMobileMode() {
+    isMobile = window.matchMedia('(max-width: 900px)').matches;
+    // Desktop keeps the established split map. Mobile starts with the useful
+    // result list, avoiding an expensive map and an empty-looking first screen.
+    if (!isMobile) ensureMap();
+  }
+
+  onMount(() => {
+    updateMobileMode();
+    const media = window.matchMedia('(max-width: 900px)');
+    const onChange = () => updateMobileMode();
+    media.addEventListener('change', onChange);
+
+    // Discovery data is independent of Leaflet so the list is ready before a
+    // mobile visitor chooses Map.
+    loadDiscoveryUsers();
+    const unsubMatches = discovery.subscribe((m) => {
+      matchList = m;
+      if (map) updateMarkers();
+    });
+    const unsubBooks = discoveryBooks.subscribe((b) => (books = b));
+
+    return () => {
+      mapDestroyed = true;
+      media.removeEventListener('change', onChange);
+      unsubMatches();
+      unsubBooks();
+      mapCleanup?.();
+    };
+  });
+
+  async function ensureMap() {
+    if (map || mapDestroyed) return;
+    mapInitPromise ??= initMap();
+    await mapInitPromise;
+  }
+
+  async function initMap() {
     const L = await import('leaflet');
+    await import('leaflet.markercluster');
+
+    // The component may have unmounted while the awaits above were pending;
+    // bail before creating the map so nothing leaks.
+    if (mapDestroyed) return;
 
     const center = getMapCenter();
-    map = L.map(mapContainer, { zoomControl: true }).setView([center.lat, center.lng], 13);
+    // maxZoom must be on the map itself: leaflet.markercluster reads it from the
+    // map (not the tile layer) and throws "Map has no maxZoom specified" without it.
+    map = L.map(mapContainer, { zoomControl: true, worldCopyJump: true, maxZoom: 20 }).setView(
+      [center.lat, center.lng],
+      13
+    );
+
+    // The ESM leaflet namespace is frozen, so leaflet.markercluster attaches
+    // markerClusterGroup to the mutable default export, not the namespace.
+    const markerClusterGroup =
+      (L as any).markerClusterGroup ?? (L as any).default?.markerClusterGroup;
+    clusterGroup = markerClusterGroup({
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 55,
+      chunkedLoading: true,
+    });
+    map.addLayer(clusterGroup);
 
     // Use Carto basemap so the map adopts a clean light/dark surface matching the theme.
     const tileUrl = isDark()
@@ -210,22 +357,37 @@
         .addTo(map);
     }
 
-    // Populate matches from the store and keep pins in sync as it recomputes.
-    // (Fires synchronously on subscribe, so this also does the initial render.)
-    const unsubMatches = discovery.subscribe((m) => {
-      matchList = m;
-      if (map) updateMarkers();
+    // Data subscriptions are established on mount so list-first mobile mode
+    // does not need to initialize Leaflet. Render their current values now.
+    await updateMarkers();
+
+    // Keep the panel's lists synced to what's actually visible on the map:
+    // read the initial bounds now, then re-read (debounced) on every pan/zoom.
+    const readBounds = (): MapBounds => {
+      const b = map.getBounds();
+      return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
+    };
+    viewBounds = readBounds();
+    let moveTimer: ReturnType<typeof setTimeout> | undefined;
+    map.on('moveend', () => {
+      clearTimeout(moveTimer);
+      moveTimer = setTimeout(() => {
+        viewBounds = readBounds();
+      }, 150);
     });
 
-    return () => {
-      unsubMatches();
+    mapCleanup = () => {
+      clearTimeout(moveTimer);
       themeObserver.disconnect();
       map?.remove();
     };
-  });
+  }
 
   // Pan to and emphasize a pin when its card is selected.
   async function focusMarker(id: string) {
+    await ensureMap();
+    await tick();
+    map?.invalidateSize({ animate: false });
     const entry = markerMap.get(id);
     if (!entry || !map) return;
     const ll = entry.marker.getLatLng();
@@ -237,10 +399,38 @@
     applySelectionStyles();
     if (expandedId) focusMarker(expandedId);
   }
+
+  // Jump from a book row to its owner: select the right panel (bookstore vs
+  // person), expand that owner's card, and pan/emphasize their pin.
+  function focusFromRow(ownerId: string) {
+    const owned = matchList.find((m) => m.user.id === ownerId);
+    panel = owned?.user.type === 'bookstore' ? 'bookstores' : 'people';
+    expandedId = ownerId;
+    applySelectionStyles();
+    // A row in the list has a clear visual continuation: show the owner on
+    // the map, rather than silently switching the list to another panel.
+    mobileView = 'map';
+    focusMarker(ownerId);
+  }
+
+  async function setMobileView(view: 'list' | 'map') {
+    mobileView = view;
+    if (view === 'map') {
+      await tick();
+      await ensureMap();
+      map?.invalidateSize({ animate: false });
+    }
+  }
 </script>
 
 <div class="match-map">
-  <div class="map-wrap">
+  <!-- Kept outside either surface so Map never becomes a dead end on mobile. -->
+  <div class="mobile-view-toggle" role="group" aria-label={matchesT.map.chooseView}>
+    <button class:active={mobileView === 'list'} onclick={() => setMobileView('list')}>{matchesT.views.list}</button>
+    <button class:active={mobileView === 'map'} onclick={() => setMobileView('map')}>{matchesT.views.map}</button>
+  </div>
+
+  <div class:mobile-hidden={isMobile && mobileView === 'list'} class="map-wrap">
     <div class="map-container" bind:this={mapContainer}></div>
 
     <!-- Floating glass legend over the map -->
@@ -254,61 +444,28 @@
     </div>
   </div>
 
-  <div class="cards-panel card">
-    <div class="panel-head">
-      <span class="eyebrow">{t.withinReach}</span>
-      <h2 class="serif">{t.nearby} <span class="count">{locatedList.length}</span></h2>
-    </div>
-
-    {#if loadingUsers && matchList.length === 0}
-      <div class="panel-state" aria-live="polite">
-        <div class="skeleton-list">
-          <div class="skeleton-card"></div>
-          <div class="skeleton-card"></div>
-          <div class="skeleton-card"></div>
-        </div>
-        <p class="state-note">{t.loading}</p>
-      </div>
-    {:else if loadError && matchList.length === 0}
-      <div class="panel-state error" role="alert">
-        <p>{t.errorTitle}</p>
-        <p class="state-note">{loadError}</p>
-      </div>
-    {:else if matchList.length === 0}
-      <div class="empty">
-        <p>{t.empty}</p>
-      </div>
-    {:else}
-      <div class="cards-list">
-        {#each locatedList as match, i (match.user.id)}
-          <div class="card-slot rise" style={`animation-delay:${Math.min(i * 60, 360)}ms`}>
-            <MatchCardIsland
-              {match}
-              {lang}
-              expanded={expandedId === match.user.id}
-              onToggle={() => toggleExpanded(match.user.id)}
-            />
-          </div>
-        {/each}
-
-        {#if unlocatedList.length > 0}
-          <div class="group-head">
-            <span class="eyebrow">{t.locationNotShared}</span>
-            <span class="count">{unlocatedList.length}</span>
-          </div>
-          {#each unlocatedList as match, i (match.user.id)}
-            <div class="card-slot rise" style={`animation-delay:${Math.min(i * 60, 360)}ms`}>
-              <MatchCardIsland
-                {match}
-                {lang}
-                expanded={expandedId === match.user.id}
-                onToggle={() => toggleExpanded(match.user.id)}
-              />
-            </div>
-          {/each}
-        {/if}
-      </div>
-    {/if}
+  <div class:mobile-hidden={isMobile && mobileView === 'map'} class="cards-panel card">
+    <LocalPanel
+      {panel}
+      onPanelChange={(p) => (panel = p)}
+      {query}
+      onQueryChange={(v) => (query = v)}
+      {bookGroups}
+      {bookGroupsUnlocated}
+      {peopleInView}
+      {peopleUnlocated}
+      {storesInView}
+      {storesUnlocated}
+      {inViewCount}
+      resultScope={isMobile ? t.nearby : undefined}
+      {expandedId}
+      onToggle={toggleExpanded}
+      onOwner={focusFromRow}
+      loading={loadingUsers}
+      error={loadError}
+      hasAnyData={matchList.length > 0}
+      {lang}
+    />
   </div>
 </div>
 
@@ -381,128 +538,55 @@
     box-shadow: var(--shadow-1);
   }
 
-  .panel-head {
-    margin-bottom: var(--s-4);
-    padding-bottom: var(--s-3);
-    border-bottom: 1px solid var(--hairline);
-  }
-  .panel-head .eyebrow { display: block; margin-bottom: var(--s-1); }
-
-  .cards-panel h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--ink);
-    display: flex;
-    align-items: baseline;
-    gap: var(--s-2);
-  }
-  .count {
-    font-family: var(--font-ui);
-    font-size: 0.8125rem;
-    font-weight: 590;
-    color: var(--accent);
-    background: var(--accent-tint);
-    padding: 0.1rem 0.55rem;
-    border-radius: var(--r-full);
-  }
-
-  .empty {
-    padding: var(--s-8) var(--s-6);
-    text-align: center;
-    font-family: var(--font-ui);
-    color: var(--ink-muted);
-    background: var(--surface-sunken);
-    border: 1px solid var(--hairline);
-    border-radius: var(--r-md);
-  }
-  .empty p { margin: 0; }
-  .empty::before {
-    content: '🔍';
-    display: block;
-    font-size: 1.5rem;
-    margin-bottom: var(--s-2);
-    opacity: 0.7;
-  }
-
-  /* Loading / error panel states (distinct from the empty state). */
-  .panel-state {
-    padding: var(--s-4) 0;
-    text-align: center;
-    font-family: var(--font-ui);
-    color: var(--ink-muted);
-  }
-  .panel-state.error p:first-child {
-    color: var(--ink);
-    font-weight: 590;
-  }
-  .state-note {
-    margin: var(--s-3) 0 0;
-    font-size: 0.85rem;
-    color: var(--ink-faint);
-  }
-  .panel-state.error .state-note {
-    color: var(--danger);
-  }
-
-  .skeleton-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-4);
-  }
-  .skeleton-card {
-    height: 96px;
-    border-radius: var(--r-md);
-    background: var(--surface-sunken);
-    border: 1px solid var(--hairline);
-    overflow: hidden;
-    position: relative;
-  }
-  .skeleton-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--hairline),
-      transparent
-    );
-    transform: translateX(-100%);
-    animation: shimmer 1.4s var(--ease-out) infinite;
-  }
-  @keyframes shimmer {
-    to { transform: translateX(100%); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .skeleton-card::after { animation: none; }
-  }
-
-  .cards-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-4);
-    overflow-y: auto;
-    padding-right: var(--s-2);
-  }
-
-  .card-slot { display: block; }
-
-  /* Sub-header that separates location-less people from the pinned ones. */
-  .group-head {
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-    margin: var(--s-2) 0 calc(-1 * var(--s-1));
-    padding-top: var(--s-3);
-    border-top: 1px solid var(--hairline);
-  }
-  .group-head .eyebrow { margin: 0; }
+  .mobile-view-toggle { display: none; }
 
   @media (max-width: 900px) {
     .match-map {
       grid-template-columns: 1fr;
-      grid-template-rows: 320px 1fr;
+      grid-template-rows: auto;
+      /* Let the stacked layout size to its content instead of trying to
+         squeeze both the map and the full panel into one viewport slice. */
+      height: auto;
+      min-height: 0;
+    }
+
+    .mobile-view-toggle {
+      display: inline-flex;
+      justify-self: start;
+      gap: var(--s-1);
+      margin: 0;
+      padding: 0.2rem;
+      border: 1px solid var(--hairline-strong);
+      border-radius: var(--r-full);
+      background: var(--surface-sunken);
+    }
+
+    .cards-panel {
+      padding: var(--s-4);
+    }
+
+    .map-wrap { height: 320px; }
+    .mobile-hidden { display: none; }
+    .mobile-view-toggle button {
+      min-height: 2.75rem;
+      padding: 0.45rem 1rem;
+      border: 0;
+      border-radius: var(--r-full);
+      background: transparent;
+      color: var(--ink-muted);
+      font: 590 0.875rem var(--font-ui);
+      cursor: pointer;
+    }
+    .mobile-view-toggle button.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-1);
+    }
+
+    .legend {
+      padding: var(--s-2) var(--s-3);
+      bottom: var(--s-3);
+      left: var(--s-3);
     }
   }
 
@@ -575,4 +659,18 @@
   :global(.leaflet-control-attribution a) {
     color: var(--accent) !important;
   }
+
+  /* Cluster bubbles — on-token, replacing the plugin's default blue. */
+  :global(.marker-cluster) {
+    background: transparent;
+  }
+  :global(.marker-cluster div) {
+    background: var(--accent);
+    color: var(--accent-on);
+    font-family: var(--font-ui);
+    font-weight: 640;
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 30%, transparent), var(--shadow-2);
+    border: none;
+  }
+  :global(.marker-cluster span) { line-height: 30px; }
 </style>

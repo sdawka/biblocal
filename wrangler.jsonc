@@ -1,4 +1,5 @@
 {
+	"account_id": "1bae12d5089e4c2ee5c0e62c021a117f",
 	"compatibility_date": "2026-05-05",
 	"compatibility_flags": ["nodejs_compat", "disable_nodejs_process_v2"],
 	"name": "biblocal",
@@ -9,7 +10,7 @@
 	},
 	"vars": {
 		"ENVIRONMENT": "production",
-		"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_aHVtYW5lLWxvbmdob3JuLTY2LmNsZXJrLmFjY291bnRzLmRldiQ"
+		"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuYmlibG9jYWwuY29tJA"
 	},
 	"observability": {
 		"enabled": true
@@ -22,6 +23,9 @@
 			"migrations_dir": "drizzle"
 		}
 	],
+	"images": {
+		"binding": "IMAGES"
+	},
 	"env": {
 		"qa": {
 			"name": "biblocal-qa",
@@ -38,7 +42,10 @@
 					"database_id": "44e7e517-033b-40ea-a540-ca66ee777ea1",
 					"migrations_dir": "drizzle"
 				}
-			]
+			],
+			"images": {
+				"binding": "IMAGES"
+			}
 		}
 	}
 }

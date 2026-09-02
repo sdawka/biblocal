@@ -11,6 +11,11 @@ export const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'Winnipeg': { lat: 49.8951, lng: -97.1384 },
   'Halifax': { lat: 44.6488, lng: -63.5752 },
   'Victoria': { lat: 48.4284, lng: -123.3656 },
+  'New York': { lat: 40.7128, lng: -74.006 },
+  'London': { lat: 51.5074, lng: -0.1278 },
+  'Paris': { lat: 48.8566, lng: 2.3522 },
+  'Lyon': { lat: 45.764, lng: 4.8357 },
+  'Tokyo': { lat: 35.6762, lng: 139.6503 },
 };
 
 function toRad(deg: number): number {

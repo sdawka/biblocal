@@ -36,6 +36,7 @@ import {
   addBook,
   loadBooksFromServer,
 } from '../../src/stores/shelf';
+import { shelfView, setShelfView } from '../../src/stores/shelf-view';
 import type { Book } from '../../src/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -64,6 +65,14 @@ function makeStoreBook(overrides: Partial<Book> = {}): Book {
  * here because Vite's ESM transform in the test environment captures the
  * original stub rather than the replaced global.
  */
+/**
+ * Filter chips live inside FilterPopover, closed by default. Open it before
+ * asserting/interacting with any filter group.
+ */
+function openFilterPopover() {
+  fireEvent.click(screen.getByRole('button', { name: /^Filters/ }));
+}
+
 function setupDeferredFetch(serverBooks: unknown[] = []) {
   let release!: () => void;
   const gate = new Promise<void>((r) => { release = r; });
@@ -84,6 +93,7 @@ describe('ShelfIsland', () => {
   beforeEach(() => {
     shelf.set({});
     activeFilters.set({ visibility: [], ownership: [], intents: [] });
+    setShelfView('details');
     // Restore the default fetch mock after any test that overrides it
     vi.mocked(fetch).mockImplementation(async () =>
       ({ ok: true, json: async () => ({}) } as unknown as Response)
@@ -115,6 +125,7 @@ describe('ShelfIsland', () => {
       render(ShelfIsland, { props: { lang: 'en' } });
 
       // Filter to "am seeking" — our only book is "have", so nothing passes
+      openFilterPopover();
       const ownershipGroup = screen.getByRole('group', { name: 'Filter by ownership' });
       fireEvent.click(within(ownershipGroup).getByRole('button', { name: /am seeking/ }));
 
@@ -190,7 +201,10 @@ describe('ShelfIsland', () => {
   // ── Initial render from pre-seeded store ──────────────────────────────────
 
   describe('initial render from pre-seeded store', () => {
-    it('renders three books with correct section headers, intent pills, and status badges', () => {
+    // Details-view cards are non-editing buttons that open the detail sheet
+    // (inline pills/badges moved into the sheet — see Task 7); status is
+    // folded into each card's accessible name instead.
+    it('renders three books with correct section headers and status folded into each card aria-label', () => {
       shelf.set({
         'b1': makeStoreBook({ id: 'b1', title: 'The Great Gatsby', author: 'Fitzgerald', ownership: 'have', intents: ['borrowable'] }),
         'b2': makeStoreBook({ id: 'b2', title: 'Brave New World', author: 'Huxley', ownership: 'have', visibility: 'private' }),
@@ -208,20 +222,22 @@ describe('ShelfIsland', () => {
       expect(screen.getByRole('button', { name: /Collapse books I have/ })).toBeTruthy();
       expect(screen.getByRole('button', { name: /Collapse books I am seeking/ })).toBeTruthy();
 
-      // Gatsby has borrowable intent → rendered as a removable pill-button
-      expect(screen.getByRole('button', { name: /Remove Lending intent from The Great Gatsby/ })).toBeTruthy();
+      // Gatsby has borrowable intent → folded into the card's aria-label
+      expect(screen.getByRole('button', { name: 'View details for The Great Gatsby — Lending' })).toBeTruthy();
 
-      // Brave New World is private → "Private" badge visible
-      expect(screen.getByText('Private')).toBeTruthy();
+      // Brave New World is private → folded into the card's aria-label
+      expect(screen.getByRole('button', { name: 'View details for Brave New World — Private' })).toBeTruthy();
 
-      // Foundation is seeking → "Seeking" badge visible
-      expect(screen.getByText('Seeking')).toBeTruthy();
+      // Foundation is seeking → folded into the card's aria-label
+      expect(screen.getByRole('button', { name: 'View details for Foundation — Seeking' })).toBeTruthy();
     });
   });
 
-  // ── Delete from UI ────────────────────────────────────────────────────────
+  // ── Delete from the detail sheet ────────────────────────────────────────────
+  // Details-view cards no longer carry inline edit controls (Task 5); clicking
+  // a card opens the shared BookDetailSheet, which still hosts delete/intents.
 
-  describe('delete from UI', () => {
+  describe('delete from detail sheet', () => {
     it('confirming delete removes book from DOM and store, and issues a DELETE request', async () => {
       const book = addBook({ title: 'Deletable Book', author: 'Author', addedVia: 'manual', ownership: 'have' });
       render(ShelfIsland, { props: { lang: 'en' } });
@@ -230,10 +246,14 @@ describe('ShelfIsland', () => {
         expect(screen.getByText('Deletable Book')).toBeTruthy();
       });
 
-      // Step 1: click the X button on the card
-      fireEvent.click(screen.getByRole('button', { name: 'Delete Deletable Book from shelf' }));
+      // Step 1: open the sheet by clicking the card
+      fireEvent.click(screen.getByRole('button', { name: 'View details for Deletable Book' }));
 
-      // Step 2: confirmation dialog appears — click Remove
+      // Step 2: click the X button inside the sheet
+      const deleteBtn = await screen.findByRole('button', { name: 'Delete Deletable Book from shelf' });
+      fireEvent.click(deleteBtn);
+
+      // Step 3: confirmation dialog appears — click Remove
       await waitFor(() => {
         expect(screen.getByText('Remove from shelf?')).toBeTruthy();
       });
@@ -252,10 +272,13 @@ describe('ShelfIsland', () => {
     });
   });
 
-  // ── Intent change from card UI ────────────────────────────────────────────
+  // ── Intent change from the detail sheet ─────────────────────────────────────
+  // Since Task 7, the sheet renders ALL intent options as aria-pressed toggle
+  // pills (not just the active ones), so a book with only "borrowable" active
+  // still shows "Discussion" and "Gifting" pills, both pressed=false.
 
-  describe('intent change from card UI', () => {
-    it('clicking an active intent pill removes it from the book and issues a PATCH', async () => {
+  describe('intent change from detail sheet', () => {
+    it('clicking an active intent pill (aria-pressed=true) removes it from the book and issues a PATCH', async () => {
       const book = addBook({
         title: 'Lendable Book',
         author: 'Author',
@@ -267,10 +290,16 @@ describe('ShelfIsland', () => {
 
       await tick(); // let the component settle
 
-      // The "borrowable" intent is rendered as a pill-button labeled "Lending"
-      const lendingPill = await screen.findByRole('button', {
-        name: /Remove Lending intent from Lendable Book/,
-      });
+      // Open the sheet by clicking the card
+      const card = await screen.findByRole('button', { name: /^View details for Lendable Book/ });
+      fireEvent.click(card);
+
+      // All three intent options render as toggle pills; "Lending" starts pressed.
+      const lendingPill = await screen.findByRole('button', { name: 'Lending' });
+      expect(lendingPill.getAttribute('aria-pressed')).toBe('true');
+      const discussionPill = screen.getByRole('button', { name: 'Discussion' });
+      expect(discussionPill.getAttribute('aria-pressed')).toBe('false');
+
       fireEvent.click(lendingPill);
 
       // Store should now have no intents
@@ -283,6 +312,81 @@ describe('ShelfIsland', () => {
         `/api/books/${book.id}`,
         expect.objectContaining({ method: 'PATCH' }),
       );
+    });
+
+    it('clicking an inactive intent pill (aria-pressed=false) adds it to the book', async () => {
+      const book = addBook({
+        title: 'Discussable Book',
+        author: 'Author',
+        addedVia: 'manual',
+        ownership: 'have',
+        intents: [],
+      });
+      render(ShelfIsland, { props: { lang: 'en' } });
+
+      await tick();
+
+      const card = await screen.findByRole('button', { name: /^View details for Discussable Book/ });
+      fireEvent.click(card);
+
+      const giftingPill = await screen.findByRole('button', { name: 'Gifting' });
+      expect(giftingPill.getAttribute('aria-pressed')).toBe('false');
+      fireEvent.click(giftingPill);
+
+      await waitFor(() => {
+        expect(shelf.get()[book.id].intents).toEqual(['giftable']);
+      });
+    });
+  });
+
+  // ── Ownership / visibility toggles from the detail sheet ────────────────────
+
+  describe('ownership and visibility change from detail sheet', () => {
+    it('flipping the ownership segmented control updates the book and issues a PATCH', async () => {
+      const book = addBook({
+        title: 'Owned Book',
+        author: 'Author',
+        addedVia: 'manual',
+        ownership: 'have',
+      });
+      render(ShelfIsland, { props: { lang: 'en' } });
+      await tick();
+
+      const card = await screen.findByRole('button', { name: /^View details for Owned Book/ });
+      fireEvent.click(card);
+
+      const ownershipGroup = await screen.findByRole('group', { name: 'Ownership' });
+      fireEvent.click(within(ownershipGroup).getByRole('button', { name: 'am seeking' }));
+
+      await waitFor(() => {
+        expect(shelf.get()[book.id].ownership).toBe('seeking');
+      });
+      expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+        `/api/books/${book.id}`,
+        expect.objectContaining({ method: 'PATCH' }),
+      );
+    });
+
+    it('flipping the visibility segmented control updates the book', async () => {
+      const book = addBook({
+        title: 'Visible Book',
+        author: 'Author',
+        addedVia: 'manual',
+        ownership: 'have',
+        visibility: 'visible',
+      });
+      render(ShelfIsland, { props: { lang: 'en' } });
+      await tick();
+
+      const card = await screen.findByRole('button', { name: /^View details for Visible Book/ });
+      fireEvent.click(card);
+
+      const visibilityGroup = await screen.findByRole('group', { name: 'Visibility' });
+      fireEvent.click(within(visibilityGroup).getByRole('button', { name: 'Private' }));
+
+      await waitFor(() => {
+        expect(shelf.get()[book.id].visibility).toBe('private');
+      });
     });
   });
 
@@ -300,6 +404,7 @@ describe('ShelfIsland', () => {
       expect(screen.getByText('I Want This')).toBeTruthy();
 
       // Activate the "am seeking" filter chip
+      openFilterPopover();
       const ownershipGroup = screen.getByRole('group', { name: 'Filter by ownership' });
       fireEvent.click(within(ownershipGroup).getByRole('button', { name: /am seeking/ }));
 
@@ -323,6 +428,7 @@ describe('ShelfIsland', () => {
       render(ShelfIsland, { props: { lang: 'en' } });
 
       // Activate the "have" filter
+      openFilterPopover();
       const ownershipGroup = screen.getByRole('group', { name: 'Filter by ownership' });
       fireEvent.click(within(ownershipGroup).getByRole('button', { name: /^have/i }));
 
@@ -346,6 +452,7 @@ describe('ShelfIsland', () => {
       shelf.set({ 'seed': makeStoreBook({ id: 'seed', title: 'Seed Book', ownership: 'have' }) });
       render(ShelfIsland, { props: { lang: 'en' } });
 
+      openFilterPopover();
       const ownershipGroup = screen.getByRole('group', { name: 'Filter by ownership' });
       fireEvent.click(within(ownershipGroup).getByRole('button', { name: /^have/i }));
 
@@ -359,6 +466,92 @@ describe('ShelfIsland', () => {
 
       // But NOT visible — silently filtered out with no hint to the user
       expect(screen.queryByText('Hidden Seek Book')).toBeNull();
+    });
+  });
+
+  // ── Covers view ───────────────────────────────────────────────────────────
+
+  describe('covers view', () => {
+    it('renders a book spine tile after switching to covers view', async () => {
+      shelf.set({
+        'b1': makeStoreBook({ id: 'b1', title: 'The Great Gatsby', author: 'Fitzgerald', ownership: 'have' }),
+      });
+      setShelfView('covers');
+      const { container } = render(ShelfIsland, { props: { lang: 'en' } });
+
+      await waitFor(() => {
+        expect(container.querySelector('[data-book-id="b1"]')).toBeTruthy();
+      });
+    });
+
+    // Regression guard for the "shelf furniture" removal: .covers-row must be
+    // a direct child of its <section class="shelf-section">, with no wrapping
+    // shelf/ledge/bay element between them. That wrapper's full-bleed
+    // `overflow-x: clip` was what swallowed the row's own horizontal scroll,
+    // so its absence (plus the .covers-row class carrying the scroll CSS,
+    // asserted against the component source below) is what makes the row
+    // itself the working scroll container.
+    it('the covers-row renders as a direct child of its section, with no shelf/ledge wrapper', async () => {
+      shelf.set({
+        'b1': makeStoreBook({ id: 'b1', title: 'The Great Gatsby', author: 'Fitzgerald', ownership: 'have' }),
+        'b2': makeStoreBook({ id: 'b2', title: 'Foundation', author: 'Asimov', ownership: 'seeking' }),
+      });
+      setShelfView('covers');
+      const { container } = render(ShelfIsland, { props: { lang: 'en' } });
+
+      await waitFor(() => {
+        expect(container.querySelector('[data-book-id="b1"]')).toBeTruthy();
+      });
+
+      const rows = container.querySelectorAll('.covers-row');
+      expect(rows.length).toBeGreaterThan(0);
+
+      // No shelf/ledge/bay furniture left anywhere in the tree.
+      expect(container.querySelector('.shelf-bay')).toBeNull();
+      expect(container.querySelector('.bay-content')).toBeNull();
+      expect(container.querySelector('.ledge')).toBeNull();
+
+      rows.forEach((row) => {
+        // Direct child of the section (only .section-header is a sibling).
+        expect(row.parentElement?.classList.contains('shelf-section')).toBe(true);
+      });
+    });
+
+    it('frames ownership sections in one bookcase while each covers row owns its scrolling', async () => {
+      shelf.set({
+        'b1': makeStoreBook({ id: 'b1', title: 'The Great Gatsby', author: 'Fitzgerald', ownership: 'have' }),
+        'b2': makeStoreBook({ id: 'b2', title: 'Foundation', author: 'Asimov', ownership: 'seeking' }),
+      });
+      setShelfView('covers');
+      const { container } = render(ShelfIsland, { props: { lang: 'en' } });
+
+      await waitFor(() => {
+        expect(container.querySelector('[data-book-id="b1"]')).toBeTruthy();
+      });
+
+      const bookcase = container.querySelector('.bookcase');
+      expect(bookcase).toBeTruthy();
+      expect(bookcase?.querySelectorAll(':scope > .shelf-section')).toHaveLength(2);
+
+      bookcase?.querySelectorAll(':scope > .shelf-section').forEach((section) => {
+        expect(section.querySelector(':scope > .covers-row')).toBeTruthy();
+      });
+    });
+
+    it('the ShelfIsland source defines .covers-row as the scroll container (overflow-x: auto, flex)', async () => {
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+      const src = await fs.readFile(
+        path.resolve(__dirname, '../../src/components/ShelfIsland.svelte'),
+        'utf-8'
+      );
+      const styleBlock = src.slice(src.indexOf('<style>'), src.indexOf('</style>'));
+      const rowRuleMatch = styleBlock.match(/\.covers-row\s*\{[^}]*\}/);
+      expect(rowRuleMatch).toBeTruthy();
+      const rowRule = rowRuleMatch![0];
+      expect(rowRule).toMatch(/display:\s*flex/);
+      expect(rowRule).toMatch(/overflow-x:\s*auto/);
+      expect(rowRule).toMatch(/width:\s*100%/);
     });
   });
 });

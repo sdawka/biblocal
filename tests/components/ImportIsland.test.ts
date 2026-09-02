@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/svelte';
+import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import ImportIsland from '../../src/components/ImportIsland.svelte';
 
 // Mock i18n
@@ -24,6 +24,9 @@ vi.mock('../../src/i18n', () => ({
         imported: 'imported',
         skipped: 'skipped',
         errorsLabel: 'errors',
+        failedBook: lang === 'es' ? 'No se pudo importar {title}' : 'Could not import {title}',
+        failedUnknownBook:
+          lang === 'es' ? 'No se pudo importar un libro' : 'Could not import a book',
         andMore: 'and {n} more',
         done: 'Done',
         seeking: 'Seeking',
@@ -141,6 +144,39 @@ describe('ImportIsland', () => {
 
       // Error messages should render in the upload section if file reading fails
       expect(uploadSection).toBeTruthy();
+    });
+
+    it('uses a localized fallback when the API cannot identify a failed book', async () => {
+      class CsvFileReader {
+        onload: ((event: { target: { result: string } }) => void) | null = null;
+        onerror: (() => void) | null = null;
+
+        readAsText() {
+          this.onload?.({ target: { result: 'Title,Author\nDune,Frank Herbert' } });
+        }
+      }
+
+      vi.stubGlobal('FileReader', CsvFileReader);
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(
+          new Response(JSON.stringify({ imported: 0, skipped: 0, errors: [''] }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        ),
+      );
+
+      const { container } = render(ImportIsland, { props: { lang: 'es' } });
+      const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+      await fireEvent.change(input, {
+        target: { files: [new File(['csv'], 'books.csv', { type: 'text/csv' })] },
+      });
+      await fireEvent.click(screen.getByRole('button', { name: 'Import 1 books' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('No se pudo importar un libro')).toBeTruthy();
+      });
     });
   });
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CURATED_TOPICS } from '../stores/topics';
-  import { useTranslations, type Lang } from '../i18n';
+  import { localizeTopicLabel, useTranslations, type Lang } from '../i18n';
 
   interface Props {
     onSuccess?: (storeId: string) => void;
@@ -73,18 +73,21 @@
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || t.form.errorAddFailed);
+        const data: { error?: string } = await res.json();
+        console.error('Failed to add store:', data.error);
+        error = t.form.errorAddFailed;
+        return;
       }
 
-      const data = await res.json();
+      const data: { id: string } = await res.json();
       success = true;
 
       if (onSuccess) {
         onSuccess(data.id);
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : t.form.errorGeneric;
+      console.error('Failed to add store:', e);
+      error = t.form.errorGeneric;
     } finally {
       loading = false;
     }
@@ -199,7 +202,7 @@
               onclick={() => toggleSpecialty(topic)}
               disabled={loading || (!selectedSpecialties.includes(topic) && selectedSpecialties.length >= 6)}
             >
-              {topic.replace(/-/g, ' ')}
+              {localizeTopicLabel(topic, lang)}
             </button>
           {/each}
         </div>

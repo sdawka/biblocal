@@ -1,3 +1,4 @@
+import { atom } from 'nanostores';
 import { persistentAtom } from '@nanostores/persistent';
 import type { Book, BookNote, BookStatus, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
 import { inferTopicsFromSubjects } from './topics';
@@ -6,6 +7,7 @@ import { reportSyncError } from './sync-status';
 
 const SYNC_ERROR_MESSAGE = 'Could not save your change. Please try again.';
 const LOAD_SYNC_ERROR_MESSAGE = 'Could not load your shelf from the server. Please try again.';
+const COVER_SYNC_ERROR_MESSAGE = 'Could not update the cover. Please try again.';
 
 function safeJsonDecode<T>(defaultValue: T) {
   return (str: string): T => {
@@ -21,6 +23,16 @@ export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {
   encode: JSON.stringify,
   decode: safeJsonDecode({}),
 });
+
+// Signals when the initial shelf load has settled (success or failure), so
+// the UI can tell "empty because still loading" apart from "empty because
+// there really are no books." Starts false and is set true by
+// loadBooksFromServer() (success or failure), or client-side the moment a
+// returning user's persisted shelf is seen to be non-empty (see Bookshelf).
+// NOTE: must NOT read shelf.get() here — doing so at module (global) scope
+// triggers nanostores' unmount setTimeout, which Cloudflare Workers forbids
+// in global scope and would 500 every cold SSR render.
+export const shelfHydrated = atom<boolean>(false);
 
 // Legacy single-select filter (deprecated, kept for migration)
 export type ShelfFilter = 'all' | 'lending' | 'discussing' | 'gifting' | 'seeking' | 'private';
@@ -326,6 +338,62 @@ export function removeBook(id: string) {
   syncRemoveBook(id, prior);
 }
 
+// ─── Custom covers ───────────────────────────────────────────────────────────
+// Cover changes are NOT optimistic: the server owns the delivery URL, so the
+// store is updated only after a 2xx response. Callers show their own
+// in-progress state (the detail sheet disables its buttons while awaiting).
+
+function applyCoverResult(id: string, coverUrl: string | undefined, fetchedCoverUrl?: string | null): void {
+  const current = shelf.get();
+  const book = current[id];
+  if (!book) return;
+  const next: Book = { ...book, coverUrl };
+  if (fetchedCoverUrl !== undefined) {
+    next.fetchedCoverUrl = fetchedCoverUrl ?? undefined;
+  }
+  shelf.set({ ...current, [id]: next });
+}
+
+export async function uploadCover(id: string, file: File): Promise<boolean> {
+  if (!shelf.get()[id] || !currentUserId.get()) return false;
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`/api/books/${id}/cover`, { method: 'POST', body: form });
+    if (!res.ok) {
+      console.error('Failed to upload cover:', await res.text());
+      reportSyncError(COVER_SYNC_ERROR_MESSAGE);
+      return false;
+    }
+    const data = await res.json() as { coverUrl: string; fetchedCoverUrl: string | null };
+    applyCoverResult(id, data.coverUrl, data.fetchedCoverUrl);
+    return true;
+  } catch (e) {
+    console.error('Failed to upload cover:', e);
+    reportSyncError(COVER_SYNC_ERROR_MESSAGE);
+    return false;
+  }
+}
+
+export async function resetCover(id: string): Promise<boolean> {
+  if (!shelf.get()[id] || !currentUserId.get()) return false;
+  try {
+    const res = await fetch(`/api/books/${id}/cover`, { method: 'DELETE' });
+    if (!res.ok) {
+      console.error('Failed to reset cover:', await res.text());
+      reportSyncError(COVER_SYNC_ERROR_MESSAGE);
+      return false;
+    }
+    const data = await res.json() as { coverUrl: string | null };
+    applyCoverResult(id, data.coverUrl ?? undefined);
+    return true;
+  } catch (e) {
+    console.error('Failed to reset cover:', e);
+    reportSyncError(COVER_SYNC_ERROR_MESSAGE);
+    return false;
+  }
+}
+
 // ─── Book notes ──────────────────────────────────────────────────────────────
 // Notes are stored on each book's `notes` array. Mutations follow the same
 // optimistic-local-then-sync pattern as updateBook: update the store immediately
@@ -387,6 +455,7 @@ interface ServerBook {
   author: string;
   isbn: string | null;
   coverUrl: string | null;
+  fetchedCoverUrl: string | null;
   status: string;
   // New three-dimension model
   visibility: string | null;
@@ -432,7 +501,10 @@ export async function loadBooksFromServer(): Promise<void> {
   // as a different user), bail before set() so a slow response can't overwrite
   // the newer user's freshly-loaded shelf.
   const loadingFor = currentUserId.get();
-  if (!loadingFor) return;
+  if (!loadingFor) {
+    shelfHydrated.set(true);
+    return;
+  }
   // Snapshot local shelf before the request so legacy-only books can be recovered.
   const preLoadSnapshot = shelf.get();
   try {
@@ -459,6 +531,7 @@ export async function loadBooksFromServer(): Promise<void> {
         // Legacy status kept for migration
         status: b.status as BookStatus,
         coverUrl: b.coverUrl || undefined,
+        fetchedCoverUrl: b.fetchedCoverUrl || undefined,
         subjects: b.subjects ? safeJsonDecode<string[]>([])(b.subjects) : undefined,
         notes: (b.notes ?? []).map((n) => ({
           id: n.id,
@@ -489,6 +562,11 @@ export async function loadBooksFromServer(): Promise<void> {
   } catch (e) {
     console.error('Failed to load books from server:', e);
     reportSyncError(LOAD_SYNC_ERROR_MESSAGE);
+  } finally {
+    // Settle hydration on both success and failure so the UI never hangs on
+    // a loading skeleton. Safe even on a stale mid-flight bail: the newer
+    // load for the current user will also finish and set this again.
+    shelfHydrated.set(true);
   }
 }
 

@@ -1,68 +1,22 @@
 /**
- * Component tests for LocalDiscovery: the book-first Local page island with
- * a Books/People/Map view switcher. Books (default) renders the grouped,
- * taste-ordered feed from discoveryBooks; People reuses MatchCardIsland.
+ * Component test for LocalDiscovery: now a thin host that renders
+ * MatchMapIsland (the map-anchored hub) directly — the old Books/People/Map
+ * tab switcher and standalone book feed have been retired.
  *
- * Follows the render/reset pattern in Bookshelf.test.ts.
+ * MatchMapIsland can't mount under jsdom — Leaflet throws ("Map has no
+ * maxZoom specified") because jsdom has no real layout/canvas — so we don't
+ * render LocalDiscovery here. The panel behavior it delegates to is already
+ * covered by tests/components/MatchMapIsland.test.ts (the extracted
+ * LocalPanel). This just asserts the module loads and exports a component,
+ * which is what LocalPage.astro depends on.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/svelte';
+import { describe, it, expect } from 'vitest';
 import LocalDiscovery from '../../src/components/LocalDiscovery.svelte';
-import { shelf } from '../../src/stores/shelf';
-import { seedUsers } from '../../src/stores/users';
-
-beforeEach(() => {
-  shelf.set({});
-  seedUsers.set([
-    {
-      id: 'bob',
-      name: 'Bob',
-      city: 'X',
-      radiusKm: 10,
-      topics: { curated: [], freeform: [], inferred: [] },
-      shelf: [
-        {
-          id: 'd',
-          title: 'Dune',
-          author: 'H',
-          visibility: 'visible',
-          ownership: 'have',
-          intents: ['borrowable'],
-          addedVia: 'manual',
-          addedAt: 0,
-        },
-      ],
-    },
-  ]);
-});
 
 describe('LocalDiscovery', () => {
-  it('defaults to the Books view and lists a nearby book', () => {
-    render(LocalDiscovery, { props: { lang: 'en' } });
-    expect(screen.getByText('Dune')).toBeTruthy();
-    expect(screen.getByText('To borrow')).toBeTruthy();
-  });
-
-  it('switches to the People view', async () => {
-    render(LocalDiscovery, { props: { lang: 'en' } });
-    await fireEvent.click(screen.getByRole('tab', { name: /people/i }));
-    expect(screen.getByText('Bob')).toBeTruthy();
-  });
-
-  it('jumps to the People view with the owner expanded when a book row owner action is clicked', async () => {
-    render(LocalDiscovery, { props: { lang: 'en' } });
-
-    // Expand the book row to reveal the owner action.
-    await fireEvent.click(screen.getByText('Dune'));
-    const ownerButton = screen.getByRole('button', { name: /see bob nearby/i });
-    await fireEvent.click(ownerButton);
-
-    // We should now be on the People tab (Books search input gone) with
-    // Bob's card rendered and expanded.
-    const peopleTab = screen.getByRole('tab', { name: /people/i });
-    expect(peopleTab.getAttribute('aria-selected')).toBe('true');
-    expect(screen.queryByPlaceholderText(/search title or author/i)).toBeNull();
-    expect(screen.getByText('Bob')).toBeTruthy();
+  it('imports cleanly and exports a Svelte component', () => {
+    expect(LocalDiscovery).toBeTruthy();
+    expect(['function', 'object']).toContain(typeof LocalDiscovery);
   });
 });

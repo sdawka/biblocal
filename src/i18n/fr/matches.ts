@@ -11,6 +11,7 @@ export default {
   views: {
     books: 'Livres',
     people: 'Personnes',
+    list: 'Liste',
     map: 'Carte',
   },
   groups: {
@@ -37,6 +38,19 @@ export default {
     errorTitle: 'Impossible de charger les correspondances à proximité.',
     empty: 'Ajoutez quelques livres pour trouver des correspondances !',
     locationNotShared: 'Position non partagée',
+    chooseView: 'Choisir la vue de découverte',
+  },
+  hub: {
+    panelBooks: 'Livres',
+    panelPeople: 'Personnes',
+    panelStores: 'Librairies',
+    inView: 'en vue',
+    search: 'Rechercher par titre, auteur ou nom',
+    loading: 'Recherche de ce qui est à proximité…',
+    errorTitle: 'Impossible de charger les correspondances à proximité.',
+    emptyBooks: 'Aucun livre en vue. Essayez de déplacer ou de dézoomer la carte.',
+    emptyPeople: 'Aucune personne en vue. Essayez de déplacer ou de dézoomer la carte.',
+    emptyStores: 'Aucune librairie en vue. Essayez de déplacer ou de dézoomer la carte.',
   },
   card: {
     facets: {

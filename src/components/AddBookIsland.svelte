@@ -19,6 +19,7 @@
 
   let mode: Mode = $state('isbn');
   let isbn = $state('');
+  let isbnSource: 'manual' | 'scan' = $state('manual');
   let title = $state('');
   let author = $state('');
   let loading = $state(false);
@@ -42,6 +43,7 @@
 
   function resetForm() {
     isbn = '';
+    isbnSource = 'manual';
     title = '';
     author = '';
     error = '';
@@ -80,7 +82,10 @@
         mode = 'manual';
       }
     } catch {
-      error = t.errors.notFound;
+      // fetchByIsbn throws OpenLibraryNetworkError when the request itself
+      // failed (offline/timeout) — the book may well exist, so stay in ISBN
+      // mode and let the user retry rather than telling them it wasn't found.
+      error = t.errors.networkError;
     } finally {
       loading = false;
     }
@@ -95,6 +100,9 @@
     previewBook = {
       title: title.trim(),
       author: author.trim(),
+      // A failed lookup falls back to manual entry; keep the scanned/typed
+      // ISBN (and thereby its scan provenance via isbnSource) on the book.
+      isbn: isValidIsbn(isbn) ? isbn.replace(/[-\s]/g, '').toUpperCase() : undefined,
     };
   }
 
@@ -124,7 +132,9 @@
       visibility,
       ownership,
       intents,
-      addedVia: previewBook.isbn ? 'scan' : 'manual',
+      // An ISBN can be typed as well as scanned. Preserve that distinction for
+      // library analytics rather than treating every ISBN lookup as a scan.
+      addedVia: previewBook.isbn && isbnSource === 'scan' ? 'scan' : 'manual',
     });
 
     resetForm();
@@ -136,19 +146,35 @@
     doAdd();
   }
 
+  function pulseAndScroll(card: Element) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('highlight-pulse');
+    setTimeout(() => card.classList.remove('highlight-pulse'), 1000);
+  }
+
   function viewExisting() {
     if (!duplicateBook) return;
     const bookId = duplicateBook.id;
     resetForm();
 
-    // Scroll to and highlight the existing book
+    // Scroll to and highlight the existing book. Both BookCard (Details view)
+    // and BookSpine (Covers view) carry [data-book-id], so this works in
+    // either view — but if the book's owning section (books-i-have /
+    // books-seeking) is collapsed, its grid isn't in the DOM at all. Expand
+    // any collapsed section first, then retry the lookup on the next tick.
     setTimeout(() => {
-      const card = document.querySelector(`[data-book-id="${bookId}"]`);
-      if (card) {
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        card.classList.add('highlight-pulse');
-        setTimeout(() => card.classList.remove('highlight-pulse'), 1000);
+      const collapsedHeaders = document.querySelectorAll('.section-header[aria-expanded="false"]');
+      if (collapsedHeaders.length > 0) {
+        collapsedHeaders.forEach((header) => (header as HTMLElement).click());
+        setTimeout(() => {
+          const card = document.querySelector(`[data-book-id="${bookId}"]`);
+          if (card) pulseAndScroll(card);
+        }, 50);
+        return;
       }
+
+      const card = document.querySelector(`[data-book-id="${bookId}"]`);
+      if (card) pulseAndScroll(card);
     }, 100);
   }
 
@@ -164,6 +190,7 @@
 
   function handleScanResult(scannedIsbn: string) {
     isbn = scannedIsbn;
+    isbnSource = 'scan';
     showScanner = false;
     handleIsbnSubmit();
   }
@@ -303,11 +330,15 @@
           handleIsbnSubmit();
         }}
       >
+        <button type="button" class="btn btn-filled scan-primary" onclick={openScanner}>
+          {t.scanBarcode}
+        </button>
         <div class="isbn-row">
           <input
             class="input"
             type="text"
             bind:value={isbn}
+            oninput={() => isbnSource = 'manual'}
             placeholder={t.isbnPlaceholder}
             disabled={loading}
             aria-invalid={error && mode === 'isbn' ? 'true' : undefined}
@@ -510,6 +541,10 @@
     transition: color var(--dur-1) var(--ease-soft), border-color var(--dur-1) var(--ease-soft), background var(--dur-2) var(--ease-out);
   }
 
+  .scan-primary {
+    display: none;
+  }
+
   .scan-btn:hover {
     color: var(--accent);
     border-color: var(--accent);
@@ -541,5 +576,16 @@
 
   .duplicate-actions .btn {
     flex: 1;
+  }
+
+  @media (max-width: 600px) {
+    .scan-primary {
+      display: block;
+      width: 100%;
+    }
+
+    .scan-btn {
+      display: none;
+    }
   }
 </style>

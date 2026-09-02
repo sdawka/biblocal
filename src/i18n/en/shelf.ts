@@ -8,6 +8,8 @@ export default {
     metaTitle: 'Your Shelf | biblocal',
     zoneTitle: 'Add a book',
     importSummary: 'Import from Goodreads',
+    intakeAriaLabel: 'Add books',
+    closeAdd: 'Close',
   },
   intents: {
     prompt: 'Open to:',
@@ -24,6 +26,7 @@ export default {
     },
     isbnPlaceholder: 'Enter ISBN (e.g., 9780465026562)',
     scanAriaLabel: 'Scan ISBN barcode with camera',
+    scanBarcode: 'Scan barcode',
     lookingUp: 'Looking up…',
     lookUpBook: 'Look Up Book',
     titlePlaceholder: 'Book title',
@@ -53,6 +56,7 @@ export default {
     errors: {
       invalidIsbn: 'Please enter a valid 10 or 13 digit ISBN',
       notFound: 'Book not found. Try manual entry.',
+      networkError: 'Could not reach the book database. Check your connection and try again.',
       titleAuthorRequired: 'Title and author are required',
     },
     duplicate: {
@@ -101,6 +105,24 @@ export default {
     expandHave: 'Expand books I have section',
     collapseSeeking: 'Collapse books I am seeking section',
     expandSeeking: 'Expand books I am seeking section',
+    viewCovers: 'Covers',
+    viewDetails: 'Details',
+    viewToggleGroup: 'Book display',
+    filterButton: 'Filters',
+    filterPopoverLabel: 'Filter books',
+    searchAria: 'Search your books by title or author',
+    searchPlaceholder: 'Search title or author',
+    sort: 'Sort',
+    sortRecent: 'Recent',
+    sortTitle: 'Title',
+    sortShareable: 'Shareable',
+    showing: 'Showing {shown} of {total} books',
+    clearResults: 'Clear',
+    swipeMore: 'Swipe for {n} more',
+    closeFilters: 'Close filters',
+    done: 'Done',
+    // {n} interpolated
+    filterActiveAria: '{n} filters active',
   },
   empty: {
     shelfTitle: 'Your Shelf',
@@ -126,6 +148,18 @@ export default {
     removeConfirm: 'Remove from shelf?',
     cancel: 'Cancel',
     remove: 'Remove',
+    // {title} interpolated
+    openDetailAria: 'View details for {title}',
+    closeDetailAria: 'Close',
+    changeCover: 'Change cover',
+    resetCover: 'Use original cover',
+    uploadingCover: 'Uploading…',
+    // {title} interpolated
+    changeCoverAria: 'Upload a custom cover for {title}',
+    editDetails: 'Edit title & author',
+    editTitleLabel: 'Title',
+    editAuthorLabel: 'Author',
+    save: 'Save',
     notes: {
       // {n} interpolated
       addNote: 'Add a note',
@@ -167,6 +201,8 @@ export default {
     skipped: 'skipped (duplicates)',
     // {n} interpolated
     errorsLabel: 'errors:',
+    failedBook: 'Could not import {title}',
+    failedUnknownBook: 'Could not import a book',
     andMore: '...and {n} more',
     done: 'Done',
   },
