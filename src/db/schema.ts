@@ -1,4 +1,5 @@
-import { sqliteTable, text, integer, real, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { desc, sql } from 'drizzle-orm';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -29,7 +30,11 @@ export const users = sqliteTable('users', {
   contactMethod: text('contact_method'),
   contactValue: text('contact_value'),
   contactVisibility: text('contact_visibility').default('hidden'),
-});
+}, (t) => ({
+  discoveryNamedNameId: index('users_discovery_named_name_id_idx')
+    .on(t.name, t.id)
+    .where(sql`${t.name} is not null and trim(${t.name}) <> ''`),
+}));
 
 export const authCodes = sqliteTable('auth_codes', {
   id: text('id').primaryKey(),
@@ -68,7 +73,11 @@ export const books = sqliteTable('books', {
   notes: text('notes'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
-});
+}, (t) => ({
+  discoveryVisibleOwnerCreatedId: index('books_discovery_visible_owner_created_id_idx')
+    .on(t.userId, desc(t.createdAt), desc(t.id))
+    .where(sql`${t.visibility} = 'visible'`),
+}));
 
 export const bookNotes = sqliteTable('book_notes', {
   id: text('id').primaryKey(),

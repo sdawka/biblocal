@@ -7,7 +7,7 @@
   import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
   import { discovery, discoveryBooks } from '../stores/matches';
   import { profile } from '../stores/profile';
-  import { loadSeedUsers, usersLoading, usersError } from '../stores/users';
+  import { loadDiscoveryUsers, usersLoading, usersError } from '../stores/users';
   import type { Match, LocalBook } from '../lib/types';
   import { CITY_COORDINATES, formatDistance } from '../lib/geo';
   import LocalPanel from './LocalPanel.svelte';
@@ -103,7 +103,7 @@
     panel === 'books' ? booksInView.length : panel === 'people' ? peopleInView.length : storesInView.length
   );
 
-  // Track the seed-user fetch so the panel can tell loading/error apart from a
+  // Track the discovery-user fetch so the panel can tell loading/error apart from a
   // genuinely empty match list.
   $effect(() => usersLoading.subscribe((v) => (loadingUsers = v)));
   $effect(() => usersError.subscribe((v) => (loadError = v)));
@@ -267,7 +267,7 @@
 
     // Discovery data is independent of Leaflet so the list is ready before a
     // mobile visitor chooses Map.
-    loadSeedUsers();
+    loadDiscoveryUsers();
     const unsubMatches = discovery.subscribe((m) => {
       matchList = m;
       if (map) updateMarkers();

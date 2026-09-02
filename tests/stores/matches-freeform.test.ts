@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { shelf } from '../../src/stores/shelf';
 import { profile, DEFAULT_PROFILE } from '../../src/stores/profile';
-import { seedUsers } from '../../src/stores/users';
+import { discoveryUsers } from '../../src/stores/users';
 import { matches, discovery } from '../../src/stores/matches';
 import type { UserProfile } from '../../src/lib/types';
 
@@ -19,14 +19,14 @@ describe('freeform topics produce discussion matches', () => {
   beforeEach(() => {
     shelf.set({});
     profile.set(DEFAULT_PROFILE);
-    seedUsers.set([]);
+    discoveryUsers.set([]);
   });
 
   it('a freeform-only topic yields a discussionMatch facet in `matches`', () => {
     // Keep the computed store active so it recomputes on dependency changes.
     const unsub = matches.subscribe(() => {});
 
-    seedUsers.set([otherUserWithTopic('Existentialism')]);
+    discoveryUsers.set([otherUserWithTopic('Existentialism')]);
     profile.set({
       ...DEFAULT_PROFILE,
       id: 'me',
@@ -46,7 +46,7 @@ describe('freeform topics produce discussion matches', () => {
   it('a freeform-only topic yields a discussionMatch facet in `discovery`', () => {
     const unsub = discovery.subscribe(() => {});
 
-    seedUsers.set([otherUserWithTopic('Cybernetics')]);
+    discoveryUsers.set([otherUserWithTopic('Cybernetics')]);
     profile.set({
       ...DEFAULT_PROFILE,
       id: 'me',

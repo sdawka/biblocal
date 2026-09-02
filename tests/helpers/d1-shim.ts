@@ -53,6 +53,13 @@ export class BoundStatement {
 
   /** Synchronous run used inside db.batch() transactions. */
   runSync(): D1Result {
+    if (this.stmt.reader) {
+      return {
+        results: this.stmt.all(...this.params) as Record<string, unknown>[],
+        success: true,
+        meta: {},
+      };
+    }
     const info = this.stmt.run(...this.params);
     return {
       results: [],
