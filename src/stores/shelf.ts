@@ -32,13 +32,14 @@ type NoteMutation =
     kind: 'update';
     noteId: string;
     updates: Partial<Pick<BookNote, 'text' | 'visibility'>>;
-    fallback: BookNote;
+    seed: BookNote;
   }
   | { status: 'pending' | 'succeeded' | 'failed'; kind: 'remove'; noteId: string };
 
 interface NoteMutationJournal {
   base: BookNote[];
   mutations: NoteMutation[];
+  seeds: Map<string, BookNote>;
 }
 
 interface BookMutationLane {
@@ -47,7 +48,10 @@ interface BookMutationLane {
   canonicalId: string;
   tail: Promise<void>;
   create?: Promise<boolean>;
+  barrier?: Promise<void>;
   deletionFenced: boolean;
+  fieldOwners: Map<keyof Book, symbol>;
+  pendingMutations: number;
   noteJournal?: NoteMutationJournal;
 }
 
@@ -171,6 +175,8 @@ function mutationLane(id: string, session: UserSession): BookMutationLane {
     canonicalId,
     tail: Promise.resolve(),
     deletionFenced: false,
+    fieldOwners: new Map(),
+    pendingMutations: 0,
   };
   aliasMutationLane(lane, id);
   if (canonicalId !== id) aliasMutationLane(lane, canonicalId);
@@ -190,6 +196,8 @@ function newBookMutationLane(id: string, session: UserSession): BookMutationLane
     canonicalId: id,
     tail: Promise.resolve(),
     deletionFenced: false,
+    fieldOwners: new Map(),
+    pendingMutations: 0,
   };
   aliasMutationLane(lane, id);
   return lane;
@@ -204,17 +212,49 @@ function enqueueBookMutation<T>(
   lane: BookMutationLane,
   skipped: T,
   mutation: (serverId: string) => Promise<T>,
+  onCreateFailure?: () => void,
 ): Promise<T> {
+  const create = lane.create;
+  lane.pendingMutations += 1;
   const run = lane.tail.then(async () => {
     if (!isCurrentUserSession(lane.session)) return skipped;
-    if (lane.create) {
-      const created = await lane.create;
-      if (!created || !isCurrentUserSession(lane.session)) return skipped;
+    if (create) {
+      const created = await create;
+      if (!isCurrentUserSession(lane.session)) return skipped;
+      if (!created) {
+        onCreateFailure?.();
+        return skipped;
+      }
+    }
+    const barrier = lane.barrier;
+    if (barrier) {
+      await barrier;
+      if (!isCurrentUserSession(lane.session)) return skipped;
+      if (lane.barrier === barrier) lane.barrier = undefined;
     }
     return mutation(lane.canonicalId);
   });
-  lane.tail = run.then(() => undefined, () => undefined);
+  const settled = run.then(() => undefined, () => undefined);
+  lane.tail = settled;
+  void settled.then(() => {
+    lane.pendingMutations -= 1;
+    cleanupMutationLane(lane, settled);
+  });
   return run;
+}
+
+function cleanupMutationLane(lane: BookMutationLane, settled = lane.tail): void {
+  if (lane.tail !== settled
+    || lane.create
+    || lane.barrier
+    || lane.deletionFenced
+    || lane.pendingMutations > 0
+    || lane.noteJournal
+    || lane.fieldOwners.size > 0
+    || lane.aliases.size > 1) return;
+  for (const alias of lane.aliases) {
+    if (bookMutationLanes.get(alias) === lane) bookMutationLanes.delete(alias);
+  }
 }
 
 function reconcileCreatedBookId(
@@ -227,6 +267,23 @@ function reconcileCreatedBookId(
   // A successful explicit add is an authoritative restoration, including when
   // server-side ISBN dedup maps the client id back to a previously deleted id.
   clearPersistedDeletion(session.userId, canonicalId);
+  const current = shelf.get();
+  const clientBook = current[clientId];
+  const existingCanonicalLane = bookMutationLanes.get(canonicalId);
+  if (existingCanonicalLane
+    && existingCanonicalLane !== lane
+    && sameUserSession(existingCanonicalLane.session, session)) {
+    // Snapshot the old tail. Client work already awaiting this create waits on
+    // that snapshot, while all future aliases point at the client lane. Using
+    // the snapshot (rather than either live tail) avoids a promise cycle.
+    lane.barrier = existingCanonicalLane.tail;
+    for (const alias of [...existingCanonicalLane.aliases]) aliasMutationLane(lane, alias);
+    if (clientBook) {
+      for (const key of Object.keys(clientBook) as Array<keyof Book>) {
+        existingCanonicalLane.fieldOwners.delete(key);
+      }
+    }
+  }
   lane.canonicalId = canonicalId;
   aliasMutationLane(lane, canonicalId);
   for (const alias of lane.aliases) canonicalBookIds.set(alias, { session, id: canonicalId });
@@ -237,12 +294,10 @@ function reconcileCreatedBookId(
     deletionFences.set(canonicalId, clientFence);
   }
 
-  const current = shelf.get();
-  const clientBook = current[clientId];
   if (!clientBook) return;
   const next = { ...current };
   delete next[clientId];
-  next[canonicalId] = current[canonicalId] ?? { ...clientBook, id: canonicalId };
+  next[canonicalId] = { ...current[canonicalId], ...clientBook, id: canonicalId };
   shelf.set(next);
 }
 
@@ -693,12 +748,35 @@ function rollback(id: string, prior: Record<string, Book>): void {
   reportSyncError(SYNC_ERROR_MESSAGE);
 }
 
-// Field-aware rollback for update mutations. Reverts only the fields this
-// mutation changed, and only when the current value still matches the
-// optimistically-written value — so a later edit to the same field wins
-// (its value differs from what we wrote, so we leave it alone).
-function rollbackFields(id: string, updates: Partial<Book>, priorBook: Book | undefined): void {
+// Per-field ownership lets an older failure roll back only fields which have
+// not since been claimed by another optimistic mutation. Equal values still
+// represent distinct writes and therefore receive distinct owner tokens.
+function finishFieldMutation(
+  lane: BookMutationLane,
+  fields: Map<keyof Book, symbol>,
+  priorBook?: Book,
+): void {
   const current = shelf.get();
+  const id = currentLaneBookId(lane);
+  const currentBook = current[id];
+  let reverted = currentBook;
+  for (const [key, token] of fields) {
+    if (lane.fieldOwners.get(key) !== token) continue;
+    lane.fieldOwners.delete(key);
+    if (priorBook && reverted) {
+      reverted = { ...reverted, [key]: priorBook[key] };
+    }
+  }
+  if (reverted && reverted !== currentBook) shelf.set({ ...current, [id]: reverted });
+}
+
+function rollbackFields(
+  lane: BookMutationLane,
+  fields: Map<keyof Book, symbol>,
+  priorBook: Book | undefined,
+): void {
+  const current = shelf.get();
+  const id = currentLaneBookId(lane);
   if (priorBook === undefined) {
     // Prior snapshot had no book at this id — treat as add rollback.
     const next = { ...current };
@@ -713,15 +791,7 @@ function rollbackFields(id: string, updates: Partial<Book>, priorBook: Book | un
     reportSyncError(SYNC_ERROR_MESSAGE);
     return;
   }
-  const reverted: Book = { ...currentBook };
-  for (const key of Object.keys(updates) as Array<keyof Book>) {
-    // Only revert a field if it still holds the optimistically-written value.
-    // If it has changed (a subsequent edit won), leave the later value intact.
-    if (JSON.stringify(reverted[key]) === JSON.stringify(updates[key])) {
-      Object.assign(reverted, { [key]: priorBook[key] });
-    }
-  }
-  shelf.set({ ...current, [id]: reverted });
+  finishFieldMutation(lane, fields, priorBook);
   reportSyncError(SYNC_ERROR_MESSAGE);
 }
 
@@ -783,7 +853,13 @@ function trackCreate(
     return Promise.resolve(false);
   }
   const promise = syncAddBook(book, prior, syncingFor, lane);
-  if (lane) lane.create = promise;
+  if (lane) {
+    lane.create = promise;
+    void promise.then(() => {
+      if (lane.create === promise) lane.create = undefined;
+      cleanupMutationLane(lane);
+    });
+  }
   return promise;
 }
 
@@ -791,9 +867,9 @@ async function syncUpdateBook(
   lane: BookMutationLane,
   updates: Partial<Book>,
   priorBook: Book,
+  fields: Map<keyof Book, symbol>,
 ): Promise<void> {
   const session = lane.session;
-  const id = currentLaneBookId(lane);
   try {
     const res = await fetch(`/api/books/${lane.canonicalId}`, {
       method: 'PATCH',
@@ -805,12 +881,14 @@ async function syncUpdateBook(
       const detail = await res.text();
       if (!isCurrentUserSession(session)) return;
       console.error('Failed to sync book update:', detail);
-      rollbackFields(id, updates, priorBook);
+      rollbackFields(lane, fields, priorBook);
+    } else {
+      finishFieldMutation(lane, fields);
     }
   } catch (e) {
     if (!isCurrentUserSession(session)) return;
     console.error('Failed to sync book update:', e);
-    rollbackFields(id, updates, priorBook);
+    rollbackFields(lane, fields, priorBook);
   }
 }
 
@@ -820,13 +898,17 @@ function applyNoteMutation(notes: BookNote[], mutation: NoteMutation): BookNote[
   }
   if (mutation.kind === 'remove') return notes.filter((note) => note.id !== mutation.noteId);
   const found = notes.some((note) => note.id === mutation.noteId);
-  if (!found) return [...notes, { ...mutation.fallback, ...mutation.updates }];
+  if (!found) return [...notes, { ...mutation.seed, ...mutation.updates }];
   return notes.map((note) => note.id === mutation.noteId ? { ...note, ...mutation.updates } : note);
 }
 
 function noteJournal(lane: BookMutationLane, notes: BookNote[]): NoteMutationJournal {
   if (!lane.noteJournal || lane.noteJournal.mutations.length === 0) {
-    lane.noteJournal = { base: [...notes], mutations: [] };
+    lane.noteJournal = {
+      base: [...notes],
+      mutations: [],
+      seeds: new Map(notes.map((note) => [note.id, note])),
+    };
   }
   return lane.noteJournal;
 }
@@ -845,7 +927,12 @@ function renderNoteJournal(lane: BookMutationLane): void {
   shelf.set({ ...current, [bookId]: { ...book, notes } });
 }
 
-function settleNoteMutation(lane: BookMutationLane, mutation: NoteMutation, succeeded: boolean): void {
+function settleNoteMutation(
+  lane: BookMutationLane,
+  mutation: NoteMutation,
+  succeeded: boolean,
+  shouldRender = true,
+): void {
   const journal = lane.noteJournal;
   if (!journal || !journal.mutations.includes(mutation)) return;
   mutation.status = succeeded ? 'succeeded' : 'failed';
@@ -854,7 +941,7 @@ function settleNoteMutation(lane: BookMutationLane, mutation: NoteMutation, succ
     if (!settled) break;
     if (settled.status === 'succeeded') journal.base = applyNoteMutation(journal.base, settled);
   }
-  renderNoteJournal(lane);
+  if (shouldRender) renderNoteJournal(lane);
   if (journal.mutations.length === 0) lane.noteJournal = undefined;
 }
 
@@ -884,7 +971,7 @@ async function syncNoteMutation(
       settleNoteMutation(lane, mutation, false);
       reportSyncError(SYNC_ERROR_MESSAGE);
     }
-  });
+  }, () => settleNoteMutation(lane, mutation, false, false));
 }
 
 export function addBook(book: Omit<Book, 'id' | 'addedAt'> & { id?: string }): Book {
@@ -915,8 +1002,19 @@ export function updateBook(id: string, updates: Partial<Book>) {
   const current = shelf.get();
   const book = current[localId];
   if (book) {
+    const fields = new Map<keyof Book, symbol>();
+    for (const key of Object.keys(updates) as Array<keyof Book>) {
+      const token = Symbol(key);
+      fields.set(key, token);
+      lane.fieldOwners.set(key, token);
+    }
     shelf.set({ ...current, [localId]: { ...book, ...updates } });
-    void enqueueBookMutation(lane, undefined, () => syncUpdateBook(lane, updates, book));
+    void enqueueBookMutation(
+      lane,
+      undefined,
+      () => syncUpdateBook(lane, updates, book, fields),
+      () => finishFieldMutation(lane, fields),
+    );
   }
 }
 
@@ -1107,7 +1205,9 @@ export function addNote(bookId: string, text: string, visibility: BookVisibility
     createdAt: Date.now(),
   };
   const mutation: NoteMutation = { status: 'pending', kind: 'add', note };
-  noteJournal(lane, book.notes ?? []).mutations.push(mutation);
+  const journal = noteJournal(lane, book.notes ?? []);
+  journal.seeds.set(note.id, note);
+  journal.mutations.push(mutation);
   renderNoteJournal(lane);
   void syncNoteMutation(
     lane,
@@ -1134,8 +1234,15 @@ export function updateNote(bookId: string, noteId: string, updates: Partial<Pick
   if (!book || !book.notes) return;
   const fallback = book.notes.find((note) => note.id === noteId);
   if (!fallback) return;
-  const mutation: NoteMutation = { status: 'pending', kind: 'update', noteId, updates, fallback };
-  noteJournal(lane, book.notes).mutations.push(mutation);
+  const journal = noteJournal(lane, book.notes);
+  const mutation: NoteMutation = {
+    status: 'pending',
+    kind: 'update',
+    noteId,
+    updates,
+    seed: journal.seeds.get(noteId) ?? fallback,
+  };
+  journal.mutations.push(mutation);
   renderNoteJournal(lane);
   void syncNoteMutation(
     lane,

@@ -246,9 +246,119 @@ describe('per-book mutation lanes', () => {
     setMockUserId('lane-user');
     create.resolve(response(true, { book: { id: 'aba-server' } }));
 
-    await Promise.resolve();
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 20));
     expect(requests).toEqual(['POST /api/books']);
     expect(shelf.get()['aba-server']).toBeUndefined();
+  });
+
+  it('settles queued optimism after create failure and lets a later mutation retry', async () => {
+    seedBook('retry-create');
+    const create = deferred<Response>();
+    const requests: string[] = [];
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      requests.push(`${init?.method ?? 'GET'} ${String(url)}`);
+      if (url === '/api/books') return create.promise;
+      return response(true);
+    });
+
+    addBook({ id: 'retry-create', title: 'Replacement', author: 'Author', addedVia: 'manual' });
+    addNote('retry-create', 'must roll back with create');
+    create.resolve(response(false, { error: 'create failed' }));
+
+    await vi.waitFor(() => expect(shelf.get()['retry-create'].title).toBe('Original title'));
+    await vi.waitFor(() => expect(vi.mocked(reportSyncError)).toHaveBeenCalledTimes(1));
+    expect(shelf.get()['retry-create'].notes).toEqual([
+      expect.objectContaining({ id: 'note-1', text: 'original' }),
+    ]);
+
+    updateBook('retry-create', { title: 'Valid retry' });
+    await vi.waitFor(() => expect(requests).toEqual([
+      'POST /api/books',
+      'PATCH /api/books/retry-create',
+    ]));
+    expect(shelf.get()['retry-create'].title).toBe('Valid retry');
+    expect(vi.mocked(reportSyncError)).toHaveBeenCalledTimes(1);
+  });
+
+  it('replays a successful dependent field from the original failed-add seed', async () => {
+    seedBook('three-note-ops');
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(response(false, { error: 'lost add response' }))
+      .mockResolvedValueOnce(response(false, { error: 'text rejected' }))
+      .mockResolvedValueOnce(response(true));
+
+    const note = addNote('three-note-ops', 'draft text', 'private')!;
+    updateNote('three-note-ops', note.id, { text: 'failed text' });
+    updateNote('three-note-ops', note.id, { visibility: 'visible' });
+
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(3));
+    await vi.waitFor(() => expect(vi.mocked(reportSyncError)).toHaveBeenCalledTimes(2));
+    expect(shelf.get()['three-note-ops'].notes).toContainEqual(
+      expect.objectContaining({ id: note.id, text: 'draft text', visibility: 'visible' }),
+    );
+  });
+
+  it('does not roll back a later identical metadata value after the earlier write fails', async () => {
+    seedBook('same-metadata');
+    const firstFailure = deferred<Response>();
+    vi.mocked(fetch)
+      .mockImplementationOnce(() => firstFailure.promise)
+      .mockResolvedValueOnce(response(true));
+
+    updateBook('same-metadata', { title: 'Same title' });
+    updateBook('same-metadata', { title: 'Same title' });
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1));
+    firstFailure.resolve(response(false));
+
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(vi.mocked(reportSyncError)).toHaveBeenCalledTimes(1));
+    expect(shelf.get()['same-metadata'].title).toBe('Same title');
+  });
+
+  it('joins an existing canonical tail before running deduplicated client work', async () => {
+    seedBook('canonical-existing');
+    const canonicalUpdate = deferred<Response>();
+    const create = deferred<Response>();
+    const requests: string[] = [];
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      const request = `${init?.method ?? 'GET'} ${String(url)}`;
+      requests.push(request);
+      if (request === 'PATCH /api/books/canonical-existing' && requests.length === 1) {
+        return canonicalUpdate.promise;
+      }
+      if (request === 'POST /api/books') return create.promise;
+      return response(true);
+    });
+
+    updateBook('canonical-existing', { author: 'Canonical edit' });
+    await vi.waitFor(() => expect(requests).toEqual(['PATCH /api/books/canonical-existing']));
+    const client = addBook({
+      id: 'dedup-client',
+      title: 'Client title',
+      author: 'Canonical edit',
+      isbn: 'same-isbn',
+      addedVia: 'manual',
+    });
+    updateBook(client.id, { title: 'Queued client title' });
+    create.resolve(response(true, { book: { id: 'canonical-existing' } }));
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(requests).toEqual([
+      'PATCH /api/books/canonical-existing',
+      'POST /api/books',
+    ]);
+
+    canonicalUpdate.resolve(response(true));
+    await vi.waitFor(() => expect(requests).toEqual([
+      'PATCH /api/books/canonical-existing',
+      'POST /api/books',
+      'PATCH /api/books/canonical-existing',
+    ]));
+    expect(shelf.get()['dedup-client']).toBeUndefined();
+    expect(shelf.get()['canonical-existing']).toEqual(expect.objectContaining({
+      id: 'canonical-existing',
+      title: 'Queued client title',
+      author: 'Canonical edit',
+    }));
   });
 });
