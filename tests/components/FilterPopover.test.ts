@@ -161,4 +161,12 @@ describe('FilterPopover mobile dialog', () => {
     header.remove();
     tabbar.remove();
   });
+
+  it('anchors the mobile sheet to the viewport bottom without a desktop top offset', async () => {
+    render(FilterPopover, { props: { lang: 'en' } });
+    const dialog = await openMobileFilters();
+
+    expect(dialog.style.position).toBe('fixed');
+    expect(dialog.style.top).toBe('auto');
+  });
 });

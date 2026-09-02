@@ -115,6 +115,52 @@ describe('BookDetailSheet', () => {
 
       await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     });
+
+    it('disables cover and inner mutations while deletion is pending', async () => {
+      let resolveDelete!: (removed: boolean) => void;
+      const onDelete = vi.fn(() => new Promise<boolean>((resolve) => { resolveDelete = resolve; }));
+      const onUploadCover = vi.fn().mockResolvedValue(true);
+      const onResetCover = vi.fn().mockResolvedValue(true);
+      const { container } = render(BookDetailSheet, {
+        props: {
+          book: makeBook({
+            coverUrl: HOSTED_URL,
+            fetchedCoverUrl: OTHER_URL,
+            notes: [{ id: 'note-1', text: 'A note', visibility: 'private', createdAt: 1 }],
+          }),
+          lang: 'en',
+          onClose: vi.fn(),
+          onDelete,
+          onUploadCover,
+          onResetCover,
+          onIntentsChange: vi.fn(),
+          onVisibilityChange: vi.fn(),
+          onOwnershipChange: vi.fn(),
+          onAddNote: vi.fn(),
+          onUpdateNote: vi.fn(),
+          onDeleteNote: vi.fn(),
+          onUpdateDetails: vi.fn(),
+        },
+      });
+
+      await fireEvent.click(screen.getByLabelText('Delete Test Book from shelf'));
+      await fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+      const mutations = container.querySelector('fieldset.sheet-mutations') as HTMLFieldSetElement;
+      const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+      expect(mutations?.disabled).toBe(true);
+      expect(fileInput.disabled).toBe(true);
+      expect((screen.getByRole('button', { name: /Upload a custom cover/ }) as HTMLButtonElement).disabled).toBe(true);
+      expect((screen.getByRole('button', { name: 'Use original cover' }) as HTMLButtonElement).disabled).toBe(true);
+
+      await fireEvent.change(fileInput, { target: { files: [makeFile()] } });
+      await fireEvent.click(screen.getByRole('button', { name: 'Use original cover' }));
+      expect(onUploadCover).not.toHaveBeenCalled();
+      expect(onResetCover).not.toHaveBeenCalled();
+
+      resolveDelete(false);
+      await screen.findByRole('alert');
+    });
   });
 
   describe('cover upload', () => {

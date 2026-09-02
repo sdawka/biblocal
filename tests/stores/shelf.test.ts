@@ -192,6 +192,68 @@ describe('Shelf Store', () => {
       expect(shelf.get()[book.id]).toBeUndefined();
     });
 
+    it('deletes the canonical server book when ISBN dedup changes the created id', async () => {
+      let releaseCreate!: () => void;
+      const createGate = new Promise<void>((resolve) => { releaseCreate = resolve; });
+      const deletedUrls: string[] = [];
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        if (url === '/api/books' && init?.method === 'POST') {
+          await createGate;
+          return {
+            ok: true,
+            json: async () => ({
+              book: {
+                id: 'canonical-book', title: 'Dune', author: 'Frank Herbert', isbn: '9780441013593',
+                coverUrl: null, fetchedCoverUrl: null, status: 'visible', visibility: 'visible',
+                ownership: 'have', intents: '[]', addedVia: 'manual', subjects: null, notes: [],
+                createdAt: new Date(1).toISOString(),
+              },
+            }),
+          } as Response;
+        }
+        if (init?.method === 'DELETE') {
+          deletedUrls.push(String(url));
+          return { ok: true } as Response;
+        }
+        return { ok: true, json: async () => ({}) } as Response;
+      });
+
+      const book = addBook({
+        id: 'client-book', title: 'Dune', author: 'Frank Herbert', isbn: '9780441013593', addedVia: 'manual',
+      });
+      const deletion = removeBook(book.id);
+
+      releaseCreate();
+      await expect(deletion).resolves.toBe(true);
+      expect(deletedUrls).toEqual(['/api/books/canonical-book']);
+      expect(shelf.get()['client-book']).toBeUndefined();
+      expect(shelf.get()['canonical-book']).toBeUndefined();
+    });
+
+    it('resolves a stale client id after canonical create reconciliation', async () => {
+      const deletedUrls: string[] = [];
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        if (url === '/api/books' && init?.method === 'POST') {
+          return {
+            ok: true,
+            json: async () => ({ book: { id: 'canonical-book' } }),
+          } as Response;
+        }
+        if (init?.method === 'DELETE') {
+          deletedUrls.push(String(url));
+          return { ok: true } as Response;
+        }
+        return { ok: true, json: async () => ({}) } as Response;
+      });
+
+      const book = addBook({ id: 'client-book', title: 'Dune', author: 'Frank Herbert', addedVia: 'manual' });
+      await vi.waitFor(() => expect(shelf.get()['canonical-book']).toBeDefined());
+
+      await expect(removeBook(book.id)).resolves.toBe(true);
+      expect(deletedUrls).toEqual(['/api/books/canonical-book']);
+      expect(shelf.get()['canonical-book']).toBeUndefined();
+    });
+
     it('waits for a legacy-recovery create before deleting the same book', async () => {
       const book: Book = {
         id: 'legacy-recovery', title: 'Recovered Book', author: 'Author', visibility: 'visible',
@@ -297,6 +359,54 @@ describe('Shelf Store', () => {
 
       await loadBooksFromServer(); // after stale work settles, a genuine copy may appear again
       expect(shelf.get()[book.id]?.title).toBe('Stale Book');
+    });
+
+    it('honors a deletion persisted by another tab when an older load returns', async () => {
+      const book: Book = {
+        id: 'cross-tab-book', title: 'Cross-tab Book', author: 'Author', visibility: 'visible',
+        ownership: 'have', intents: [], addedVia: 'manual', addedAt: 1,
+      };
+      shelf.set({ [book.id]: book });
+      let releaseLoad!: () => void;
+      const loadGate = new Promise<void>((resolve) => { releaseLoad = resolve; });
+      const recoveryPosts: string[] = [];
+      let loadCount = 0;
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        if (url === '/api/books?mine=true') {
+          const requestNumber = ++loadCount;
+          if (requestNumber === 1) await loadGate;
+          const books = requestNumber === 1 ? [{
+            id: book.id, title: book.title, author: book.author, isbn: null,
+            coverUrl: null, fetchedCoverUrl: null, status: 'visible', visibility: 'visible',
+            ownership: 'have', intents: '[]', addedVia: 'manual', subjects: null, notes: [],
+            createdAt: new Date(1).toISOString(),
+          }] : [];
+          return { ok: true, json: async () => ({ books }) } as Response;
+        }
+        if (url === '/api/books' && init?.method === 'POST') {
+          recoveryPosts.push(String(url));
+        }
+        return { ok: true, json: async () => ({ books: [] }) } as Response;
+      });
+
+      const staleLoad = loadBooksFromServer();
+      shelf.set({}); // shared shelf update from the deleting tab
+      releaseLoad();
+      await staleLoad;
+      expect(shelf.get()[book.id]).toBeDefined();
+
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'biblocal:shelf:deleted:v1:test-user-123\u0000cross-tab-book',
+        newValue: JSON.stringify({
+          deletedAt: Number.MAX_SAFE_INTEGER,
+          absenceConfirmed: false,
+        }),
+      }));
+
+      expect(shelf.get()[book.id]).toBeUndefined();
+      await loadBooksFromServer();
+      expect(shelf.get()[book.id]).toBeUndefined();
+      expect(recoveryPosts).toEqual([]);
     });
 
     it('keeps the book on failed DELETE and allows a successful retry', async () => {
@@ -659,6 +769,22 @@ describe('Shelf Store', () => {
       await loadBooksFromServer();
       expect(shelf.get()[bookId]).toBeUndefined();
       expect(recoveryPosts).toEqual([]);
+    });
+
+    it.each([
+      ['add', (bookId: string) => addNote(bookId, 'A failed note')],
+      ['update', (bookId: string, noteId: string) => updateNote(bookId, noteId, { text: 'A failed edit' })],
+      ['delete', (bookId: string, noteId: string) => removeNote(bookId, noteId)],
+    ])('restores the prior notes when an ordinary %s note request fails', async (_operation, mutateNote) => {
+      const { bookId, noteId } = seedBookWithNote();
+      vi.mocked(fetch).mockResolvedValue({ ok: false, text: async () => 'note failed' } as Response);
+
+      mutateNote(bookId, noteId);
+      await vi.waitFor(() => expect(vi.mocked(reportSyncError)).toHaveBeenCalled());
+
+      expect(shelf.get()[bookId].notes).toEqual([
+        { id: 'note-1', text: 'Loved the dialogues', visibility: 'private', createdAt: 1 },
+      ]);
     });
   });
 });

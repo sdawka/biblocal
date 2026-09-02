@@ -63,14 +63,14 @@
     const input = event.currentTarget as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
-    if (!file || !onUploadCover) return;
+    if (deleting || !file || !onUploadCover) return;
     uploading = true;
     await onUploadCover(file);
     uploading = false;
   }
 
   async function handleResetCover() {
-    if (!onResetCover) return;
+    if (deleting || !onResetCover) return;
     uploading = true;
     await onResetCover();
     uploading = false;
@@ -154,17 +154,18 @@
             class="visually-hidden-input"
             bind:this={fileInputRef}
             onchange={handleFileChange}
+            disabled={deleting}
           />
           <button
             class="btn btn-outline btn-sm"
             onclick={() => fileInputRef?.click()}
-            disabled={uploading}
+            disabled={uploading || deleting}
             aria-label={t.changeCoverAria.replace('{title}', book.title)}
           >
             {uploading ? t.uploadingCover : t.changeCover}
           </button>
           {#if canReset && onResetCover}
-            <button class="btn btn-plain btn-sm" onclick={handleResetCover} disabled={uploading}>
+            <button class="btn btn-plain btn-sm" onclick={handleResetCover} disabled={uploading || deleting}>
               {t.resetCover}
             </button>
           {/if}
@@ -185,18 +186,20 @@
     </div>
 
     <div class="sheet-body">
-      <BookDetail
-        {book}
-        {lang}
-        {onIntentsChange}
-        {onVisibilityChange}
-        {onOwnershipChange}
-        onDelete={onDelete ? handleDelete : undefined}
-        {onAddNote}
-        {onUpdateNote}
-        {onDeleteNote}
-        {onUpdateDetails}
-      />
+      <fieldset class="sheet-mutations" disabled={deleting}>
+        <BookDetail
+          {book}
+          {lang}
+          {onIntentsChange}
+          {onVisibilityChange}
+          {onOwnershipChange}
+          onDelete={onDelete ? handleDelete : undefined}
+          {onAddNote}
+          {onUpdateNote}
+          {onDeleteNote}
+          {onUpdateDetails}
+        />
+      </fieldset>
     </div>
   </div>
 </div>
@@ -308,6 +311,13 @@
   .sheet-body {
     padding: var(--s-4);
     overflow-y: auto;
+  }
+
+  .sheet-mutations {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
   }
 
   .sheet-body :global(.book-detail) {

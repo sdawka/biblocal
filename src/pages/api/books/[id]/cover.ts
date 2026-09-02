@@ -91,10 +91,14 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       prev.fetchedCoverUrl ?? (prev.coverUrl && !isHostedCoverUrl(prev.coverUrl) ? prev.coverUrl : null);
 
     try {
-      await db
+      const updateResult = await db
         .update(books)
         .set({ coverUrl, fetchedCoverUrl, updatedAt: new Date() })
         .where(and(eq(books.id, bookId), eq(books.userId, userId)));
+      if (updateResult.meta.changes === 0) {
+        await images.hosted.image(uploaded.id).delete().catch(() => {});
+        return json({ error: 'Book was removed during cover upload' }, 409);
+      }
     } catch (e) {
       // The DB never saw the new URL, so the fresh upload would leak as an
       // orphan on the Images account. Best-effort cleanup, then fail.

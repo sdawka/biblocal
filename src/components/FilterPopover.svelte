@@ -128,6 +128,7 @@
       aria-modal={isMobile ? 'true' : undefined}
       aria-label={t.filterPopoverLabel}
       style:position={isMobile ? 'fixed' : undefined}
+      style:top={isMobile ? 'auto' : undefined}
       style:z-index={isMobile ? 110 : 50}
       bind:this={sheetRef}
     >

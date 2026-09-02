@@ -134,6 +134,25 @@ describe('POST /api/books/:id/cover — orphaned image on DB failure', () => {
     });
   }
 
+  /** Deletes the row after the ownership SELECT but before the cover UPDATE. */
+  function deleteBeforeUpdate(inner: D1Shim, bookId: string): D1Shim {
+    let deleted = false;
+    return new Proxy(inner, {
+      get(target, prop, receiver) {
+        if (prop === 'prepare') {
+          return (sql: string) => {
+            if (!deleted && /^\s*update\s+["`]?books/i.test(sql)) {
+              deleted = true;
+              void target.prepare('DELETE FROM books WHERE id = ?').bind(bookId).run();
+            }
+            return target.prepare(sql);
+          };
+        }
+        return Reflect.get(target, prop, receiver);
+      },
+    });
+  }
+
   it('deletes the just-uploaded image and returns 500 when the DB update throws', async () => {
     const images = createImagesMock();
     setTestImages(images.binding);
@@ -172,6 +191,24 @@ describe('POST /api/books/:id/cover — orphaned image on DB failure', () => {
 
     expect(status).toBe(500);
     expect((json as { error: string }).error).toBeTruthy();
+  });
+
+  it('deletes the uploaded image and fails when deletion wins before the DB update', async () => {
+    const images = createImagesMock();
+    setTestImages(images.binding);
+    const bookId = await seedBook();
+
+    setTestDb(deleteBeforeUpdate(db, bookId));
+    const { status } = await callApiAs(USER, postCoverHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books/${bookId}/cover`,
+      rawBody: coverForm(),
+      params: { id: bookId },
+    });
+
+    expect(status).toBe(409);
+    expect(images.uploadedIds).toEqual(['img-1']);
+    expect(images.deletedIds).toEqual(['img-1']);
   });
 });
 

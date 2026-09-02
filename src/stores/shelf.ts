@@ -1,5 +1,5 @@
 import { atom } from 'nanostores';
-import { persistentAtom } from '@nanostores/persistent';
+import { persistentAtom, persistentMap } from '@nanostores/persistent';
 import type { Book, BookNote, BookStatus, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
 import { inferTopicsFromSubjects } from './topics';
 import { currentUserId } from './auth';
@@ -8,6 +8,8 @@ import { reportSyncError } from './sync-status';
 const SYNC_ERROR_MESSAGE = 'Could not save your change. Please try again.';
 const LOAD_SYNC_ERROR_MESSAGE = 'Could not load your shelf from the server. Please try again.';
 const COVER_SYNC_ERROR_MESSAGE = 'Could not update the cover. Please try again.';
+const DELETION_MARKERS_STORAGE_PREFIX = 'biblocal:shelf:deleted:v1:';
+const ACTIVE_LOADS_STORAGE_PREFIX = 'biblocal:shelf:loads:v1:';
 
 interface UserSession {
   userId: string;
@@ -28,14 +30,36 @@ interface DeleteTombstone {
   absenceConfirmed: boolean;
 }
 
+interface PersistedDeleteMarker {
+  deletedAt: number;
+  absenceConfirmed: boolean;
+}
+
 const pendingCreates = new Map<string, Set<PendingCreate>>();
 const deletionFences = new Map<string, DeletionFence>();
+const canonicalBookIds = new Map<string, { session: UserSession; id: string }>();
 const deleteTombstones = new Map<string, Map<string, DeleteTombstone>>();
 const activeLoads = new Map<string, Set<number>>();
 let operationSequence = 0;
 let observedUserId: string | null | undefined;
 let userSessionGeneration = 0;
 
+const persistedDeletionMarkers = persistentMap<Record<string, PersistedDeleteMarker>>(
+  DELETION_MARKERS_STORAGE_PREFIX,
+  {},
+  {
+    encode: JSON.stringify,
+    decode: safeJsonDecode<PersistedDeleteMarker>({
+      deletedAt: Number.MAX_SAFE_INTEGER,
+      absenceConfirmed: false,
+    }),
+  },
+);
+const persistedActiveLoads = persistentMap<Record<string, number>>(
+  ACTIVE_LOADS_STORAGE_PREFIX,
+  {},
+  { encode: JSON.stringify, decode: safeJsonDecode(0) },
+);
 const subscribeToUserId = (currentUserId as unknown as {
   subscribe?: (listener: (userId: string | null) => void) => () => void;
 }).subscribe;
@@ -69,6 +93,33 @@ function isDeletionFenced(id: string, session: UserSession): boolean {
     && fence.session.generation === session.generation;
 }
 
+function resolvedBookId(id: string, session: UserSession): string {
+  const canonical = canonicalBookIds.get(id);
+  return canonical?.session.userId === session.userId
+    && canonical.session.generation === session.generation
+    ? canonical.id
+    : id;
+}
+
+function reconcileCreatedBookId(clientId: string, canonicalId: string, session: UserSession): void {
+  if (clientId === canonicalId || !isCurrentUserSession(session)) return;
+  canonicalBookIds.set(clientId, { session, id: canonicalId });
+
+  const clientFence = deletionFences.get(clientId);
+  if (clientFence?.session.userId === session.userId
+    && clientFence.session.generation === session.generation) {
+    deletionFences.set(canonicalId, clientFence);
+  }
+
+  const current = shelf.get();
+  const clientBook = current[clientId];
+  if (!clientBook) return;
+  const next = { ...current };
+  delete next[clientId];
+  next[canonicalId] = current[canonicalId] ?? { ...clientBook, id: canonicalId };
+  shelf.set(next);
+}
+
 function fencedBookIds(session: UserSession): string[] {
   const ids: string[] = [];
   for (const [id, fence] of deletionFences) {
@@ -85,6 +136,69 @@ function tombstonesFor(userId: string): Map<string, DeleteTombstone> {
     deleteTombstones.set(userId, tombstones);
   }
   return tombstones;
+}
+
+function deletionMarkerKey(userId: string, bookId: string): string {
+  return `${userId}\u0000${bookId}`;
+}
+
+function persistedDeletionEntries(userId: string): Array<[string, PersistedDeleteMarker]> {
+  const prefix = `${userId}\u0000`;
+  return Object.entries(persistedDeletionMarkers.get())
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([key, marker]) => [key.slice(prefix.length), marker]);
+}
+
+function persistedActiveLoadStarts(userId: string): number[] {
+  const prefix = `${userId}\u0000`;
+  return Object.entries(persistedActiveLoads.get())
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([, startedAt]) => startedAt);
+}
+
+function markDeletionPersisted(userId: string, bookIds: Iterable<string>): void {
+  const newestLoadStart = Math.max(0, ...persistedActiveLoadStarts(userId));
+  const deletedAt = Math.max(Date.now(), newestLoadStart + 1);
+  for (const bookId of bookIds) {
+    persistedDeletionMarkers.setKey(
+      deletionMarkerKey(userId, bookId),
+      { deletedAt, absenceConfirmed: false },
+    );
+  }
+}
+
+function clearPersistedDeletion(userId: string, bookId: string): void {
+  const key = deletionMarkerKey(userId, bookId);
+  const current = persistedDeletionMarkers.get();
+  if (!current[key]) return;
+  persistedDeletionMarkers.setKey(key, undefined);
+}
+
+function beginPersistedLoad(userId: string): { key: string; startedAt: number } {
+  const key = deletionMarkerKey(userId, crypto.randomUUID());
+  const newestDeletion = Math.max(
+    0,
+    ...persistedDeletionEntries(userId).map(([, marker]) => marker.deletedAt),
+  );
+  const startedAt = Math.max(Date.now(), newestDeletion + 1);
+  persistedActiveLoads.setKey(key, startedAt);
+  return { key, startedAt };
+}
+
+function finishPersistedLoad(loadKey: string): void {
+  const current = persistedActiveLoads.get();
+  if (!(loadKey in current)) return;
+  persistedActiveLoads.setKey(loadKey, undefined);
+}
+
+function clearConfirmedPersistedDeletions(userId: string): void {
+  const activeLoadStarts = persistedActiveLoadStarts(userId);
+  for (const [bookId, marker] of persistedDeletionEntries(userId)) {
+    const olderLoadStillActive = activeLoadStarts.some((startedAt) => startedAt <= marker.deletedAt);
+    if (marker.absenceConfirmed && !olderLoadStillActive) {
+      persistedDeletionMarkers.setKey(deletionMarkerKey(userId, bookId), undefined);
+    }
+  }
 }
 
 function activeLoadsFor(userId: string): Set<number> {
@@ -122,6 +236,25 @@ export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {
   encode: JSON.stringify,
   decode: safeJsonDecode({}),
 });
+
+// Keep coordination listeners mounted even though these stores are not
+// rendered. A remote marker also removes any stale book another tab managed to
+// write before its storage event was delivered.
+void persistedDeletionMarkers.listen(() => {
+  const session = captureUserSession();
+  if (!session) return;
+  const current = shelf.get();
+  const next = { ...current };
+  let changed = false;
+  for (const [bookId] of persistedDeletionEntries(session.userId)) {
+    if (next[bookId]) {
+      delete next[bookId];
+      changed = true;
+    }
+  }
+  if (changed) shelf.set(next);
+});
+void persistedActiveLoads.listen(() => {});
 
 // Signals when the initial shelf load has settled (success or failure), so
 // the UI can tell "empty because still loading" apart from "empty because
@@ -304,6 +437,12 @@ async function syncAddBook(
       rollback(book.id, prior);
       return false;
     }
+    if (typeof res.json === 'function') {
+      const data = await res.json().catch(() => null) as { book?: { id?: unknown } } | null;
+      if (typeof data?.book?.id === 'string') {
+        reconcileCreatedBookId(book.id, data.book.id, syncingFor);
+      }
+    }
     return true;
   } catch (e) {
     if (!isCurrentUserSession(syncingFor)) return false;
@@ -419,8 +558,10 @@ export function addBook(book: Omit<Book, 'id' | 'addedAt'> & { id?: string }): B
     addedAt: Date.now(),
   };
   const prior = shelf.get();
+  const addingFor = captureUserSession();
+  if (addingFor) clearPersistedDeletion(addingFor.userId, fullBook.id);
   shelf.set({ ...prior, [fullBook.id]: fullBook });
-  void trackCreate(fullBook, prior);
+  void trackCreate(fullBook, prior, addingFor);
   return fullBook;
 }
 
@@ -462,11 +603,14 @@ export function toggleBookIntent(id: string, intent: BookIntent) {
 
 export async function removeBook(id: string): Promise<boolean> {
   const deletingFor = captureUserSession();
-  if (!deletingFor || !shelf.get()[id]) return false;
+  if (!deletingFor) return false;
+  const initiallyResolvedId = resolvedBookId(id, deletingFor);
+  if (!shelf.get()[initiallyResolvedId]) return false;
 
-  if (isDeletionFenced(id, deletingFor)) return false;
+  if (isDeletionFenced(id, deletingFor) || isDeletionFenced(initiallyResolvedId, deletingFor)) return false;
   const fence: DeletionFence = { session: deletingFor };
   deletionFences.set(id, fence);
+  deletionFences.set(initiallyResolvedId, fence);
 
   try {
     // Snapshot creates only after installing the fence: pre-fence work drains
@@ -477,13 +621,16 @@ export async function removeBook(id: string): Promise<boolean> {
     );
     if (pending.length > 0) {
       const created = await Promise.all(pending.map((create) => create.promise));
-      if (created.some((success) => !success) || !isCurrentUserSession(deletingFor) || !shelf.get()[id]) return false;
+      if (created.some((success) => !success) || !isCurrentUserSession(deletingFor)) return false;
+      if (!shelf.get()[resolvedBookId(id, deletingFor)]) return false;
     }
 
     if (!isCurrentUserSession(deletingFor)) return false;
+    const deleteId = resolvedBookId(id, deletingFor);
+    if (!shelf.get()[deleteId]) return false;
     let res: Response;
     try {
-      res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
+      res = await fetch(`/api/books/${deleteId}`, { method: 'DELETE' });
     } catch (e) {
       if (!isCurrentUserSession(deletingFor)) return false;
       console.error('Failed to sync book removal:', e);
@@ -499,17 +646,28 @@ export async function removeBook(id: string): Promise<boolean> {
       return false;
     }
 
+    const deletedIds = new Set([id, deleteId]);
+    // Publish the cross-tab fence before the shared shelf deletion so another
+    // tab cannot process the shelf event without already knowing this row is gone.
+    markDeletionPersisted(deletingFor.userId, deletedIds);
     const current = shelf.get();
     const next = { ...current };
     delete next[id];
+    delete next[deleteId];
     shelf.set(next);
-    tombstonesFor(deletingFor.userId).set(id, {
-      createdAtOperation: ++operationSequence,
-      absenceConfirmed: false,
-    });
+    const deletionOperation = ++operationSequence;
+    for (const deletedId of deletedIds) {
+      tombstonesFor(deletingFor.userId).set(deletedId, {
+        createdAtOperation: deletionOperation,
+        absenceConfirmed: false,
+      });
+    }
+    canonicalBookIds.delete(id);
     return true;
   } finally {
-    if (deletionFences.get(id) === fence) deletionFences.delete(id);
+    for (const [fencedId, activeFence] of deletionFences) {
+      if (activeFence === fence) deletionFences.delete(fencedId);
+    }
   }
 }
 
@@ -683,6 +841,7 @@ export async function loadBooksFromServer(): Promise<void> {
   const loadingFor = loadingSession.userId;
   const loadOperation = ++operationSequence;
   activeLoadsFor(loadingFor).add(loadOperation);
+  const persistedLoad = beginPersistedLoad(loadingFor);
   // Snapshot local shelf before the request so legacy-only books can be recovered.
   const preLoadSnapshot = shelf.get();
   try {
@@ -732,6 +891,18 @@ export async function loadBooksFromServer(): Promise<void> {
         tombstone.absenceConfirmed = true;
       }
     }
+    const persistedDeletions = persistedDeletionEntries(loadingFor);
+    for (const [id, marker] of persistedDeletions) {
+      const serverConfirmedAbsent = !serverBooks[id];
+      delete serverBooks[id];
+      if (serverConfirmedAbsent && persistedLoad.startedAt > marker.deletedAt && !marker.absenceConfirmed) {
+        persistedDeletionMarkers.setKey(
+          deletionMarkerKey(loadingFor, id),
+          { ...marker, absenceConfirmed: true },
+        );
+      }
+    }
+    const persistedDeletedIds = persistedDeletions.map(([id]) => id);
     const fencedIds = fencedBookIds(loadingSession);
     for (const id of fencedIds) delete serverBooks[id];
     // Legacy recovery: books that were local-only BEFORE this request started.
@@ -740,6 +911,7 @@ export async function loadBooksFromServer(): Promise<void> {
     const withoutDeleted = (books: Record<string, Book>): Record<string, Book> => {
       const active = { ...books };
       for (const id of userTombstones.keys()) delete active[id];
+      for (const id of persistedDeletedIds) delete active[id];
       for (const id of fencedIds) delete active[id];
       return active;
     };
@@ -768,6 +940,8 @@ export async function loadBooksFromServer(): Promise<void> {
   } finally {
     activeLoadsFor(loadingFor).delete(loadOperation);
     clearConfirmedTombstones(loadingFor);
+    finishPersistedLoad(persistedLoad.key);
+    clearConfirmedPersistedDeletions(loadingFor);
     // Settle hydration on both success and failure so the UI never hangs on
     // a loading skeleton. Safe even on a stale mid-flight bail: the newer
     // load for the current user will also finish and set this again.
