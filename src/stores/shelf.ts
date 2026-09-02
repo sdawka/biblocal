@@ -47,12 +47,20 @@ interface FieldProvenance {
   pending: Array<{ token: symbol; value: unknown }>;
 }
 
+interface CreateBatch {
+  attempts: Set<Promise<boolean>>;
+  pending: number;
+  successes: number;
+  book: Book;
+  prior: Record<string, Book>;
+}
+
 interface BookMutationLane {
   session: UserSession;
   aliases: Set<string>;
   canonicalId: string;
   tail: Promise<void>;
-  create?: Promise<boolean>;
+  createBatch?: CreateBatch;
   barrier?: Promise<void>;
   deletionFenced: boolean;
   fieldOwners: Map<keyof Book, symbol>;
@@ -222,14 +230,14 @@ function enqueueBookMutation<T>(
   mutation: (serverId: string) => Promise<T>,
   onCreateFailure?: () => void,
 ): Promise<T> {
-  const create = lane.create;
+  const creates = lane.createBatch ? [...lane.createBatch.attempts] : [];
   lane.pendingMutations += 1;
   const run = lane.tail.then(async () => {
     if (!isCurrentUserSession(lane.session)) return skipped;
-    if (create) {
-      const created = await create;
+    if (creates.length > 0) {
+      const created = await Promise.all(creates);
       if (!isCurrentUserSession(lane.session)) return skipped;
-      if (!created) {
+      if (!created.some(Boolean)) {
         onCreateFailure?.();
         return skipped;
       }
@@ -253,7 +261,7 @@ function enqueueBookMutation<T>(
 
 function cleanupMutationLane(lane: BookMutationLane, settled = lane.tail): void {
   if (lane.tail !== settled
-    || lane.create
+    || lane.createBatch
     || lane.barrier
     || lane.deletionFenced
     || lane.pendingMutations > 0
@@ -803,6 +811,7 @@ async function syncAddBook(
   prior: Record<string, Book>,
   syncingFor = captureUserSession(),
   lane?: BookMutationLane,
+  deferFailure = false,
 ): Promise<boolean> {
   if (!syncingFor) { rollback(book.id, prior); return false; }
   try {
@@ -826,8 +835,10 @@ async function syncAddBook(
     if (!res.ok) {
       const detail = await res.text();
       if (!isCurrentUserSession(syncingFor)) return false;
-      console.error('Failed to sync book:', detail);
-      rollback(book.id, prior);
+      if (!deferFailure) {
+        console.error('Failed to sync book:', detail);
+        rollback(book.id, prior);
+      }
       return false;
     }
     if (typeof res.json === 'function') {
@@ -840,8 +851,10 @@ async function syncAddBook(
     return true;
   } catch (e) {
     if (!isCurrentUserSession(syncingFor)) return false;
-    console.error('Failed to sync book:', e);
-    rollback(book.id, prior);
+    if (!deferFailure) {
+      console.error('Failed to sync book:', e);
+      rollback(book.id, prior);
+    }
     return false;
   }
 }
@@ -852,17 +865,33 @@ function trackCreate(
   syncingFor = captureUserSession(),
   lane?: BookMutationLane,
 ): Promise<boolean> {
-  if (syncingFor && isDeletionFenced(book.id, syncingFor)) {
+  if (syncingFor && (isDeletionFenced(book.id, syncingFor) || lane?.deletionFenced)) {
     return Promise.resolve(false);
   }
-  const promise = syncAddBook(book, prior, syncingFor, lane);
-  if (lane) {
-    lane.create = promise;
-    void promise.then(() => {
-      if (lane.create === promise) lane.create = undefined;
-      cleanupMutationLane(lane);
-    });
-  }
+  if (!lane || !syncingFor) return syncAddBook(book, prior, syncingFor, lane);
+
+  const batch = lane.createBatch ?? {
+    attempts: new Set<Promise<boolean>>(),
+    pending: 0,
+    successes: 0,
+    book,
+    prior,
+  };
+  lane.createBatch = batch;
+  const promise = syncAddBook(book, prior, syncingFor, lane, true);
+  batch.attempts.add(promise);
+  batch.pending += 1;
+  void promise.then((success) => {
+    if (success) batch.successes += 1;
+    batch.pending -= 1;
+    if (batch.pending > 0) return;
+    if (batch.successes === 0 && isCurrentUserSession(syncingFor)) {
+      console.error('Failed to sync book: all create attempts failed');
+      rollback(batch.book.id, batch.prior);
+    }
+    if (lane.createBatch === batch) lane.createBatch = undefined;
+    cleanupMutationLane(lane);
+  });
   return promise;
 }
 

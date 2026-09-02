@@ -32,6 +32,7 @@ vi.mock('../../src/stores/sync-status', () => ({
 import {
   addBook,
   addNote,
+  loadBooksFromServer,
   removeBook,
   removeNote,
   resetCover,
@@ -419,5 +420,79 @@ describe('per-book mutation lanes', () => {
       title: 'Queued client title',
       author: 'Canonical edit',
     }));
+  });
+
+  it('waits for every concurrent recovery create before deleting the book', async () => {
+    seedBook('concurrent-recovery');
+    const firstCreate = deferred<Response>();
+    const secondCreate = deferred<Response>();
+    let createCount = 0;
+    let deleteCount = 0;
+    let serverHasBook = false;
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      if (url === '/api/books?mine=true') return response(true, { books: [] });
+      if (url === '/api/books' && init?.method === 'POST') {
+        const gate = createCount++ === 0 ? firstCreate : secondCreate;
+        const result = await gate.promise;
+        if (result.ok) serverHasBook = true;
+        return result;
+      }
+      if (url === '/api/books/concurrent-recovery' && init?.method === 'DELETE') {
+        deleteCount += 1;
+        serverHasBook = false;
+        return response(true);
+      }
+      throw new Error(`Unexpected request: ${init?.method ?? 'GET'} ${String(url)}`);
+    });
+
+    const firstLoad = loadBooksFromServer();
+    const secondLoad = loadBooksFromServer();
+    await vi.waitFor(() => expect(createCount).toBe(2));
+    await Promise.all([firstLoad, secondLoad]);
+    const deletion = removeBook('concurrent-recovery');
+
+    secondCreate.resolve(response(true, { book: { id: 'concurrent-recovery' } }));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(deleteCount).toBe(0);
+
+    firstCreate.resolve(response(true, { book: { id: 'concurrent-recovery' } }));
+    await expect(deletion).resolves.toBe(true);
+    expect(deleteCount).toBe(1);
+    expect(serverHasBook).toBe(false);
+    expect(shelf.get()['concurrent-recovery']).toBeUndefined();
+    const storage = localStorage as Storage & Record<string, string>;
+    expect(storage['biblocal:shelf:deleted:v1:lane-user\u0000concurrent-recovery']).toBeDefined();
+  });
+
+  it('deletes after concurrent recovery when one create succeeds and one fails', async () => {
+    seedBook('mixed-recovery');
+    const firstCreate = deferred<Response>();
+    const secondCreate = deferred<Response>();
+    let createCount = 0;
+    let deleteCount = 0;
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      if (url === '/api/books?mine=true') return response(true, { books: [] });
+      if (url === '/api/books' && init?.method === 'POST') {
+        return (createCount++ === 0 ? firstCreate : secondCreate).promise;
+      }
+      if (url === '/api/books/mixed-recovery' && init?.method === 'DELETE') {
+        deleteCount += 1;
+        return response(true);
+      }
+      throw new Error(`Unexpected request: ${init?.method ?? 'GET'} ${String(url)}`);
+    });
+
+    const loads = [loadBooksFromServer(), loadBooksFromServer()];
+    await vi.waitFor(() => expect(createCount).toBe(2));
+    await Promise.all(loads);
+    const deletion = removeBook('mixed-recovery');
+    secondCreate.resolve(response(false));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(deleteCount).toBe(0);
+
+    firstCreate.resolve(response(true, { book: { id: 'mixed-recovery' } }));
+    await expect(deletion).resolves.toBe(true);
+    expect(deleteCount).toBe(1);
+    expect(vi.mocked(reportSyncError)).not.toHaveBeenCalled();
   });
 });
