@@ -557,7 +557,7 @@ describe('ShelfIsland', () => {
 
       const bookcaseRuleMatch = styleBlock.match(/\.bookcase\s*\{[^}]*\}/);
       expect(bookcaseRuleMatch).toBeTruthy();
-      expect(bookcaseRuleMatch![0]).not.toMatch(/\boverflow(?:-x)?\s*:/);
+      expect(bookcaseRuleMatch![0]).not.toMatch(/\boverflow(?:-[xy])?\s*:/);
     });
   });
 });
