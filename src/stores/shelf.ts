@@ -21,13 +21,34 @@ interface UserSession {
   generation: number;
 }
 
-interface PendingCreate {
-  session: UserSession;
-  promise: Promise<boolean>;
-}
-
 interface DeletionFence {
   session: UserSession;
+}
+
+type NoteMutation =
+  | { status: 'pending' | 'succeeded' | 'failed'; kind: 'add'; note: BookNote }
+  | {
+    status: 'pending' | 'succeeded' | 'failed';
+    kind: 'update';
+    noteId: string;
+    updates: Partial<Pick<BookNote, 'text' | 'visibility'>>;
+    fallback: BookNote;
+  }
+  | { status: 'pending' | 'succeeded' | 'failed'; kind: 'remove'; noteId: string };
+
+interface NoteMutationJournal {
+  base: BookNote[];
+  mutations: NoteMutation[];
+}
+
+interface BookMutationLane {
+  session: UserSession;
+  aliases: Set<string>;
+  canonicalId: string;
+  tail: Promise<void>;
+  create?: Promise<boolean>;
+  deletionFenced: boolean;
+  noteJournal?: NoteMutationJournal;
 }
 
 interface PersistedDeleteMarker {
@@ -42,12 +63,22 @@ interface PersistedLoadLease {
   expiresAt: number;
 }
 
-const pendingCreates = new Map<string, Set<PendingCreate>>();
 const deletionFences = new Map<string, DeletionFence>();
 const canonicalBookIds = new Map<string, { session: UserSession; id: string }>();
+const bookMutationLanes = new Map<string, BookMutationLane>();
 const ownedLoadLeases = new Map<string, { userId: string; lease: PersistedLoadLease }>();
 let observedUserId: string | null | undefined;
 let userSessionGeneration = 0;
+
+function sameUserSession(left: UserSession, right: UserSession): boolean {
+  return left.userId === right.userId && left.generation === right.generation;
+}
+
+function resetSessionMutationState(): void {
+  bookMutationLanes.clear();
+  canonicalBookIds.clear();
+  deletionFences.clear();
+}
 
 const persistedDeletionMarkers = persistentMap<Record<string, PersistedDeleteMarker>>(
   DELETION_MARKERS_STORAGE_PREFIX,
@@ -81,6 +112,7 @@ if (subscribeToUserId) {
     if (userId === observedUserId) return;
     observedUserId = userId;
     userSessionGeneration += 1;
+    resetSessionMutationState();
   });
 }
 
@@ -91,13 +123,14 @@ function captureUserSession(): UserSession | null {
   if (userId !== observedUserId) {
     observedUserId = userId;
     userSessionGeneration += 1;
+    resetSessionMutationState();
   }
   return userId ? { userId, generation: userSessionGeneration } : null;
 }
 
 function isCurrentUserSession(session: UserSession): boolean {
   const current = captureUserSession();
-  return current?.userId === session.userId && current.generation === session.generation;
+  return current !== null && sameUserSession(current, session);
 }
 
 function isDeletionFenced(id: string, session: UserSession): boolean {
@@ -107,6 +140,8 @@ function isDeletionFenced(id: string, session: UserSession): boolean {
 }
 
 function resolvedBookId(id: string, session: UserSession): string {
+  const lane = bookMutationLanes.get(id);
+  if (lane && sameUserSession(lane.session, session)) return lane.canonicalId;
   const canonical = canonicalBookIds.get(id);
   return canonical?.session.userId === session.userId
     && canonical.session.generation === session.generation
@@ -114,12 +149,87 @@ function resolvedBookId(id: string, session: UserSession): string {
     : id;
 }
 
-function reconcileCreatedBookId(clientId: string, canonicalId: string, session: UserSession): void {
+function aliasMutationLane(lane: BookMutationLane, id: string): void {
+  const previous = bookMutationLanes.get(id);
+  if (previous && previous !== lane) previous.aliases.delete(id);
+  lane.aliases.add(id);
+  bookMutationLanes.set(id, lane);
+}
+
+function mutationLane(id: string, session: UserSession): BookMutationLane {
+  const direct = bookMutationLanes.get(id);
+  if (direct && sameUserSession(direct.session, session)) return direct;
+  const canonicalId = resolvedBookId(id, session);
+  const canonical = bookMutationLanes.get(canonicalId);
+  if (canonical && sameUserSession(canonical.session, session)) {
+    aliasMutationLane(canonical, id);
+    return canonical;
+  }
+  const lane: BookMutationLane = {
+    session,
+    aliases: new Set(),
+    canonicalId,
+    tail: Promise.resolve(),
+    deletionFenced: false,
+  };
+  aliasMutationLane(lane, id);
+  if (canonicalId !== id) aliasMutationLane(lane, canonicalId);
+  return lane;
+}
+
+function newBookMutationLane(id: string, session: UserSession): BookMutationLane {
+  // An explicit add using an old client id starts a genuinely new identity;
+  // detach that alias from any completed/deleted lane retained for stale calls.
+  const previous = bookMutationLanes.get(id);
+  previous?.aliases.delete(id);
+  bookMutationLanes.delete(id);
+  canonicalBookIds.delete(id);
+  const lane: BookMutationLane = {
+    session,
+    aliases: new Set(),
+    canonicalId: id,
+    tail: Promise.resolve(),
+    deletionFenced: false,
+  };
+  aliasMutationLane(lane, id);
+  return lane;
+}
+
+function currentLaneBookId(lane: BookMutationLane): string {
+  if (shelf.get()[lane.canonicalId]) return lane.canonicalId;
+  return [...lane.aliases].find((id) => shelf.get()[id]) ?? lane.canonicalId;
+}
+
+function enqueueBookMutation<T>(
+  lane: BookMutationLane,
+  skipped: T,
+  mutation: (serverId: string) => Promise<T>,
+): Promise<T> {
+  const run = lane.tail.then(async () => {
+    if (!isCurrentUserSession(lane.session)) return skipped;
+    if (lane.create) {
+      const created = await lane.create;
+      if (!created || !isCurrentUserSession(lane.session)) return skipped;
+    }
+    return mutation(lane.canonicalId);
+  });
+  lane.tail = run.then(() => undefined, () => undefined);
+  return run;
+}
+
+function reconcileCreatedBookId(
+  clientId: string,
+  canonicalId: string,
+  session: UserSession,
+  lane: BookMutationLane,
+): void {
   if (clientId === canonicalId || !isCurrentUserSession(session)) return;
   // A successful explicit add is an authoritative restoration, including when
   // server-side ISBN dedup maps the client id back to a previously deleted id.
   clearPersistedDeletion(session.userId, canonicalId);
-  canonicalBookIds.set(clientId, { session, id: canonicalId });
+  lane.canonicalId = canonicalId;
+  aliasMutationLane(lane, canonicalId);
+  for (const alias of lane.aliases) canonicalBookIds.set(alias, { session, id: canonicalId });
 
   const clientFence = deletionFences.get(clientId);
   if (clientFence?.session.userId === session.userId
@@ -583,23 +693,12 @@ function rollback(id: string, prior: Record<string, Book>): void {
   reportSyncError(SYNC_ERROR_MESSAGE);
 }
 
-function rollbackNoteMutation(bookId: string, prior: Record<string, Book>): void {
-  if (!shelf.get()[bookId]) {
-    // A stale note response must not recreate a book removed by a concurrent
-    // deletion. There is no remaining note state to roll back.
-    reportSyncError(SYNC_ERROR_MESSAGE);
-    return;
-  }
-  rollback(bookId, prior);
-}
-
 // Field-aware rollback for update mutations. Reverts only the fields this
 // mutation changed, and only when the current value still matches the
 // optimistically-written value — so a later edit to the same field wins
 // (its value differs from what we wrote, so we leave it alone).
-function rollbackFields(id: string, updates: Partial<Book>, prior: Record<string, Book>): void {
+function rollbackFields(id: string, updates: Partial<Book>, priorBook: Book | undefined): void {
   const current = shelf.get();
-  const priorBook = prior[id];
   if (priorBook === undefined) {
     // Prior snapshot had no book at this id — treat as add rollback.
     const next = { ...current };
@@ -630,6 +729,7 @@ async function syncAddBook(
   book: Book,
   prior: Record<string, Book>,
   syncingFor = captureUserSession(),
+  lane?: BookMutationLane,
 ): Promise<boolean> {
   if (!syncingFor) { rollback(book.id, prior); return false; }
   try {
@@ -651,14 +751,17 @@ async function syncAddBook(
     });
     if (!isCurrentUserSession(syncingFor)) return false;
     if (!res.ok) {
-      console.error('Failed to sync book:', await res.text());
+      const detail = await res.text();
+      if (!isCurrentUserSession(syncingFor)) return false;
+      console.error('Failed to sync book:', detail);
       rollback(book.id, prior);
       return false;
     }
     if (typeof res.json === 'function') {
       const data = await res.json().catch(() => null) as { book?: { id?: unknown } } | null;
-      if (typeof data?.book?.id === 'string') {
-        reconcileCreatedBookId(book.id, data.book.id, syncingFor);
+      if (!isCurrentUserSession(syncingFor)) return false;
+      if (lane && typeof data?.book?.id === 'string') {
+        reconcileCreatedBookId(book.id, data.book.id, syncingFor, lane);
       }
     }
     return true;
@@ -674,95 +777,114 @@ function trackCreate(
   book: Book,
   prior: Record<string, Book>,
   syncingFor = captureUserSession(),
+  lane?: BookMutationLane,
 ): Promise<boolean> {
   if (syncingFor && isDeletionFenced(book.id, syncingFor)) {
     return Promise.resolve(false);
   }
-  const promise = syncAddBook(book, prior, syncingFor);
-  if (!syncingFor) return promise;
-
-  const pending: PendingCreate = { session: syncingFor, promise };
-  let bookCreates = pendingCreates.get(book.id);
-  if (!bookCreates) {
-    bookCreates = new Set();
-    pendingCreates.set(book.id, bookCreates);
-  }
-  bookCreates.add(pending);
-  void promise.then(() => {
-    const currentCreates = pendingCreates.get(book.id);
-    currentCreates?.delete(pending);
-    if (currentCreates?.size === 0) pendingCreates.delete(book.id);
-  });
+  const promise = syncAddBook(book, prior, syncingFor, lane);
+  if (lane) lane.create = promise;
   return promise;
 }
 
-async function syncUpdateBook(id: string, updates: Partial<Book>, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) { rollbackFields(id, updates, prior); return; }
+async function syncUpdateBook(
+  lane: BookMutationLane,
+  updates: Partial<Book>,
+  priorBook: Book,
+): Promise<void> {
+  const session = lane.session;
+  const id = currentLaneBookId(lane);
   try {
-    const res = await fetch(`/api/books/${id}`, {
+    const res = await fetch(`/api/books/${lane.canonicalId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
+    if (!isCurrentUserSession(session)) return;
     if (!res.ok) {
-      console.error('Failed to sync book update:', await res.text());
-      rollbackFields(id, updates, prior);
+      const detail = await res.text();
+      if (!isCurrentUserSession(session)) return;
+      console.error('Failed to sync book update:', detail);
+      rollbackFields(id, updates, priorBook);
     }
   } catch (e) {
+    if (!isCurrentUserSession(session)) return;
     console.error('Failed to sync book update:', e);
-    rollbackFields(id, updates, prior);
+    rollbackFields(id, updates, priorBook);
   }
 }
 
-async function syncAddNote(bookId: string, note: BookNote, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) { rollbackNoteMutation(bookId, prior); return; }
-  try {
-    const res = await fetch(`/api/books/${bookId}/notes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // Send our client id so the server keeps the same identity for this note.
-      body: JSON.stringify({ id: note.id, text: note.text, visibility: note.visibility }),
-    });
-    if (!res.ok) {
-      console.error('Failed to sync note:', await res.text());
-      rollbackNoteMutation(bookId, prior);
-    }
-  } catch (e) {
-    console.error('Failed to sync note:', e);
-    rollbackNoteMutation(bookId, prior);
+function applyNoteMutation(notes: BookNote[], mutation: NoteMutation): BookNote[] {
+  if (mutation.kind === 'add') {
+    return [...notes.filter((note) => note.id !== mutation.note.id), mutation.note];
   }
+  if (mutation.kind === 'remove') return notes.filter((note) => note.id !== mutation.noteId);
+  const found = notes.some((note) => note.id === mutation.noteId);
+  if (!found) return [...notes, { ...mutation.fallback, ...mutation.updates }];
+  return notes.map((note) => note.id === mutation.noteId ? { ...note, ...mutation.updates } : note);
 }
 
-async function syncUpdateNote(bookId: string, noteId: string, updates: Partial<BookNote>, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) { rollbackNoteMutation(bookId, prior); return; }
-  try {
-    const res = await fetch(`/api/books/${bookId}/notes/${noteId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-    if (!res.ok) {
-      console.error('Failed to sync note update:', await res.text());
-      rollbackNoteMutation(bookId, prior);
-    }
-  } catch (e) {
-    console.error('Failed to sync note update:', e);
-    rollbackNoteMutation(bookId, prior);
+function noteJournal(lane: BookMutationLane, notes: BookNote[]): NoteMutationJournal {
+  if (!lane.noteJournal || lane.noteJournal.mutations.length === 0) {
+    lane.noteJournal = { base: [...notes], mutations: [] };
   }
+  return lane.noteJournal;
 }
 
-async function syncRemoveNote(bookId: string, noteId: string, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) { rollbackNoteMutation(bookId, prior); return; }
-  try {
-    const res = await fetch(`/api/books/${bookId}/notes/${noteId}`, { method: 'DELETE' });
-    if (!res.ok) {
-      console.error('Failed to sync note removal:', await res.text());
-      rollbackNoteMutation(bookId, prior);
-    }
-  } catch (e) {
-    console.error('Failed to sync note removal:', e);
-    rollbackNoteMutation(bookId, prior);
+function renderNoteJournal(lane: BookMutationLane): void {
+  const journal = lane.noteJournal;
+  if (!journal || !isCurrentUserSession(lane.session)) return;
+  const bookId = currentLaneBookId(lane);
+  const current = shelf.get();
+  const book = current[bookId];
+  if (!book) return;
+  const notes = journal.mutations.reduce(
+    (result, mutation) => mutation.status === 'failed' ? result : applyNoteMutation(result, mutation),
+    [...journal.base],
+  );
+  shelf.set({ ...current, [bookId]: { ...book, notes } });
+}
+
+function settleNoteMutation(lane: BookMutationLane, mutation: NoteMutation, succeeded: boolean): void {
+  const journal = lane.noteJournal;
+  if (!journal || !journal.mutations.includes(mutation)) return;
+  mutation.status = succeeded ? 'succeeded' : 'failed';
+  while (journal.mutations[0]?.status !== 'pending') {
+    const settled = journal.mutations.shift();
+    if (!settled) break;
+    if (settled.status === 'succeeded') journal.base = applyNoteMutation(journal.base, settled);
   }
+  renderNoteJournal(lane);
+  if (journal.mutations.length === 0) lane.noteJournal = undefined;
+}
+
+async function syncNoteMutation(
+  lane: BookMutationLane,
+  mutation: NoteMutation,
+  request: (serverId: string) => Promise<Response>,
+  label: string,
+): Promise<void> {
+  const session = lane.session;
+  await enqueueBookMutation(lane, undefined, async (serverId) => {
+    try {
+      const res = await request(serverId);
+      if (!isCurrentUserSession(session)) return;
+      if (!res.ok) {
+        const detail = await res.text();
+        if (!isCurrentUserSession(session)) return;
+        console.error(label, detail);
+        settleNoteMutation(lane, mutation, false);
+        reportSyncError(SYNC_ERROR_MESSAGE);
+        return;
+      }
+      settleNoteMutation(lane, mutation, true);
+    } catch (e) {
+      if (!isCurrentUserSession(session)) return;
+      console.error(label, e);
+      settleNoteMutation(lane, mutation, false);
+      reportSyncError(SYNC_ERROR_MESSAGE);
+    }
+  });
 }
 
 export function addBook(book: Omit<Book, 'id' | 'addedAt'> & { id?: string }): Book {
@@ -779,16 +901,22 @@ export function addBook(book: Omit<Book, 'id' | 'addedAt'> & { id?: string }): B
   const addingFor = captureUserSession();
   if (addingFor) clearPersistedDeletion(addingFor.userId, fullBook.id);
   shelf.set({ ...prior, [fullBook.id]: fullBook });
-  void trackCreate(fullBook, prior, addingFor);
+  const lane = addingFor ? newBookMutationLane(fullBook.id, addingFor) : undefined;
+  void trackCreate(fullBook, prior, addingFor, lane);
   return fullBook;
 }
 
 export function updateBook(id: string, updates: Partial<Book>) {
+  const updatingFor = captureUserSession();
+  if (!updatingFor) return;
+  const lane = mutationLane(id, updatingFor);
+  if (lane.deletionFenced) return;
+  const localId = currentLaneBookId(lane);
   const current = shelf.get();
-  const book = current[id];
+  const book = current[localId];
   if (book) {
-    shelf.set({ ...current, [id]: { ...book, ...updates } });
-    syncUpdateBook(id, updates, current);
+    shelf.set({ ...current, [localId]: { ...book, ...updates } });
+    void enqueueBookMutation(lane, undefined, () => syncUpdateBook(lane, updates, book));
   }
 }
 
@@ -822,60 +950,51 @@ export function toggleBookIntent(id: string, intent: BookIntent) {
 export async function removeBook(id: string): Promise<boolean> {
   const deletingFor = captureUserSession();
   if (!deletingFor) return false;
-  const initiallyResolvedId = resolvedBookId(id, deletingFor);
-  if (!shelf.get()[initiallyResolvedId]) return false;
+  const lane = mutationLane(id, deletingFor);
+  const initiallyResolvedId = currentLaneBookId(lane);
+  if (!shelf.get()[initiallyResolvedId] || lane.deletionFenced) return false;
 
-  if (isDeletionFenced(id, deletingFor) || isDeletionFenced(initiallyResolvedId, deletingFor)) return false;
   const fence: DeletionFence = { session: deletingFor };
-  deletionFences.set(id, fence);
-  deletionFences.set(initiallyResolvedId, fence);
+  lane.deletionFenced = true;
+  for (const alias of lane.aliases) deletionFences.set(alias, fence);
+  deletionFences.set(lane.canonicalId, fence);
 
   try {
-    // Snapshot creates only after installing the fence: pre-fence work drains
-    // before DELETE, while reconciliation cannot enqueue new same-book work.
-    const pending = [...(pendingCreates.get(id) ?? [])].filter(
-      (create) => create.session.userId === deletingFor.userId
-        && create.session.generation === deletingFor.generation,
-    );
-    if (pending.length > 0) {
-      const created = await Promise.all(pending.map((create) => create.promise));
-      if (created.some((success) => !success) || !isCurrentUserSession(deletingFor)) return false;
-      if (!shelf.get()[resolvedBookId(id, deletingFor)]) return false;
-    }
-
-    if (!isCurrentUserSession(deletingFor)) return false;
-    const deleteId = resolvedBookId(id, deletingFor);
-    if (!shelf.get()[deleteId]) return false;
-    let res: Response;
-    try {
-      res = await fetch(`/api/books/${deleteId}`, { method: 'DELETE' });
-    } catch (e) {
+    return await enqueueBookMutation(lane, false, async (deleteId) => {
+      if (!isCurrentUserSession(deletingFor) || !shelf.get()[currentLaneBookId(lane)]) return false;
+      let res: Response;
+      try {
+        res = await fetch(`/api/books/${deleteId}`, { method: 'DELETE' });
+      } catch (e) {
+        if (!isCurrentUserSession(deletingFor)) return false;
+        console.error('Failed to sync book removal:', e);
+        reportSyncError(SYNC_ERROR_MESSAGE);
+        return false;
+      }
       if (!isCurrentUserSession(deletingFor)) return false;
-      console.error('Failed to sync book removal:', e);
-      reportSyncError(SYNC_ERROR_MESSAGE);
-      return false;
-    }
-    if (!isCurrentUserSession(deletingFor)) return false;
-    // A retry may see 404 when the first DELETE committed but its response was
-    // lost. For the same authenticated session, absence is the desired state.
-    if (!res.ok && res.status !== 404) {
-      console.error('Failed to sync book removal:', await res.text());
-      reportSyncError(SYNC_ERROR_MESSAGE);
-      return false;
-    }
+      // A retry may see 404 when the first DELETE committed but its response was
+      // lost. For the same authenticated session, absence is the desired state.
+      if (!res.ok && res.status !== 404) {
+        const detail = await res.text();
+        if (!isCurrentUserSession(deletingFor)) return false;
+        console.error('Failed to sync book removal:', detail);
+        reportSyncError(SYNC_ERROR_MESSAGE);
+        return false;
+      }
 
-    const deletedIds = new Set([id, deleteId]);
-    // Publish the cross-tab fence before the shared shelf deletion so another
-    // tab cannot process the shelf event without already knowing this row is gone.
-    markDeletionPersisted(deletingFor.userId, deletedIds);
-    const current = shelf.get();
-    const next = { ...current };
-    delete next[id];
-    delete next[deleteId];
-    shelf.set(next);
-    canonicalBookIds.delete(id);
-    return true;
+      const deletedIds = new Set([...lane.aliases, deleteId]);
+      // Publish the cross-tab fence before the shared shelf deletion so another
+      // tab cannot process the shelf event without already knowing this row is gone.
+      markDeletionPersisted(deletingFor.userId, deletedIds);
+      const current = shelf.get();
+      const next = { ...current };
+      for (const deletedId of deletedIds) delete next[deletedId];
+      shelf.set(next);
+      lane.noteJournal = undefined;
+      return true;
+    });
   } finally {
+    lane.deletionFenced = false;
     for (const [fencedId, activeFence] of deletionFences) {
       if (activeFence === fence) deletionFences.delete(fencedId);
     }
@@ -899,43 +1018,63 @@ function applyCoverResult(id: string, coverUrl: string | undefined, fetchedCover
 }
 
 export async function uploadCover(id: string, file: File): Promise<boolean> {
-  if (!shelf.get()[id] || !currentUserId.get()) return false;
-  try {
-    const form = new FormData();
-    form.append('file', file);
-    const res = await fetch(`/api/books/${id}/cover`, { method: 'POST', body: form });
-    if (!res.ok) {
-      console.error('Failed to upload cover:', await res.text());
+  const session = captureUserSession();
+  if (!session) return false;
+  const lane = mutationLane(id, session);
+  if (lane.deletionFenced || !shelf.get()[currentLaneBookId(lane)]) return false;
+  return enqueueBookMutation(lane, false, async (serverId) => {
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`/api/books/${serverId}/cover`, { method: 'POST', body: form });
+      if (!isCurrentUserSession(session)) return false;
+      if (!res.ok) {
+        const detail = await res.text();
+        if (!isCurrentUserSession(session)) return false;
+        console.error('Failed to upload cover:', detail);
+        reportSyncError(COVER_SYNC_ERROR_MESSAGE);
+        return false;
+      }
+      const data = await res.json() as { coverUrl: string; fetchedCoverUrl: string | null };
+      if (!isCurrentUserSession(session)) return false;
+      applyCoverResult(currentLaneBookId(lane), data.coverUrl, data.fetchedCoverUrl);
+      return true;
+    } catch (e) {
+      if (!isCurrentUserSession(session)) return false;
+      console.error('Failed to upload cover:', e);
       reportSyncError(COVER_SYNC_ERROR_MESSAGE);
       return false;
     }
-    const data = await res.json() as { coverUrl: string; fetchedCoverUrl: string | null };
-    applyCoverResult(id, data.coverUrl, data.fetchedCoverUrl);
-    return true;
-  } catch (e) {
-    console.error('Failed to upload cover:', e);
-    reportSyncError(COVER_SYNC_ERROR_MESSAGE);
-    return false;
-  }
+  });
 }
 
 export async function resetCover(id: string): Promise<boolean> {
-  if (!shelf.get()[id] || !currentUserId.get()) return false;
-  try {
-    const res = await fetch(`/api/books/${id}/cover`, { method: 'DELETE' });
-    if (!res.ok) {
-      console.error('Failed to reset cover:', await res.text());
+  const session = captureUserSession();
+  if (!session) return false;
+  const lane = mutationLane(id, session);
+  if (lane.deletionFenced || !shelf.get()[currentLaneBookId(lane)]) return false;
+  return enqueueBookMutation(lane, false, async (serverId) => {
+    try {
+      const res = await fetch(`/api/books/${serverId}/cover`, { method: 'DELETE' });
+      if (!isCurrentUserSession(session)) return false;
+      if (!res.ok) {
+        const detail = await res.text();
+        if (!isCurrentUserSession(session)) return false;
+        console.error('Failed to reset cover:', detail);
+        reportSyncError(COVER_SYNC_ERROR_MESSAGE);
+        return false;
+      }
+      const data = await res.json() as { coverUrl: string | null };
+      if (!isCurrentUserSession(session)) return false;
+      applyCoverResult(currentLaneBookId(lane), data.coverUrl ?? undefined);
+      return true;
+    } catch (e) {
+      if (!isCurrentUserSession(session)) return false;
+      console.error('Failed to reset cover:', e);
       reportSyncError(COVER_SYNC_ERROR_MESSAGE);
       return false;
     }
-    const data = await res.json() as { coverUrl: string | null };
-    applyCoverResult(id, data.coverUrl ?? undefined);
-    return true;
-  } catch (e) {
-    console.error('Failed to reset cover:', e);
-    reportSyncError(COVER_SYNC_ERROR_MESSAGE);
-    return false;
-  }
+  });
 }
 
 // ─── Book notes ──────────────────────────────────────────────────────────────
@@ -952,8 +1091,13 @@ export async function resetCover(id: string): Promise<boolean> {
  * addBook, where the server ignores the client id until loadBooksFromServer.)
  */
 export function addNote(bookId: string, text: string, visibility: BookVisibility = 'private'): BookNote | null {
+  const session = captureUserSession();
+  if (!session) return null;
+  const lane = mutationLane(bookId, session);
+  if (lane.deletionFenced) return null;
+  const localId = currentLaneBookId(lane);
   const current = shelf.get();
-  const book = current[bookId];
+  const book = current[localId];
   if (!book) return null;
 
   const note: BookNote = {
@@ -962,28 +1106,67 @@ export function addNote(bookId: string, text: string, visibility: BookVisibility
     visibility,
     createdAt: Date.now(),
   };
-  const notes = [...(book.notes ?? []), note];
-  shelf.set({ ...current, [bookId]: { ...book, notes } });
-  syncAddNote(bookId, note, current);
+  const mutation: NoteMutation = { status: 'pending', kind: 'add', note };
+  noteJournal(lane, book.notes ?? []).mutations.push(mutation);
+  renderNoteJournal(lane);
+  void syncNoteMutation(
+    lane,
+    mutation,
+    (serverId) => fetch(`/api/books/${serverId}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // Send our client id so the server keeps the same identity for this note.
+      body: JSON.stringify({ id: note.id, text: note.text, visibility: note.visibility }),
+    }),
+    'Failed to sync note:',
+  );
   return note;
 }
 
 export function updateNote(bookId: string, noteId: string, updates: Partial<Pick<BookNote, 'text' | 'visibility'>>) {
+  const session = captureUserSession();
+  if (!session) return;
+  const lane = mutationLane(bookId, session);
+  if (lane.deletionFenced) return;
+  const localId = currentLaneBookId(lane);
   const current = shelf.get();
-  const book = current[bookId];
+  const book = current[localId];
   if (!book || !book.notes) return;
-  const notes = book.notes.map((n) => (n.id === noteId ? { ...n, ...updates } : n));
-  shelf.set({ ...current, [bookId]: { ...book, notes } });
-  syncUpdateNote(bookId, noteId, updates, current);
+  const fallback = book.notes.find((note) => note.id === noteId);
+  if (!fallback) return;
+  const mutation: NoteMutation = { status: 'pending', kind: 'update', noteId, updates, fallback };
+  noteJournal(lane, book.notes).mutations.push(mutation);
+  renderNoteJournal(lane);
+  void syncNoteMutation(
+    lane,
+    mutation,
+    (serverId) => fetch(`/api/books/${serverId}/notes/${noteId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    }),
+    'Failed to sync note update:',
+  );
 }
 
 export function removeNote(bookId: string, noteId: string) {
+  const session = captureUserSession();
+  if (!session) return;
+  const lane = mutationLane(bookId, session);
+  if (lane.deletionFenced) return;
+  const localId = currentLaneBookId(lane);
   const current = shelf.get();
-  const book = current[bookId];
+  const book = current[localId];
   if (!book || !book.notes) return;
-  const notes = book.notes.filter((n) => n.id !== noteId);
-  shelf.set({ ...current, [bookId]: { ...book, notes } });
-  syncRemoveNote(bookId, noteId, current);
+  const mutation: NoteMutation = { status: 'pending', kind: 'remove', noteId };
+  noteJournal(lane, book.notes).mutations.push(mutation);
+  renderNoteJournal(lane);
+  void syncNoteMutation(
+    lane,
+    mutation,
+    (serverId) => fetch(`/api/books/${serverId}/notes/${noteId}`, { method: 'DELETE' }),
+    'Failed to sync note removal:',
+  );
 }
 
 interface ServerNote {
@@ -1169,7 +1352,8 @@ export async function loadBooksFromServer(): Promise<void> {
     // `serverBooks`) must be the prior snapshot: on upload failure, rollback
     // restores the book instead of deleting the only surviving copy from localStorage.
     for (const book of legacyLocalOnly) {
-      void trackCreate(book, merged, loadingSession);
+      const lane = mutationLane(book.id, loadingSession);
+      void trackCreate(book, merged, loadingSession, lane);
     }
   } catch (e) {
     console.error('Failed to load books from server:', e);

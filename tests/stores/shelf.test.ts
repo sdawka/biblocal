@@ -53,6 +53,8 @@ import type { Book, BookStatus } from '../../src/lib/types';
 
 describe('Shelf Store', () => {
   beforeEach(() => {
+    setMockUserId(null);
+    setMockUserId('test-user-123');
     shelf.set({});
     activeFilter.set('all');
   });
@@ -962,15 +964,17 @@ describe('Shelf Store', () => {
       expect(stored.notes![0].id).toBe(note!.id);
     });
 
-    it('addNote defaults to private and syncs to server', () => {
+    it('addNote defaults to private and syncs to server', async () => {
       const book = addBook({ title: 'X', author: 'Y', ownership: 'have', intents: [], addedVia: 'manual' });
       const note = addNote(book.id, 'a private thought');
 
       expect(note!.visibility).toBe('private');
-      expect(fetch).toHaveBeenCalledWith(
-        `/api/books/${book.id}/notes`,
-        expect.objectContaining({ method: 'POST' })
-      );
+      await vi.waitFor(() => {
+        expect(fetch).toHaveBeenCalledWith(
+          `/api/books/${book.id}/notes`,
+          expect.objectContaining({ method: 'POST' })
+        );
+      });
     });
 
     it('addNote returns null for a non-existent book', () => {
@@ -999,7 +1003,7 @@ describe('Shelf Store', () => {
       ['add', (bookId: string) => addNote(bookId, 'A delayed note')],
       ['update', (bookId: string, noteId: string) => updateNote(bookId, noteId, { text: 'A delayed edit' })],
       ['delete', (bookId: string, noteId: string) => removeNote(bookId, noteId)],
-    ])('does not resurrect a deleted book when a stale %s note request fails', async (_operation, mutateNote) => {
+    ])('does not resurrect a book when a queued %s note request fails before deletion', async (_operation, mutateNote) => {
       const { bookId, noteId } = seedBookWithNote();
       let releaseNoteFailure!: () => void;
       const noteFailure = new Promise<Response>((resolve) => {
@@ -1021,10 +1025,12 @@ describe('Shelf Store', () => {
       });
 
       mutateNote(bookId, noteId);
-      await expect(removeBook(bookId)).resolves.toBe(true);
+      const deletion = removeBook(bookId);
+      await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1));
+      releaseNoteFailure();
+      await expect(deletion).resolves.toBe(true);
       expect(shelf.get()[bookId]).toBeUndefined();
 
-      releaseNoteFailure();
       await vi.waitFor(() => {
         expect(vi.mocked(reportSyncError)).toHaveBeenCalled();
       });
