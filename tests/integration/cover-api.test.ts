@@ -10,6 +10,7 @@ import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } 
 import { File as NodeFile } from 'node:buffer';
 import { POST as postCoverHandler } from '../../src/pages/api/books/[id]/cover';
 import { POST as postBookHandler } from '../../src/pages/api/books/index';
+import { DELETE as deleteBookHandler } from '../../src/pages/api/books/[id]';
 import { createTestDb, seedUser } from '../helpers/test-db';
 import { setTestDb, resetTestDb, setTestImages, resetTestImages } from '../mocks/cloudflare-workers';
 import { callApiAs } from '../helpers/api';
@@ -17,6 +18,7 @@ import type { D1Shim } from '../helpers/d1-shim';
 
 const BASE = 'http://localhost';
 const USER = 'cover-test-user';
+const OTHER_USER = 'cover-other-user';
 const MAX_COVER_BYTES = 10 * 1024 * 1024;
 
 let db: D1Shim;
@@ -84,6 +86,7 @@ beforeEach(() => {
   db = createTestDb();
   setTestDb(db);
   seedUser(db, USER);
+  seedUser(db, OTHER_USER);
 });
 
 afterEach(() => {
@@ -249,5 +252,114 @@ describe('POST /api/books/:id/cover — oversized upload', () => {
 
     expect(status).toBe(400);
     expect(images.uploadedIds).toEqual([]);
+  });
+});
+
+describe('cover upload and book deletion interleavings', () => {
+  const OLD_COVER = 'https://imagedelivery.net/testacct/old-image/public';
+
+  async function setHostedCover(bookId: string): Promise<void> {
+    await db.prepare('UPDATE books SET cover_url = ? WHERE id = ?').bind(OLD_COVER, bookId).run();
+  }
+
+  function gateBatch(inner: D1Shim) {
+    let release!: () => void;
+    let reached!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const batchReached = new Promise<void>((resolve) => { reached = resolve; });
+    const wrapped = new Proxy(inner, {
+      get(target, prop, receiver) {
+        if (prop === 'batch') {
+          return async (statements: Parameters<D1Shim['batch']>[0]) => {
+            reached();
+            await gate;
+            return target.batch(statements);
+          };
+        }
+        return Reflect.get(target, prop, receiver);
+      },
+    });
+    return { wrapped, batchReached, release };
+  }
+
+  it('deletes the cover URL present when the book deletion wins after an upload', async () => {
+    const images = createImagesMock();
+    setTestImages(images.binding);
+    const bookId = await seedBook();
+    await setHostedCover(bookId);
+    const batch = gateBatch(db);
+    setTestDb(batch.wrapped);
+
+    const deletion = callApiAs(USER, deleteBookHandler, {
+      method: 'DELETE',
+      url: `${BASE}/api/books/${bookId}`,
+      params: { id: bookId },
+    });
+    await batch.batchReached;
+
+    const upload = await callApiAs(USER, postCoverHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books/${bookId}/cover`,
+      rawBody: coverForm(),
+      params: { id: bookId },
+    });
+    expect(upload.status).toBe(200);
+
+    batch.release();
+    const removed = await deletion;
+    expect(removed.status).toBe(200);
+    expect(images.deletedIds).toContain('old-image');
+    expect(images.deletedIds).toContain('img-1');
+  });
+
+  it('cleans the fresh upload when book deletion finishes before its DB update', async () => {
+    let releaseUpload!: () => void;
+    let uploadReached!: () => void;
+    const uploadGate = new Promise<void>((resolve) => { releaseUpload = resolve; });
+    const uploadStarted = new Promise<void>((resolve) => { uploadReached = resolve; });
+    const images = createImagesMock();
+    const originalUpload = images.binding.hosted.upload;
+    images.binding.hosted.upload = async (...args: Parameters<typeof originalUpload>) => {
+      uploadReached();
+      await uploadGate;
+      return originalUpload(...args);
+    };
+    setTestImages(images.binding);
+    const bookId = await seedBook();
+
+    const upload = callApiAs(USER, postCoverHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books/${bookId}/cover`,
+      rawBody: coverForm(),
+      params: { id: bookId },
+    });
+    await uploadStarted;
+
+    const removed = await callApiAs(USER, deleteBookHandler, {
+      method: 'DELETE',
+      url: `${BASE}/api/books/${bookId}`,
+      params: { id: bookId },
+    });
+    expect(removed.status).toBe(200);
+
+    releaseUpload();
+    expect((await upload).status).toBe(409);
+    expect(images.deletedIds).toContain('img-1');
+  });
+
+  it('does not delete a hosted cover when another user attempts book deletion', async () => {
+    const images = createImagesMock();
+    setTestImages(images.binding);
+    const bookId = await seedBook();
+    await setHostedCover(bookId);
+
+    const removed = await callApiAs(OTHER_USER, deleteBookHandler, {
+      method: 'DELETE',
+      url: `${BASE}/api/books/${bookId}`,
+      params: { id: bookId },
+    });
+
+    expect(removed.status).toBe(404);
+    expect(images.deletedIds).toEqual([]);
   });
 });
