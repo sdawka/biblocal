@@ -32,11 +32,17 @@ describe('shelf session initialization', () => {
     localStorage.setItem('biblocal:lastUserId', 'cold-user');
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => { /* suspended initial load */ })));
 
-    const { onUserChange } = await import('../../src/stores/auth');
+    const { onUserChange, currentUserId } = await import('../../src/stores/auth');
     const { shelf, endShelfSession } = await import('../../src/stores/shelf');
+    const publishedShelves: Array<Book | undefined> = [];
+    const stopWatchingUser = currentUserId.subscribe((activeUserId) => {
+      if (activeUserId === 'cold-user') publishedShelves.push(shelf.get()['cold-deleted']);
+    });
     await onUserChange('cold-user');
 
     expect(shelf.get()['cold-deleted']).toBeUndefined();
+    expect(publishedShelves).toEqual([undefined]);
+    stopWatchingUser();
     endShelfSession('cold-user');
 
     delete storage[shelfKey];
