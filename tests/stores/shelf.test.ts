@@ -620,5 +620,45 @@ describe('Shelf Store', () => {
 
       expect(shelf.get()[bookId].notes).toHaveLength(0);
     });
+
+    it.each([
+      ['add', (bookId: string) => addNote(bookId, 'A delayed note')],
+      ['update', (bookId: string, noteId: string) => updateNote(bookId, noteId, { text: 'A delayed edit' })],
+      ['delete', (bookId: string, noteId: string) => removeNote(bookId, noteId)],
+    ])('does not resurrect a deleted book when a stale %s note request fails', async (_operation, mutateNote) => {
+      const { bookId, noteId } = seedBookWithNote();
+      let releaseNoteFailure!: () => void;
+      const noteFailure = new Promise<Response>((resolve) => {
+        releaseNoteFailure = () => resolve({ ok: false, text: async () => 'note failed' } as Response);
+      });
+      const recoveryPosts: string[] = [];
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        if (url === `/api/books/${bookId}` && init?.method === 'DELETE') {
+          return { ok: true } as Response;
+        }
+        if (url === '/api/books?mine=true') {
+          return { ok: true, json: async () => ({ books: [] }) } as Response;
+        }
+        if (url === '/api/books' && init?.method === 'POST') {
+          recoveryPosts.push(String(url));
+          return { ok: true } as Response;
+        }
+        return noteFailure;
+      });
+
+      mutateNote(bookId, noteId);
+      await expect(removeBook(bookId)).resolves.toBe(true);
+      expect(shelf.get()[bookId]).toBeUndefined();
+
+      releaseNoteFailure();
+      await vi.waitFor(() => {
+        expect(vi.mocked(reportSyncError)).toHaveBeenCalled();
+      });
+
+      expect(shelf.get()[bookId]).toBeUndefined();
+      await loadBooksFromServer();
+      expect(shelf.get()[bookId]).toBeUndefined();
+      expect(recoveryPosts).toEqual([]);
+    });
   });
 });

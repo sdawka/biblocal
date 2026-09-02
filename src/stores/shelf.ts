@@ -232,6 +232,16 @@ function rollback(id: string, prior: Record<string, Book>): void {
   reportSyncError(SYNC_ERROR_MESSAGE);
 }
 
+function rollbackNoteMutation(bookId: string, prior: Record<string, Book>): void {
+  if (!shelf.get()[bookId]) {
+    // A stale note response must not recreate a book removed by a concurrent
+    // deletion. There is no remaining note state to roll back.
+    reportSyncError(SYNC_ERROR_MESSAGE);
+    return;
+  }
+  rollback(bookId, prior);
+}
+
 // Field-aware rollback for update mutations. Reverts only the fields this
 // mutation changed, and only when the current value still matches the
 // optimistically-written value — so a later edit to the same field wins
@@ -348,7 +358,7 @@ async function syncUpdateBook(id: string, updates: Partial<Book>, prior: Record<
 }
 
 async function syncAddNote(bookId: string, note: BookNote, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) { rollback(bookId, prior); return; }
+  if (!currentUserId.get()) { rollbackNoteMutation(bookId, prior); return; }
   try {
     const res = await fetch(`/api/books/${bookId}/notes`, {
       method: 'POST',
@@ -358,16 +368,16 @@ async function syncAddNote(bookId: string, note: BookNote, prior: Record<string,
     });
     if (!res.ok) {
       console.error('Failed to sync note:', await res.text());
-      rollback(bookId, prior);
+      rollbackNoteMutation(bookId, prior);
     }
   } catch (e) {
     console.error('Failed to sync note:', e);
-    rollback(bookId, prior);
+    rollbackNoteMutation(bookId, prior);
   }
 }
 
 async function syncUpdateNote(bookId: string, noteId: string, updates: Partial<BookNote>, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) { rollback(bookId, prior); return; }
+  if (!currentUserId.get()) { rollbackNoteMutation(bookId, prior); return; }
   try {
     const res = await fetch(`/api/books/${bookId}/notes/${noteId}`, {
       method: 'PATCH',
@@ -376,25 +386,25 @@ async function syncUpdateNote(bookId: string, noteId: string, updates: Partial<B
     });
     if (!res.ok) {
       console.error('Failed to sync note update:', await res.text());
-      rollback(bookId, prior);
+      rollbackNoteMutation(bookId, prior);
     }
   } catch (e) {
     console.error('Failed to sync note update:', e);
-    rollback(bookId, prior);
+    rollbackNoteMutation(bookId, prior);
   }
 }
 
 async function syncRemoveNote(bookId: string, noteId: string, prior: Record<string, Book>): Promise<void> {
-  if (!currentUserId.get()) { rollback(bookId, prior); return; }
+  if (!currentUserId.get()) { rollbackNoteMutation(bookId, prior); return; }
   try {
     const res = await fetch(`/api/books/${bookId}/notes/${noteId}`, { method: 'DELETE' });
     if (!res.ok) {
       console.error('Failed to sync note removal:', await res.text());
-      rollback(bookId, prior);
+      rollbackNoteMutation(bookId, prior);
     }
   } catch (e) {
     console.error('Failed to sync note removal:', e);
-    rollback(bookId, prior);
+    rollbackNoteMutation(bookId, prior);
   }
 }
 
