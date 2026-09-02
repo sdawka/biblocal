@@ -87,21 +87,6 @@ describe('ScannerIsland', () => {
   // ── 1. Camera init error → message mapping ───────────────────────────────
 
   describe('camera init error mapping', () => {
-    it('NotAllowedError → permission-denied message and no-camera placeholder', async () => {
-      vi.mocked(Quagga.init).mockRejectedValue(makeInitError('NotAllowedError'));
-      renderScanner();
-
-      await waitFor(() => {
-        expect(
-          screen.getByText('Camera permission denied. Allow camera access or upload a photo.'),
-        ).toBeTruthy();
-      });
-      // hasCamera flips to false → viewfinder replaced by the placeholder
-      expect(screen.getByText('Camera not available')).toBeTruthy();
-      // Quagga must not start when init failed
-      expect(vi.mocked(Quagga.start)).not.toHaveBeenCalled();
-    });
-
     it('NotFoundError → no-camera-found message', async () => {
       vi.mocked(Quagga.init).mockRejectedValue(makeInitError('NotFoundError'));
       renderScanner();
@@ -301,5 +286,39 @@ describe('ScannerIsland', () => {
       await fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
       expect(onClose).toHaveBeenCalledTimes(1);
     });
+  });
+
+  // ── 6. Permission denial persists for this page session ─────────────────
+
+  it('does not request a denied camera again on remount, but retries on request', async () => {
+    vi.mocked(Quagga.init).mockRejectedValueOnce(makeInitError('NotAllowedError'));
+    const firstScanner = renderScanner();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Camera permission denied. Allow camera access or upload a photo.'),
+      ).toBeTruthy();
+    });
+    expect(screen.getByText('Camera not available')).toBeTruthy();
+    expect(vi.mocked(Quagga.start)).not.toHaveBeenCalled();
+
+    firstScanner.unmount();
+    const retriedScanner = renderScanner();
+
+    await waitFor(() => expect(vi.mocked(Quagga.init)).toHaveBeenCalledTimes(1));
+    expect(screen.getByText('Camera permission denied. Allow camera access or upload a photo.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try camera again' })).toBeTruthy();
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Try camera again' }));
+    await waitFor(() => expect(vi.mocked(Quagga.init)).toHaveBeenCalledTimes(2));
+    await waitFor(() => {
+      expect(screen.queryByText('Camera permission denied. Allow camera access or upload a photo.')).toBeNull();
+    });
+    expect(screen.queryByRole('button', { name: 'Try camera again' })).toBeNull();
+
+    const handler = await getDetectionHandler();
+    retriedScanner.unmount();
+    expect(vi.mocked(Quagga.offDetected)).toHaveBeenLastCalledWith(handler);
+    expect(vi.mocked(Quagga.stop)).toHaveBeenCalled();
   });
 });

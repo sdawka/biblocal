@@ -1,4 +1,4 @@
-import type { Book, UserProfile, Match, MatchFacets, MatchFacet } from './types';
+import type { Book, BookIntent, UserProfile, Match, MatchFacets, MatchFacet } from './types';
 import { haversineDistance } from './geo';
 
 export interface LocationFilter {
@@ -38,19 +38,29 @@ function hasIntent(book: Book, intent: string): boolean {
   return Array.isArray(book.intents) && book.intents.includes(intent as Book['intents'][number]);
 }
 
-function calcReadingMentor(myBooks: Book[], theirBooks: Book[]): MatchFacet {
-  const myWants = new Set(
-    myBooks
-      .filter((b) => b.ownership === 'seeking')
-      .map((b) => b.isbn)
-      .filter(Boolean)
+function seekingAllowsOffer(seekingBook: Book, offerIntent: BookIntent): boolean {
+  return !seekingBook.intents?.length || hasIntent(seekingBook, offerIntent);
+}
+
+function hasCompatibleSeekingBook(
+  books: Book[],
+  isbn: string | undefined,
+  offerIntent: BookIntent
+): boolean {
+  return Boolean(isbn) && books.some(
+    (book) =>
+      book.ownership === 'seeking' &&
+      book.isbn === isbn &&
+      seekingAllowsOffer(book, offerIntent)
   );
+}
+
+function calcReadingMentor(myBooks: Book[], theirBooks: Book[]): MatchFacet {
   const theyHave = theirBooks.filter(
     (b) =>
-      b.isbn &&
-      myWants.has(b.isbn) &&
       b.ownership === 'have' &&
-      (hasIntent(b, 'borrowable') || hasIntent(b, 'discussable'))
+      ((hasIntent(b, 'borrowable') && hasCompatibleSeekingBook(myBooks, b.isbn, 'borrowable')) ||
+        (hasIntent(b, 'discussable') && hasCompatibleSeekingBook(myBooks, b.isbn, 'discussable')))
   );
   return {
     count: theyHave.length,
@@ -59,18 +69,11 @@ function calcReadingMentor(myBooks: Book[], theirBooks: Book[]): MatchFacet {
 }
 
 function calcLocalSource(myBooks: Book[], theirBooks: Book[]): MatchFacet {
-  const myWants = new Set(
-    myBooks
-      .filter((b) => b.ownership === 'seeking')
-      .map((b) => b.isbn)
-      .filter(Boolean)
-  );
   const canObtain = theirBooks.filter(
     (b) =>
-      b.isbn &&
-      myWants.has(b.isbn) &&
       b.ownership === 'have' &&
-      (hasIntent(b, 'borrowable') || hasIntent(b, 'giftable'))
+      ((hasIntent(b, 'borrowable') && hasCompatibleSeekingBook(myBooks, b.isbn, 'borrowable')) ||
+        (hasIntent(b, 'giftable') && hasCompatibleSeekingBook(myBooks, b.isbn, 'giftable')))
   );
   return {
     count: canObtain.length,

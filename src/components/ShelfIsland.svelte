@@ -88,8 +88,8 @@
     return Math.max(books.length - 2, 0);
   }
 
-  function handleDeleteBook(id: string) {
-    removeBook(id);
+  async function handleDeleteBook(id: string): Promise<boolean> {
+    return removeBook(id);
   }
 </script>
 
@@ -250,10 +250,7 @@
     onUpdateDetails={(updates) => updateBook(openBook.id, updates)}
     onUploadCover={(file) => uploadCover(openBook.id, file)}
     onResetCover={() => resetCover(openBook.id)}
-    onDelete={(id) => {
-      handleDeleteBook(id);
-      openBookId = null;
-    }}
+    onDelete={handleDeleteBook}
     onAddNote={(text, visibility) => addNote(openBook.id, text, visibility)}
     onUpdateNote={(noteId, updates) => updateNote(openBook.id, noteId, updates)}
     onDeleteNote={(noteId) => removeNote(openBook.id, noteId)}

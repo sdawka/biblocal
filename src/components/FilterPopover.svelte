@@ -83,6 +83,16 @@
   $effect(() => {
     if (open && isMobile) requestAnimationFrame(() => sheetRef?.querySelector<HTMLElement>('button')?.focus());
   });
+
+  $effect(() => {
+    if (!open || !isMobile) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  });
 </script>
 
 <svelte:window onpointerdown={handleWindowPointerDown} onkeydown={handleKeyDown} />
@@ -117,6 +127,9 @@
       role={isMobile ? 'dialog' : 'group'}
       aria-modal={isMobile ? 'true' : undefined}
       aria-label={t.filterPopoverLabel}
+      style:position={isMobile ? 'fixed' : undefined}
+      style:top={isMobile ? 'auto' : undefined}
+      style:z-index={isMobile ? 110 : 50}
       bind:this={sheetRef}
     >
       {#if isMobile}
@@ -188,7 +201,7 @@
   .filter-scrim {
     position: fixed;
     inset: 0;
-    z-index: 49;
+    z-index: 109;
     width: 100%;
     border: 0;
     background: oklch(0 0 0 / 0.45);
@@ -228,6 +241,10 @@
     padding: var(--s-4);
     box-shadow: var(--shadow-4);
     animation: fade var(--dur-2) var(--ease-soft) both;
+  }
+
+  .popover.mobile-sheet {
+    z-index: 110;
   }
 
   .filter-row {
@@ -289,7 +306,6 @@
       right: 0;
       bottom: 0;
       left: 0;
-      z-index: 50;
       width: 100%;
       max-width: none;
       min-width: 0;

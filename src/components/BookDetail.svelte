@@ -15,7 +15,7 @@
     onIntentsChange?: (intents: BookIntent[]) => void;
     onVisibilityChange?: (visibility: BookVisibility) => void;
     onOwnershipChange?: (ownership: BookOwnership) => void;
-    onDelete?: (id: string) => void;
+    onDelete?: (id: string) => Promise<boolean>;
     onAddNote?: (text: string, visibility: BookVisibility) => void;
     onUpdateNote?: (noteId: string, updates: { text?: string; visibility?: BookVisibility }) => void;
     onDeleteNote?: (noteId: string) => void;
@@ -42,6 +42,8 @@
   const ta = $derived(useTranslations(lang).shelf.add);
 
   let showDeleteConfirm = $state(false);
+  let deletePending = $state(false);
+  let deleteFailed = $state(false);
 
   let editingDetails = $state(false);
   let draftTitle = $state('');
@@ -62,16 +64,24 @@
   }
 
   function handleDeleteClick() {
+    deleteFailed = false;
     showDeleteConfirm = true;
   }
 
-  function confirmDelete() {
-    onDelete?.(book.id);
-    showDeleteConfirm = false;
+  async function confirmDelete() {
+    if (!onDelete || deletePending) return;
+    deletePending = true;
+    deleteFailed = false;
+    const removed = await onDelete(book.id);
+    deletePending = false;
+    if (removed) showDeleteConfirm = false;
+    else deleteFailed = true;
   }
 
   function cancelDelete() {
+    if (deletePending) return;
     showDeleteConfirm = false;
+    deleteFailed = false;
   }
 
   function toggleIntent(intent: BookIntent) {
@@ -100,6 +110,8 @@
     draftTitle = '';
     draftAuthor = '';
     showDeleteConfirm = false;
+    deletePending = false;
+    deleteFailed = false;
     notesOpen = false;
     draftText = '';
     draftVisibility = 'private';
@@ -281,6 +293,7 @@
     <button
       class="delete-btn"
       onclick={handleDeleteClick}
+      disabled={deletePending}
       aria-label={t.deleteAria.replace('{title}', book.title)}
     >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
@@ -289,13 +302,18 @@
     </button>
 
     {#if showDeleteConfirm}
-      <div class="delete-confirm glass">
+      <section class="delete-confirm" aria-label={t.removeConfirmLabel}>
         <p class="serif">{t.removeConfirm}</p>
+        {#if deleteFailed}
+          <p class="delete-error" role="alert">{t.removeFailed}</p>
+        {/if}
         <div class="delete-actions">
-          <button class="btn btn-outline btn-sm" onclick={cancelDelete}>{t.cancel}</button>
-          <button class="btn btn-filled btn-sm btn-remove" onclick={confirmDelete}>{t.remove}</button>
+          <button class="btn btn-outline btn-sm" onclick={cancelDelete} disabled={deletePending}>{t.cancel}</button>
+          <button class="btn btn-filled btn-sm btn-remove" onclick={confirmDelete} disabled={deletePending}>
+            {deletePending ? t.removing : t.remove}
+          </button>
         </div>
-      </div>
+      </section>
     {/if}
   {/if}
 </div>
@@ -490,15 +508,15 @@
   }
 
   .delete-confirm {
-    position: absolute;
-    inset: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    align-items: stretch;
     gap: var(--s-3);
+    margin-top: var(--s-4);
+    padding: var(--s-4);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: var(--r-lg);
-    z-index: 3;
     animation: fade var(--dur-2) var(--ease-soft) both;
   }
 
@@ -509,9 +527,23 @@
     color: var(--ink);
   }
 
+  .delete-confirm .delete-error {
+    color: var(--danger);
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
   .delete-actions {
     display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
     gap: var(--s-2);
+  }
+
+  .delete-actions .btn {
+    min-width: 44px;
+    min-height: 44px;
   }
 
   /* Make the destructive confirm read as destructive while staying on-token. */
@@ -634,6 +666,11 @@
      squeezes both into hard-to-read tap targets. Keep the relationship clear
      by stacking each label over its segmented choice. */
   @media (max-width: 430px) {
+    .delete-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
     .dimension-row {
       align-items: stretch;
       flex-direction: column;

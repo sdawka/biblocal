@@ -264,13 +264,23 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     // Delete the book and its notes atomically so no orphan notes are left.
     // Ownership is already verified above; the notes delete is also scoped by
     // userId for defense in depth.
-    await db.batch([
+    const [, deletedBooks] = await db.batch([
       db.delete(bookNotes).where(and(eq(bookNotes.bookId, bookId), eq(bookNotes.userId, userId))),
-      db.delete(books).where(and(eq(books.id, bookId), eq(books.userId, userId))),
+      db
+        .delete(books)
+        .where(and(eq(books.id, bookId), eq(books.userId, userId)))
+        .returning({ coverUrl: books.coverUrl }),
     ]);
 
+    if (deletedBooks.length === 0) {
+      return new Response(JSON.stringify({ error: 'Book not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     // Best-effort: free the hosted cover's storage. Never fails the delete.
-    const coverUrl = existing[0].coverUrl;
+    const coverUrl = deletedBooks[0].coverUrl;
     if (coverUrl && isHostedCoverUrl(coverUrl)) {
       const images = (env as ImagesEnv).IMAGES;
       const imageId = hostedImageIdFromUrl(coverUrl);

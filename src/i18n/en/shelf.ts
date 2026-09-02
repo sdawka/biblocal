@@ -20,6 +20,18 @@ export default {
     },
   },
   add: {
+    intents: {
+      have: {
+        borrowable: 'Lend',
+        discussable: 'Discuss',
+        giftable: 'Give',
+      },
+      seeking: {
+        borrowable: 'Borrow',
+        discussable: 'Discuss',
+        giftable: 'Find a copy',
+      },
+    },
     tabs: {
       isbn: 'ISBN Lookup',
       manual: 'Manual Entry',
@@ -73,6 +85,7 @@ export default {
     cameraUnavailable: 'Camera not available',
     scanning: 'Scanning…',
     uploadPhoto: 'Upload Photo',
+    retryCamera: 'Try camera again',
     cancel: 'Cancel',
     uploadAriaScanning: 'Scanning barcode image',
     uploadAriaIdle: 'Upload a photo of ISBN barcode',
@@ -148,6 +161,9 @@ export default {
     removeConfirm: 'Remove from shelf?',
     cancel: 'Cancel',
     remove: 'Remove',
+    removing: 'Removing…',
+    removeFailed: 'Could not remove this book. Try again.',
+    removeConfirmLabel: 'Confirm removal',
     // {title} interpolated
     openDetailAria: 'View details for {title}',
     closeDetailAria: 'Close',

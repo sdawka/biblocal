@@ -17,6 +17,18 @@ export default {
     },
   },
   add: {
+    intents: {
+      have: {
+        borrowable: 'Prestar',
+        discussable: 'Conversar',
+        giftable: 'Regalar',
+      },
+      seeking: {
+        borrowable: 'Pedir prestado',
+        discussable: 'Conversar',
+        giftable: 'Encontrar un ejemplar',
+      },
+    },
     tabs: {
       isbn: 'Buscar ISBN',
       manual: 'Entrada manual',
@@ -70,6 +82,7 @@ export default {
     cameraUnavailable: 'Cámara no disponible',
     scanning: 'Escaneando…',
     uploadPhoto: 'Subir foto',
+    retryCamera: 'Intentar la cámara de nuevo',
     cancel: 'Cancelar',
     uploadAriaScanning: 'Escaneando la imagen del código de barras',
     uploadAriaIdle: 'Subir una foto del código de barras ISBN',
@@ -141,6 +154,9 @@ export default {
     removeConfirm: '¿Quitar de la estantería?',
     cancel: 'Cancelar',
     remove: 'Quitar',
+    removing: 'Quitando…',
+    removeFailed: 'No se pudo quitar este libro. Inténtalo de nuevo.',
+    removeConfirmLabel: 'Confirmar eliminación',
     openDetailAria: 'Ver detalles de {title}',
     closeDetailAria: 'Cerrar',
     changeCover: 'Cambiar portada',

@@ -70,6 +70,35 @@ describe('calculateMatches', () => {
   });
 
   describe('readingMentor facet', () => {
+    it('only matches owner offers compatible with a seeking book intention', () => {
+      const myBooks = [
+        makeBook({ isbn: '123', ownership: 'seeking', intents: ['giftable'] }),
+      ];
+      const owner = makeUser({
+        shelf: [
+          makeBook({ isbn: '123', ownership: 'have', intents: ['borrowable'], title: 'Lend only' }),
+          makeBook({ isbn: '123', ownership: 'have', intents: ['giftable'], title: 'Give only' }),
+        ],
+      });
+
+      const matches = calculateMatches(myBooks, [], [owner]);
+
+      expect(matches[0].facets.readingMentor.count).toBe(0);
+      expect(matches[0].facets.localSource.items).toEqual(['Give only']);
+    });
+
+    it('keeps broad matching for a seeking book with no intentions', () => {
+      const myBooks = [makeBook({ isbn: '123', ownership: 'seeking', intents: [] })];
+      const owner = makeUser({
+        shelf: [makeBook({ isbn: '123', ownership: 'have', intents: ['borrowable'] })],
+      });
+
+      const matches = calculateMatches(myBooks, [], [owner]);
+
+      expect(matches[0].facets.readingMentor.count).toBe(1);
+      expect(matches[0].facets.localSource.count).toBe(1);
+    });
+
     it('finds users who have books I seek and can discuss/lend', () => {
       const myBooks = [
         makeBook({ isbn: '123', ownership: 'seeking', title: 'Want This' }),

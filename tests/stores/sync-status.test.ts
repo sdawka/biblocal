@@ -103,7 +103,7 @@ describe('shelf rollback on failed sync', () => {
     expect(syncError.get()).toBe('Could not save your change. Please try again.');
   });
 
-  it('restores a removed book when the deletion sync fails', async () => {
+  it('keeps a book present and reports failure when deletion sync fails', async () => {
     const book = addBook({
       title: 'Keep Me',
       author: 'Author',
@@ -114,11 +114,9 @@ describe('shelf rollback on failed sync', () => {
     clearSyncError();
 
     mockFailedFetch();
-    removeBook(book.id);
-    expect(shelf.get()[book.id]).toBeUndefined();
+    const removed = await removeBook(book.id);
 
-    await flush();
-
+    expect(removed).toBe(false);
     expect(shelf.get()[book.id]).toBeDefined();
     expect(syncError.get()).toBe('Could not save your change. Please try again.');
   });

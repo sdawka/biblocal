@@ -11,7 +11,7 @@
     onIntentsChange?: (intents: BookIntent[]) => void;
     onVisibilityChange?: (visibility: BookVisibility) => void;
     onOwnershipChange?: (ownership: BookOwnership) => void;
-    onDelete?: (id: string) => void;
+    onDelete?: (id: string) => Promise<boolean>;
     onAddNote?: (text: string, visibility: BookVisibility) => void;
     onUpdateNote?: (noteId: string, updates: { text?: string; visibility?: BookVisibility }) => void;
     onDeleteNote?: (noteId: string) => void;
@@ -44,6 +44,7 @@
 
   let fileInputRef: HTMLInputElement | null = $state(null);
   let uploading = $state(false);
+  let deleting = $state(false);
 
   // Explicit transient-state reset keyed on the book id: if the sheet ever
   // switches books while open (e.g. a future next/prev affordance), a stale
@@ -62,17 +63,27 @@
     const input = event.currentTarget as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
-    if (!file || !onUploadCover) return;
+    if (deleting || !file || !onUploadCover) return;
     uploading = true;
     await onUploadCover(file);
     uploading = false;
   }
 
   async function handleResetCover() {
-    if (!onResetCover) return;
+    if (deleting || !onResetCover) return;
     uploading = true;
     await onResetCover();
     uploading = false;
+  }
+
+  async function handleDelete(id: string): Promise<boolean> {
+    if (!onDelete || deleting) return false;
+    deleting = true;
+    dialogRef?.focus();
+    const removed = await onDelete(id);
+    deleting = false;
+    if (removed) onClose();
+    return removed;
   }
 
   // Focus trap and restoration, following the ScannerIsland pattern.
@@ -89,18 +100,24 @@
 
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
-      onClose();
+      if (!deleting) onClose();
       return;
     }
 
     if (event.key === 'Tab' && dialogRef) {
       const focusableElements = dialogRef.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
       );
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
 
-      if (event.shiftKey && document.activeElement === firstElement) {
+      if (!firstElement || !lastElement) {
+        event.preventDefault();
+        dialogRef.focus();
+      } else if (document.activeElement === dialogRef) {
+        event.preventDefault();
+        (event.shiftKey ? lastElement : firstElement).focus();
+      } else if (event.shiftKey && document.activeElement === firstElement) {
         event.preventDefault();
         lastElement?.focus();
       } else if (!event.shiftKey && document.activeElement === lastElement) {
@@ -111,7 +128,7 @@
   }
 
   function handleScrimClick(event: MouseEvent) {
-    if (event.target === event.currentTarget) {
+    if (!deleting && event.target === event.currentTarget) {
       onClose();
     }
   }
@@ -144,17 +161,18 @@
             class="visually-hidden-input"
             bind:this={fileInputRef}
             onchange={handleFileChange}
+            disabled={deleting}
           />
           <button
             class="btn btn-outline btn-sm"
             onclick={() => fileInputRef?.click()}
-            disabled={uploading}
+            disabled={uploading || deleting}
             aria-label={t.changeCoverAria.replace('{title}', book.title)}
           >
             {uploading ? t.uploadingCover : t.changeCover}
           </button>
           {#if canReset && onResetCover}
-            <button class="btn btn-plain btn-sm" onclick={handleResetCover} disabled={uploading}>
+            <button class="btn btn-plain btn-sm" onclick={handleResetCover} disabled={uploading || deleting}>
               {t.resetCover}
             </button>
           {/if}
@@ -163,7 +181,8 @@
       <h2 id="book-detail-sheet-title" class="visually-hidden">{book.title}</h2>
       <button
         class="close-btn"
-        onclick={onClose}
+        onclick={() => { if (!deleting) onClose(); }}
+        disabled={deleting}
         aria-label={t.closeDetailAria}
         bind:this={closeBtnRef}
       >
@@ -174,18 +193,20 @@
     </div>
 
     <div class="sheet-body">
-      <BookDetail
-        {book}
-        {lang}
-        {onIntentsChange}
-        {onVisibilityChange}
-        {onOwnershipChange}
-        {onDelete}
-        {onAddNote}
-        {onUpdateNote}
-        {onDeleteNote}
-        {onUpdateDetails}
-      />
+      <fieldset class="sheet-mutations" disabled={deleting}>
+        <BookDetail
+          {book}
+          {lang}
+          {onIntentsChange}
+          {onVisibilityChange}
+          {onOwnershipChange}
+          onDelete={onDelete ? handleDelete : undefined}
+          {onAddNote}
+          {onUpdateNote}
+          {onDeleteNote}
+          {onUpdateDetails}
+        />
+      </fieldset>
     </div>
   </div>
 </div>
@@ -297,6 +318,13 @@
   .sheet-body {
     padding: var(--s-4);
     overflow-y: auto;
+  }
+
+  .sheet-mutations {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
   }
 
   .sheet-body :global(.book-detail) {

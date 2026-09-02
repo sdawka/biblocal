@@ -20,3 +20,8 @@ export const INTENT_OPTIONS: { value: BookIntent; label: string }[] = [
   { value: 'discussable', label: INTENT_LABELS.discussable },
   { value: 'giftable', label: INTENT_LABELS.giftable },
 ];
+
+// The data model deliberately keeps one stable value for each intent. Intake
+// presents direction-specific language for those values, while filters and
+// book details retain their neutral labels above.
+export const INTENT_VALUES: BookIntent[] = INTENT_OPTIONS.map((option) => option.value);

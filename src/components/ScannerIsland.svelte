@@ -1,3 +1,10 @@
+<script module lang="ts">
+  // Quagga is a module singleton, so keep a page-lifetime record of a denied
+  // permission. Reopening the sheet should not make the browser prompt again
+  // unless the reader deliberately asks us to retry.
+  let cameraAccess: 'unknown' | 'granted' | 'denied' = 'unknown';
+</script>
+
 <script lang="ts">
   import Quagga, {
     type QuaggaJSCodeReader,
@@ -18,7 +25,9 @@
   let videoRef: HTMLDivElement | null = $state(null);
   let fileInputRef: HTMLInputElement | null = $state(null);
   let dialogRef: HTMLDivElement | null = $state(null);
-  let hasCamera = $state(true);
+  let hasCamera = $state(cameraAccess !== 'denied');
+  let cameraDenied = $state(cameraAccess === 'denied');
+  let shouldStartCamera = $state(cameraAccess !== 'denied');
   let error = $state('');
   let decoding = $state(false);
   let previousActiveElement: Element | null = null;
@@ -50,7 +59,10 @@
 
   $effect(() => {
     mounted = true;
-    if (videoRef) {
+    if (cameraAccess === 'denied') {
+      error = t.errors.permissionDenied;
+    }
+    if (shouldStartCamera && videoRef) {
       initScanner(videoRef);
     }
     return () => {
@@ -127,6 +139,9 @@
       // before start() so we don't leak the camera MediaStream.
       if (!mounted) return;
 
+      cameraAccess = 'granted';
+      cameraDenied = false;
+      error = '';
       Quagga.start();
 
       const handler = (result: QuaggaJSResultObject) => {
@@ -173,6 +188,9 @@
       hasCamera = false;
       const name = err instanceof Error ? err.name : '';
       if (name === 'NotAllowedError') {
+        cameraAccess = 'denied';
+        cameraDenied = true;
+        shouldStartCamera = false;
         error = t.errors.permissionDenied;
       } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
         error = t.errors.notFound;
@@ -180,6 +198,14 @@
         error = t.errors.unavailable;
       }
     }
+  }
+
+  function retryCamera() {
+    cameraAccess = 'unknown';
+    cameraDenied = false;
+    hasCamera = true;
+    error = '';
+    shouldStartCamera = true;
   }
 
   function handleFileUpload(event: Event) {
@@ -286,6 +312,11 @@
       >
         {decoding ? t.scanning : t.uploadPhoto}
       </button>
+      {#if cameraDenied}
+        <button type="button" class="btn btn-outline retry-btn" onclick={retryCamera}>
+          {t.retryCamera}
+        </button>
+      {/if}
       <button
         type="button"
         class="btn btn-plain cancel-btn"

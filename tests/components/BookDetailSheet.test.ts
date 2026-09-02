@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, fireEvent, screen } from '@testing-library/svelte';
+import { render, fireEvent, screen, waitFor } from '@testing-library/svelte';
 import BookDetailSheet from '../../src/components/BookDetailSheet.svelte';
 import type { Book } from '../../src/lib/types';
 
@@ -16,6 +16,9 @@ vi.mock('../../src/i18n', () => ({
         removeConfirm: 'Remove from shelf?',
         cancel: 'Cancel',
         remove: 'Remove',
+        removing: 'Removing…',
+        removeFailed: 'Could not remove this book. Try again.',
+        removeConfirmLabel: 'Confirm removal',
         openDetailAria: 'View details for {title}',
         closeDetailAria: 'Close',
         changeCover: 'Change cover',
@@ -77,6 +80,142 @@ function makeFile(name = 'cover.png') {
 }
 
 describe('BookDetailSheet', () => {
+  describe('delete dismissal', () => {
+    async function startDelete(onDelete: (id: string) => Promise<boolean>, onClose = vi.fn()) {
+      render(BookDetailSheet, { props: { book: makeBook(), lang: 'en', onClose, onDelete } });
+      await fireEvent.click(screen.getByLabelText('Delete Test Book from shelf'));
+      await fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+      return { onClose, dialog: screen.getByRole('dialog') };
+    }
+
+    it('ignores Escape, scrim, and close-button dismissal while delete is pending', async () => {
+      let resolveDelete!: (removed: boolean) => void;
+      const onDelete = vi.fn(() => new Promise<boolean>((resolve) => { resolveDelete = resolve; }));
+      const { onClose, dialog } = await startDelete(onDelete);
+      const close = screen.getByRole('button', { name: 'Close' }) as HTMLButtonElement;
+
+      expect(close.disabled).toBe(true);
+      await fireEvent.keyDown(dialog, { key: 'Escape' });
+      await fireEvent.click(dialog);
+      await fireEvent.click(close);
+      expect(onClose).not.toHaveBeenCalled();
+
+      resolveDelete(false);
+      await screen.findByRole('alert');
+    });
+
+    it('does not close after failure and closes after a successful retry', async () => {
+      const onDelete = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+      const onClose = vi.fn();
+      await startDelete(onDelete, onClose);
+
+      await screen.findByRole('alert');
+      expect(onClose).not.toHaveBeenCalled();
+      await fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+      await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    });
+
+    it('disables cover and inner mutations while deletion is pending', async () => {
+      let resolveDelete!: (removed: boolean) => void;
+      const onDelete = vi.fn(() => new Promise<boolean>((resolve) => { resolveDelete = resolve; }));
+      const onUploadCover = vi.fn().mockResolvedValue(true);
+      const onResetCover = vi.fn().mockResolvedValue(true);
+      const { container } = render(BookDetailSheet, {
+        props: {
+          book: makeBook({
+            coverUrl: HOSTED_URL,
+            fetchedCoverUrl: OTHER_URL,
+            notes: [{ id: 'note-1', text: 'A note', visibility: 'private', createdAt: 1 }],
+          }),
+          lang: 'en',
+          onClose: vi.fn(),
+          onDelete,
+          onUploadCover,
+          onResetCover,
+          onIntentsChange: vi.fn(),
+          onVisibilityChange: vi.fn(),
+          onOwnershipChange: vi.fn(),
+          onAddNote: vi.fn(),
+          onUpdateNote: vi.fn(),
+          onDeleteNote: vi.fn(),
+          onUpdateDetails: vi.fn(),
+        },
+      });
+
+      await fireEvent.click(screen.getByLabelText('Delete Test Book from shelf'));
+      await fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+      const mutations = container.querySelector('fieldset.sheet-mutations') as HTMLFieldSetElement;
+      const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+      expect(mutations?.disabled).toBe(true);
+      expect(fileInput.disabled).toBe(true);
+      expect((screen.getByRole('button', { name: /Upload a custom cover/ }) as HTMLButtonElement).disabled).toBe(true);
+      expect((screen.getByRole('button', { name: 'Use original cover' }) as HTMLButtonElement).disabled).toBe(true);
+
+      await fireEvent.change(fileInput, { target: { files: [makeFile()] } });
+      await fireEvent.click(screen.getByRole('button', { name: 'Use original cover' }));
+      expect(onUploadCover).not.toHaveBeenCalled();
+      expect(onResetCover).not.toHaveBeenCalled();
+
+      resolveDelete(false);
+      await screen.findByRole('alert');
+    });
+
+    it('keeps Tab and Shift+Tab focused in the dialog when deletion disables every control', async () => {
+      let resolveDelete!: (removed: boolean) => void;
+      const onDelete = vi.fn(() => new Promise<boolean>((resolve) => { resolveDelete = resolve; }));
+      const { dialog } = await startDelete(onDelete);
+
+      const controls = [...dialog.querySelectorAll<HTMLElement>('button, input, select, textarea')];
+      expect(controls.length).toBeGreaterThan(0);
+      expect(controls.every((control) => control.matches(':disabled'))).toBe(true);
+      expect(dialog.tabIndex).toBe(-1);
+      expect(document.activeElement).toBe(dialog);
+
+      for (const shiftKey of [false, true]) {
+        const event = new KeyboardEvent('keydown', {
+          key: 'Tab',
+          shiftKey,
+          bubbles: true,
+          cancelable: true,
+        });
+        dialog.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(dialog);
+      }
+
+      resolveDelete(false);
+      await screen.findByRole('alert');
+    });
+
+    it('moves focus from the dialog boundary back into enabled controls after deletion fails', async () => {
+      let resolveDelete!: (removed: boolean) => void;
+      const onDelete = vi.fn(() => new Promise<boolean>((resolve) => { resolveDelete = resolve; }));
+      const { dialog } = await startDelete(onDelete);
+
+      resolveDelete(false);
+      await screen.findByRole('alert');
+      const enabled = [...dialog.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+      )];
+      expect(enabled.length).toBeGreaterThan(1);
+
+      for (const [shiftKey, expected] of [[false, enabled[0]], [true, enabled.at(-1)!]] as const) {
+        dialog.focus();
+        const event = new KeyboardEvent('keydown', {
+          key: 'Tab',
+          shiftKey,
+          bubbles: true,
+          cancelable: true,
+        });
+        dialog.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(expected);
+      }
+    });
+  });
+
   describe('cover upload', () => {
     it('does not render a "Change cover" button when onUploadCover is not provided', () => {
       render(BookDetailSheet, { props: { book: makeBook(), lang: 'en', onClose: vi.fn() } });
