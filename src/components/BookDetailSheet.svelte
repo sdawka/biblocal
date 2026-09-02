@@ -79,6 +79,7 @@
   async function handleDelete(id: string): Promise<boolean> {
     if (!onDelete || deleting) return false;
     deleting = true;
+    dialogRef?.focus();
     const removed = await onDelete(id);
     deleting = false;
     if (removed) onClose();
@@ -105,12 +106,15 @@
 
     if (event.key === 'Tab' && dialogRef) {
       const focusableElements = dialogRef.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
       );
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
 
-      if (event.shiftKey && document.activeElement === firstElement) {
+      if (!firstElement || !lastElement) {
+        event.preventDefault();
+        dialogRef.focus();
+      } else if (event.shiftKey && document.activeElement === firstElement) {
         event.preventDefault();
         lastElement?.focus();
       } else if (!event.shiftKey && document.activeElement === lastElement) {

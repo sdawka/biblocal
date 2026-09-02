@@ -161,6 +161,33 @@ describe('BookDetailSheet', () => {
       resolveDelete(false);
       await screen.findByRole('alert');
     });
+
+    it('keeps Tab and Shift+Tab focused in the dialog when deletion disables every control', async () => {
+      let resolveDelete!: (removed: boolean) => void;
+      const onDelete = vi.fn(() => new Promise<boolean>((resolve) => { resolveDelete = resolve; }));
+      const { dialog } = await startDelete(onDelete);
+
+      const controls = [...dialog.querySelectorAll<HTMLElement>('button, input, select, textarea')];
+      expect(controls.length).toBeGreaterThan(0);
+      expect(controls.every((control) => control.matches(':disabled'))).toBe(true);
+      expect(dialog.tabIndex).toBe(-1);
+      expect(document.activeElement).toBe(dialog);
+
+      for (const shiftKey of [false, true]) {
+        const event = new KeyboardEvent('keydown', {
+          key: 'Tab',
+          shiftKey,
+          bubbles: true,
+          cancelable: true,
+        });
+        dialog.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(dialog);
+      }
+
+      resolveDelete(false);
+      await screen.findByRole('alert');
+    });
   });
 
   describe('cover upload', () => {
