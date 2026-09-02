@@ -144,4 +144,8 @@ describe('getCityCoordinates', () => {
     const result = getCityCoordinates('Atlantis');
     expect(result).toBeNull();
   });
+
+  it.each(['New York', 'London', 'Paris', 'Lyon', 'Tokyo'])('returns the QA city center for %s', (city) => {
+    expect(getCityCoordinates(city)).toEqual(CITY_COORDINATES[city]);
+  });
 });

@@ -1,33 +1,36 @@
 import { atom } from 'nanostores';
 import type { UserProfile } from '../lib/types';
 
-export const seedUsers = atom<UserProfile[]>([]);
+export const discoveryUsers = atom<UserProfile[]>([]);
+export const discoveryUsersLoaded = atom<boolean>(false);
 export const usersLoading = atom<boolean>(false);
 export const usersError = atom<'load-failed' | null>(null);
 
 // In-flight guard: if two callers race, they share the same promise.
-let _loadSeedUsersPromise: Promise<void> | null = null;
+let _loadDiscoveryUsersPromise: Promise<void> | null = null;
 
-export async function loadSeedUsers(): Promise<void> {
-  if (seedUsers.get().length > 0) return;
-  if (_loadSeedUsersPromise) return _loadSeedUsersPromise;
+export async function loadDiscoveryUsers(): Promise<void> {
+  if (discoveryUsersLoaded.get()) return;
+  if (_loadDiscoveryUsersPromise) return _loadDiscoveryUsersPromise;
 
-  _loadSeedUsersPromise = (async () => {
+  _loadDiscoveryUsersPromise = (async () => {
     usersLoading.set(true);
     usersError.set(null);
     try {
       const res = await fetch('/api/users.json');
       if (!res.ok) throw new Error(`Failed to load users (${res.status})`);
       const data = (await res.json()) as UserProfile[];
-      seedUsers.set(data);
+      discoveryUsers.set(data);
+      discoveryUsersLoaded.set(true);
     } catch (err) {
       console.error('Failed to load users:', err);
       usersError.set('load-failed');
+      discoveryUsersLoaded.set(false);
     } finally {
       usersLoading.set(false);
-      _loadSeedUsersPromise = null;
+      _loadDiscoveryUsersPromise = null;
     }
   })();
 
-  return _loadSeedUsersPromise;
+  return _loadDiscoveryUsersPromise;
 }
