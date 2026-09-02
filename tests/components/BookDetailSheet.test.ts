@@ -188,6 +188,32 @@ describe('BookDetailSheet', () => {
       resolveDelete(false);
       await screen.findByRole('alert');
     });
+
+    it('moves focus from the dialog boundary back into enabled controls after deletion fails', async () => {
+      let resolveDelete!: (removed: boolean) => void;
+      const onDelete = vi.fn(() => new Promise<boolean>((resolve) => { resolveDelete = resolve; }));
+      const { dialog } = await startDelete(onDelete);
+
+      resolveDelete(false);
+      await screen.findByRole('alert');
+      const enabled = [...dialog.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+      )];
+      expect(enabled.length).toBeGreaterThan(1);
+
+      for (const [shiftKey, expected] of [[false, enabled[0]], [true, enabled.at(-1)!]] as const) {
+        dialog.focus();
+        const event = new KeyboardEvent('keydown', {
+          key: 'Tab',
+          shiftKey,
+          bubbles: true,
+          cancelable: true,
+        });
+        dialog.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(expected);
+      }
+    });
   });
 
   describe('cover upload', () => {

@@ -114,6 +114,9 @@
       if (!firstElement || !lastElement) {
         event.preventDefault();
         dialogRef.focus();
+      } else if (document.activeElement === dialogRef) {
+        event.preventDefault();
+        (event.shiftKey ? lastElement : firstElement).focus();
       } else if (event.shiftKey && document.activeElement === firstElement) {
         event.preventDefault();
         lastElement?.focus();
