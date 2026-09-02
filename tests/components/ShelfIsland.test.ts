@@ -517,7 +517,30 @@ describe('ShelfIsland', () => {
       });
     });
 
-    it('the ShelfIsland source defines .covers-row as the scroll container (overflow-x: auto, flex)', async () => {
+    it('frames ownership sections in one bookcase while each covers row owns its scrolling', async () => {
+      shelf.set({
+        'b1': makeStoreBook({ id: 'b1', title: 'The Great Gatsby', author: 'Fitzgerald', ownership: 'have' }),
+        'b2': makeStoreBook({ id: 'b2', title: 'Foundation', author: 'Asimov', ownership: 'seeking' }),
+      });
+      setShelfView('covers');
+      const { container } = render(ShelfIsland, { props: { lang: 'en' } });
+
+      await waitFor(() => {
+        expect(container.querySelector('[data-book-id="b1"]')).toBeTruthy();
+      });
+
+      const bookcases = container.querySelectorAll('.bookcase');
+      expect(bookcases).toHaveLength(1);
+      const bookcase = bookcases[0];
+      expect(bookcase).toBeTruthy();
+      expect(bookcase?.querySelectorAll(':scope > .shelf-section')).toHaveLength(2);
+
+      bookcase?.querySelectorAll(':scope > .shelf-section').forEach((section) => {
+        expect(section.querySelector(':scope > .covers-row')).toBeTruthy();
+      });
+    });
+
+    it('the ShelfIsland source keeps covers-row as the only horizontal scroll container', async () => {
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
       const src = await fs.readFile(
@@ -531,6 +554,12 @@ describe('ShelfIsland', () => {
       expect(rowRule).toMatch(/display:\s*flex/);
       expect(rowRule).toMatch(/overflow-x:\s*auto/);
       expect(rowRule).toMatch(/width:\s*100%/);
+
+      const bookcaseRules = [...styleBlock.matchAll(/\.bookcase\s*\{[^}]*\}/g)];
+      expect(bookcaseRules).toHaveLength(2);
+      bookcaseRules.forEach(([rule]) => {
+        expect(rule).not.toMatch(/\boverflow(?:-[xy])?\s*:/);
+      });
     });
   });
 });
