@@ -42,6 +42,11 @@ interface NoteMutationJournal {
   seeds: Map<string, BookNote>;
 }
 
+interface FieldProvenance {
+  confirmed: unknown;
+  pending: Array<{ token: symbol; value: unknown }>;
+}
+
 interface BookMutationLane {
   session: UserSession;
   aliases: Set<string>;
@@ -51,6 +56,7 @@ interface BookMutationLane {
   barrier?: Promise<void>;
   deletionFenced: boolean;
   fieldOwners: Map<keyof Book, symbol>;
+  fieldProvenance: Map<keyof Book, FieldProvenance>;
   pendingMutations: number;
   noteJournal?: NoteMutationJournal;
 }
@@ -176,6 +182,7 @@ function mutationLane(id: string, session: UserSession): BookMutationLane {
     tail: Promise.resolve(),
     deletionFenced: false,
     fieldOwners: new Map(),
+    fieldProvenance: new Map(),
     pendingMutations: 0,
   };
   aliasMutationLane(lane, id);
@@ -197,6 +204,7 @@ function newBookMutationLane(id: string, session: UserSession): BookMutationLane
     tail: Promise.resolve(),
     deletionFenced: false,
     fieldOwners: new Map(),
+    fieldProvenance: new Map(),
     pendingMutations: 0,
   };
   aliasMutationLane(lane, id);
@@ -251,6 +259,7 @@ function cleanupMutationLane(lane: BookMutationLane, settled = lane.tail): void 
     || lane.pendingMutations > 0
     || lane.noteJournal
     || lane.fieldOwners.size > 0
+    || lane.fieldProvenance.size > 0
     || lane.aliases.size > 1) return;
   for (const alias of lane.aliases) {
     if (bookMutationLanes.get(alias) === lane) bookMutationLanes.delete(alias);
@@ -751,47 +760,41 @@ function rollback(id: string, prior: Record<string, Book>): void {
 // Per-field ownership lets an older failure roll back only fields which have
 // not since been claimed by another optimistic mutation. Equal values still
 // represent distinct writes and therefore receive distinct owner tokens.
-function finishFieldMutation(
+function settleFieldMutation(
   lane: BookMutationLane,
   fields: Map<keyof Book, symbol>,
-  priorBook?: Book,
+  outcome: 'succeeded' | 'failed' | 'cancelled',
 ): void {
   const current = shelf.get();
   const id = currentLaneBookId(lane);
   const currentBook = current[id];
-  let reverted = currentBook;
+  let nextBook = currentBook;
   for (const [key, token] of fields) {
-    if (lane.fieldOwners.get(key) !== token) continue;
-    lane.fieldOwners.delete(key);
-    if (priorBook && reverted) {
-      reverted = { ...reverted, [key]: priorBook[key] };
+    const provenance = lane.fieldProvenance.get(key);
+    if (!provenance) continue;
+    const operationIndex = provenance.pending.findIndex((operation) => operation.token === token);
+    if (operationIndex < 0) continue;
+    const [operation] = provenance.pending.splice(operationIndex, 1);
+    if (outcome === 'succeeded') provenance.confirmed = operation.value;
+
+    if (lane.fieldOwners.get(key) === token) {
+      const newer = provenance.pending.at(-1);
+      if (newer) lane.fieldOwners.set(key, newer.token);
+      else lane.fieldOwners.delete(key);
+      if (outcome === 'failed' && nextBook) {
+        nextBook = { ...nextBook, [key]: newer?.value ?? provenance.confirmed };
+      }
     }
+    if (provenance.pending.length === 0) lane.fieldProvenance.delete(key);
   }
-  if (reverted && reverted !== currentBook) shelf.set({ ...current, [id]: reverted });
+  if (nextBook && nextBook !== currentBook) shelf.set({ ...current, [id]: nextBook });
 }
 
 function rollbackFields(
   lane: BookMutationLane,
   fields: Map<keyof Book, symbol>,
-  priorBook: Book | undefined,
 ): void {
-  const current = shelf.get();
-  const id = currentLaneBookId(lane);
-  if (priorBook === undefined) {
-    // Prior snapshot had no book at this id — treat as add rollback.
-    const next = { ...current };
-    delete next[id];
-    shelf.set(next);
-    reportSyncError(SYNC_ERROR_MESSAGE);
-    return;
-  }
-  const currentBook = current[id];
-  if (!currentBook) {
-    // Book was removed after the optimistic write; nothing left to revert.
-    reportSyncError(SYNC_ERROR_MESSAGE);
-    return;
-  }
-  finishFieldMutation(lane, fields, priorBook);
+  settleFieldMutation(lane, fields, 'failed');
   reportSyncError(SYNC_ERROR_MESSAGE);
 }
 
@@ -866,7 +869,6 @@ function trackCreate(
 async function syncUpdateBook(
   lane: BookMutationLane,
   updates: Partial<Book>,
-  priorBook: Book,
   fields: Map<keyof Book, symbol>,
 ): Promise<void> {
   const session = lane.session;
@@ -881,14 +883,14 @@ async function syncUpdateBook(
       const detail = await res.text();
       if (!isCurrentUserSession(session)) return;
       console.error('Failed to sync book update:', detail);
-      rollbackFields(lane, fields, priorBook);
+      rollbackFields(lane, fields);
     } else {
-      finishFieldMutation(lane, fields);
+      settleFieldMutation(lane, fields, 'succeeded');
     }
   } catch (e) {
     if (!isCurrentUserSession(session)) return;
     console.error('Failed to sync book update:', e);
-    rollbackFields(lane, fields, priorBook);
+    rollbackFields(lane, fields);
   }
 }
 
@@ -1007,13 +1009,19 @@ export function updateBook(id: string, updates: Partial<Book>) {
       const token = Symbol(key);
       fields.set(key, token);
       lane.fieldOwners.set(key, token);
+      let provenance = lane.fieldProvenance.get(key);
+      if (!provenance) {
+        provenance = { confirmed: book[key], pending: [] };
+        lane.fieldProvenance.set(key, provenance);
+      }
+      provenance.pending.push({ token, value: updates[key] });
     }
     shelf.set({ ...current, [localId]: { ...book, ...updates } });
     void enqueueBookMutation(
       lane,
       undefined,
-      () => syncUpdateBook(lane, updates, book, fields),
-      () => finishFieldMutation(lane, fields),
+      () => syncUpdateBook(lane, updates, fields),
+      () => settleFieldMutation(lane, fields, 'cancelled'),
     );
   }
 }

@@ -315,6 +315,65 @@ describe('per-book mutation lanes', () => {
     expect(shelf.get()['same-metadata'].title).toBe('Same title');
   });
 
+  it('restores the confirmed original when two sequential metadata writes fail', async () => {
+    seedBook('metadata-both-fail');
+    const first = deferred<Response>();
+    const second = deferred<Response>();
+    vi.mocked(fetch)
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+
+    updateBook('metadata-both-fail', { title: 'First' });
+    updateBook('metadata-both-fail', { title: 'Second' });
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1));
+    first.resolve(response(false));
+
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2));
+    expect(shelf.get()['metadata-both-fail'].title).toBe('Second');
+    second.resolve(response(false));
+
+    await vi.waitFor(() => expect(vi.mocked(reportSyncError)).toHaveBeenCalledTimes(2));
+    expect(shelf.get()['metadata-both-fail'].title).toBe('Original title');
+  });
+
+  it('restores the first confirmed metadata write when the second write fails', async () => {
+    seedBook('metadata-second-fails');
+    const first = deferred<Response>();
+    const second = deferred<Response>();
+    vi.mocked(fetch)
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+
+    updateBook('metadata-second-fails', { title: 'First' });
+    updateBook('metadata-second-fails', { title: 'Second' });
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1));
+    first.resolve(response(true));
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2));
+    second.resolve(response(false));
+
+    await vi.waitFor(() => expect(vi.mocked(reportSyncError)).toHaveBeenCalledTimes(1));
+    expect(shelf.get()['metadata-second-fails'].title).toBe('First');
+  });
+
+  it('keeps the second confirmed metadata write when the first write fails', async () => {
+    seedBook('metadata-second-succeeds');
+    const first = deferred<Response>();
+    const second = deferred<Response>();
+    vi.mocked(fetch)
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+
+    updateBook('metadata-second-succeeds', { title: 'First' });
+    updateBook('metadata-second-succeeds', { title: 'Second' });
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1));
+    first.resolve(response(false));
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2));
+    second.resolve(response(true));
+
+    await vi.waitFor(() => expect(vi.mocked(reportSyncError)).toHaveBeenCalledTimes(1));
+    expect(shelf.get()['metadata-second-succeeds'].title).toBe('Second');
+  });
+
   it('joins an existing canonical tail before running deduplicated client work', async () => {
     seedBook('canonical-existing');
     const canonicalUpdate = deferred<Response>();
