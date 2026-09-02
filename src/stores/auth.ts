@@ -8,15 +8,18 @@ export async function onUserChange(userId: string | null): Promise<void> {
   const oldUserId = currentUserId.get();
   if (userId) {
     const identity = checkUserIdentity(userId);
-    if (identity === 'different') {
-      // Invalidate old async work before releasing only this tab's leases.
-      currentUserId.set(userId);
-      clearUserData();
+    const changedInMemoryUser = oldUserId !== null && oldUserId !== userId;
+    const mustResetUserData = changedInMemoryUser || identity === 'different';
+    if (mustResetUserData) {
+      // Invalidate old async work before releasing this tab's leases and keep
+      // the new identity unpublished until the previous user's atoms are reset.
+      currentUserId.set(null);
       // Mirror onLogout: reset in-memory atoms before loading the new user's
       // data so the previous user's shelf/profile are not treated as
       // "local-only" and uploaded under the new user's credentials.
       const { shelf, shelfHydrated, endShelfSession } = await import('./shelf');
       if (oldUserId) endShelfSession(oldUserId);
+      clearUserData();
       shelf.set({});
       shelfHydrated.set(false);
       const { profile, DEFAULT_PROFILE } = await import('./profile');
@@ -27,7 +30,10 @@ export async function onUserChange(userId: string | null): Promise<void> {
     setLastUserId(userId);
     currentUserId.set(userId);
 
-    const { loadBooksFromServer } = await import('./shelf');
+    const { initializeShelfSession, loadBooksFromServer } = await import('./shelf');
+    // Restore/prune coordination and strip live deletions synchronously before
+    // the first server load or any UI reads this authenticated shelf.
+    initializeShelfSession(userId);
     const { loadProfileFromServer } = await import('./profile');
     Promise.all([loadBooksFromServer(), loadProfileFromServer()]).catch(console.error);
   } else {

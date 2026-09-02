@@ -108,6 +108,26 @@ describe('Bug B: user-switch leaks previous user books', () => {
     expect(leakedPost).toBeUndefined();
   });
 
+  it('resets user A state when switching to B after another tab cleared lastUserId', async () => {
+    currentUserId.set('user-A');
+    shelf.set({
+      'private-a': {
+        id: 'private-a', title: 'User A Private Book', author: 'A', visibility: 'private',
+        ownership: 'have', intents: [], addedVia: 'manual', addedAt: 1,
+      },
+    });
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => { /* suspended B load */ })));
+    // The shared localStorage identity key disappeared in another tab, so the
+    // persisted identity helper cannot identify this as a switch by itself.
+    vi.mocked(checkUserIdentity).mockReturnValue('new');
+
+    await onUserChange('user-B');
+
+    expect(currentUserId.get()).toBe('user-B');
+    expect(shelf.get()).toEqual({});
+    endShelfSession('user-B');
+  });
+
   it('connectionRequests is reset when switching to a different user', async () => {
     connectionRequests.set([
       {

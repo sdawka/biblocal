@@ -14,6 +14,7 @@ const ACTIVE_LOADS_STORAGE_PREFIX = 'biblocal:shelf:loads:v2:';
 const LOAD_LEASE_TTL_MS = 2 * 60 * 1000;
 const LEGACY_COORDINATION_TTL_MS = 24 * 60 * 60 * 1000;
 const DELETION_MARKER_TTL_MS = 24 * 60 * 60 * 1000;
+const LEGACY_LOAD_SHADOW_SUFFIX = '\u0000v1-shadow';
 
 interface UserSession {
   userId: string;
@@ -180,17 +181,47 @@ function normalizeLoadLease(value: PersistedLoadLease, now: number): PersistedLo
   return { version: 2, startedAt, expiresAt };
 }
 
-function migrateLegacyLoadLeases(now: number): void {
+function legacyLoadLease(rawStartedAt: unknown, now: number): PersistedLoadLease | null {
+  if (!isFiniteTimestamp(rawStartedAt)
+    || rawStartedAt > now + LEGACY_COORDINATION_TTL_MS) return null;
+  return {
+    version: 2,
+    startedAt: rawStartedAt,
+    expiresAt: rawStartedAt + LEGACY_COORDINATION_TTL_MS,
+  };
+}
+
+function legacyLoadShadowKey(key: string): string {
+  return `${key}${LEGACY_LOAD_SHADOW_SUFFIX}`;
+}
+
+function pruneLegacyLoadLeases(now: number): void {
   for (const [key, rawStartedAt] of Object.entries(persistedLegacyActiveLoads.get())) {
+    const legacyLease = legacyLoadLease(rawStartedAt, now);
+    if (legacyLease) {
+      // Keep a live v1 key intact so completion from an older tab remains
+      // observable. A v2 shadow fixes its first-observed deadline so clock skew
+      // cannot slide the grace forward on every prune.
+      const shadowKey = legacyLoadShadowKey(key);
+      const existingShadow = normalizeLoadLease(persistedActiveLoads.get()[shadowKey], now);
+      const shadow = existingShadow ?? {
+        ...legacyLease,
+        expiresAt: Math.min(legacyLease.expiresAt, now + LEGACY_COORDINATION_TTL_MS),
+      };
+      if (!existingShadow) persistedActiveLoads.setKey(shadowKey, shadow);
+      if (shadow.expiresAt <= now) {
+        persistedLegacyActiveLoads.setKey(key, undefined);
+        persistedActiveLoads.setKey(shadowKey, undefined);
+      }
+      continue;
+    }
+    // Malformed or implausibly future v1 records cannot be correlated with an
+    // old tab. Replace them once with a bounded v2 grace record.
     if (!persistedActiveLoads.get()[key]) {
-      const startedAt = isFiniteTimestamp(rawStartedAt)
-        && rawStartedAt <= now + LEGACY_COORDINATION_TTL_MS
-        ? rawStartedAt
-        : now;
       persistedActiveLoads.setKey(key, {
         version: 2,
-        startedAt,
-        expiresAt: Math.min(startedAt + LEGACY_COORDINATION_TTL_MS, now + LEGACY_COORDINATION_TTL_MS),
+        startedAt: now,
+        expiresAt: now + LEGACY_COORDINATION_TTL_MS,
       });
     }
     persistedLegacyActiveLoads.setKey(key, undefined);
@@ -198,13 +229,52 @@ function migrateLegacyLoadLeases(now: number): void {
 }
 
 let pruningCoordination = false;
+let scheduledCoordinationPrune: ReturnType<typeof setTimeout> | undefined;
+
+function scheduleCoordinationPrune(now: number): void {
+  if (typeof window === 'undefined') return;
+  if (scheduledCoordinationPrune !== undefined) {
+    clearTimeout(scheduledCoordinationPrune);
+    scheduledCoordinationPrune = undefined;
+  }
+
+  const expiries: number[] = [];
+  for (const rawLease of Object.values(persistedActiveLoads.get())) {
+    const lease = normalizeLoadLease(rawLease, now);
+    if (lease && lease.expiresAt > now) expiries.push(lease.expiresAt);
+  }
+  for (const rawStartedAt of Object.values(persistedLegacyActiveLoads.get())) {
+    const lease = legacyLoadLease(rawStartedAt, now);
+    if (lease && lease.expiresAt > now) expiries.push(lease.expiresAt);
+  }
+  for (const rawMarker of Object.values(persistedDeletionMarkers.get())) {
+    const marker = normalizeDeletionMarker(rawMarker, now);
+    if ((marker.expiresAt ?? 0) > now) expiries.push(marker.expiresAt!);
+  }
+  if (expiries.length === 0) return;
+
+  const delay = Math.max(0, Math.min(...expiries) - now);
+  scheduledCoordinationPrune = globalThis.setTimeout(() => {
+    scheduledCoordinationPrune = undefined;
+    pruneCoordination(Date.now());
+  }, delay);
+  // Node-backed DOM environments expose unref(); browsers use a numeric id.
+  (scheduledCoordinationPrune as unknown as { unref?: () => void }).unref?.();
+}
 
 function pruneCoordination(now: number): void {
   if (pruningCoordination) return;
   pruningCoordination = true;
   try {
-    migrateLegacyLoadLeases(now);
+    pruneLegacyLoadLeases(now);
     for (const [key, rawLease] of Object.entries(persistedActiveLoads.get())) {
+      if (key.endsWith(LEGACY_LOAD_SHADOW_SUFFIX)) {
+        const legacyKey = key.slice(0, -LEGACY_LOAD_SHADOW_SUFFIX.length);
+        if (!(legacyKey in persistedLegacyActiveLoads.get())) {
+          persistedActiveLoads.setKey(key, undefined);
+          continue;
+        }
+      }
       const lease = normalizeLoadLease(rawLease, now);
       if (!lease || lease.expiresAt <= now) {
         persistedActiveLoads.setKey(key, undefined);
@@ -224,25 +294,36 @@ function pruneCoordination(now: number): void {
   } finally {
     pruningCoordination = false;
   }
+  scheduleCoordinationPrune(now);
 }
 
 function persistedDeletionEntries(
   userId: string,
   now = Date.now(),
 ): Array<[string, PersistedDeleteMarker]> {
-  pruneCoordination(now);
   const prefix = `${userId}\u0000`;
   return Object.entries(persistedDeletionMarkers.get())
     .filter(([key]) => key.startsWith(prefix))
-    .map(([key, marker]) => [key.slice(prefix.length), marker]);
+    .map(([key, marker]): [string, PersistedDeleteMarker] => [
+      key.slice(prefix.length),
+      normalizeDeletionMarker(marker, now),
+    ])
+    .filter(([, marker]) => (marker.expiresAt ?? 0) > now);
 }
 
 function persistedActiveLoadStarts(userId: string, now = Date.now()): number[] {
-  pruneCoordination(now);
   const prefix = `${userId}\u0000`;
-  return Object.entries(persistedActiveLoads.get())
+  const v2Starts = Object.entries(persistedActiveLoads.get())
     .filter(([key]) => key.startsWith(prefix))
-    .map(([, lease]) => lease.startedAt);
+    .map(([, rawLease]) => normalizeLoadLease(rawLease, now))
+    .filter((lease): lease is PersistedLoadLease => lease !== null && lease.expiresAt > now)
+    .map((lease) => lease.startedAt);
+  const v1Starts = Object.entries(persistedLegacyActiveLoads.get())
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([, rawStartedAt]) => legacyLoadLease(rawStartedAt, now))
+    .filter((lease): lease is PersistedLoadLease => lease !== null && lease.expiresAt > now)
+    .map((lease) => lease.startedAt);
+  return [...v2Starts, ...v1Starts];
 }
 
 function markDeletionPersisted(userId: string, bookIds: Iterable<string>, now = Date.now()): void {
@@ -291,7 +372,6 @@ function isPersistedLoadLive(
   load: { key: string; lease: PersistedLoadLease },
   now = Date.now(),
 ): boolean {
-  pruneCoordination(now);
   return load.lease.expiresAt > now
     && sameLoadLease(persistedActiveLoads.get()[load.key], load.lease);
 }
@@ -346,16 +426,14 @@ export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {
 let sanitizingShelf = false;
 
 function sanitizeShelfForLiveMarkers(
+  userId: string,
   current: Record<string, Book>,
   now = Date.now(),
 ): void {
   if (sanitizingShelf) return;
-  const session = captureUserSession();
-  if (!session) return;
-  pruneCoordination(now);
   const next = { ...current };
   let changed = false;
-  for (const [bookId] of persistedDeletionEntries(session.userId, now)) {
+  for (const [bookId] of persistedDeletionEntries(userId, now)) {
     if (next[bookId]) {
       delete next[bookId];
       changed = true;
@@ -371,12 +449,19 @@ function sanitizeShelfForLiveMarkers(
   }
 }
 
+export function initializeShelfSession(userId: string, now = Date.now()): void {
+  pruneCoordination(now);
+  sanitizeShelfForLiveMarkers(userId, shelf.get(), now);
+}
+
 // Keep coordination listeners mounted even though these stores are not
 // rendered. Every shelf write is sanitized so a stale storage event cannot
 // reinsert a row while its cross-tab deletion marker is live.
 void persistedDeletionMarkers.listen(() => {
   if (pruningCoordination) return;
-  sanitizeShelfForLiveMarkers(shelf.get());
+  pruneCoordination(Date.now());
+  const session = captureUserSession();
+  if (session) sanitizeShelfForLiveMarkers(session.userId, shelf.get());
 });
 void persistedLegacyActiveLoads.listen(() => {
   if (!pruningCoordination) pruneCoordination(Date.now());
@@ -384,7 +469,10 @@ void persistedLegacyActiveLoads.listen(() => {
 void persistedActiveLoads.listen(() => {
   if (!pruningCoordination) pruneCoordination(Date.now());
 });
-void shelf.listen((current) => sanitizeShelfForLiveMarkers(current));
+void shelf.listen((current) => {
+  const session = captureUserSession();
+  if (session) sanitizeShelfForLiveMarkers(session.userId, current);
+});
 
 // Signals when the initial shelf load has settled (success or failure), so
 // the UI can tell "empty because still loading" apart from "empty because
@@ -1014,6 +1102,10 @@ export async function loadBooksFromServer(): Promise<void> {
     // the marker, while a same-id row is accepted as a genuine restoration.
     const persistedDeletions = persistedDeletionEntries(loadingFor);
     const activeLoadStarts = persistedActiveLoadStarts(loadingFor);
+    const stagedMarkerDecisions: Array<{
+      bookId: string;
+      marker?: PersistedDeleteMarker;
+    }> = [];
     for (const [id, marker] of persistedDeletions) {
       const serverConfirmedAbsent = !serverBooks[id];
       const olderLoadStillActive = activeLoadStarts.some(
@@ -1021,16 +1113,16 @@ export async function loadBooksFromServer(): Promise<void> {
       );
       const isPostDeleteLoad = persistedLoad.lease.startedAt > marker.deletedAt;
       if (isPostDeleteLoad && !olderLoadStillActive) {
-        clearPersistedDeletion(loadingFor, id);
+        stagedMarkerDecisions.push({ bookId: id });
         continue;
       }
 
       delete serverBooks[id];
       if (serverConfirmedAbsent && isPostDeleteLoad && !marker.absenceConfirmed) {
-        persistedDeletionMarkers.setKey(
-          deletionMarkerKey(loadingFor, id),
-          { ...marker, absenceConfirmed: true },
-        );
+        stagedMarkerDecisions.push({
+          bookId: id,
+          marker: { ...marker, absenceConfirmed: true },
+        });
       }
     }
     const persistedDeletedIds = persistedDeletions.map(([id]) => id);
@@ -1060,12 +1152,23 @@ export async function loadBooksFromServer(): Promise<void> {
       if (fencedBook) merged[id] = fencedBook;
     }
     if (!canCommitLoad(persistedLoad, loadingSession)) return;
+    // Marker decisions and shelf/recovery commits form one synchronous section.
+    // No expired or session-released load may mutate any of them.
+    for (const decision of stagedMarkerDecisions) {
+      if (decision.marker) {
+        persistedDeletionMarkers.setKey(
+          deletionMarkerKey(loadingFor, decision.bookId),
+          decision.marker,
+        );
+      } else {
+        clearPersistedDeletion(loadingFor, decision.bookId);
+      }
+    }
     shelf.set(merged);
     // Upload each legacy-local-only book fire-and-forget. `merged` (not
     // `serverBooks`) must be the prior snapshot: on upload failure, rollback
     // restores the book instead of deleting the only surviving copy from localStorage.
     for (const book of legacyLocalOnly) {
-      if (!canCommitLoad(persistedLoad, loadingSession)) return;
       void trackCreate(book, merged, loadingSession);
     }
   } catch (e) {

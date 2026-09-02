@@ -447,6 +447,90 @@ describe('Shelf Store', () => {
       }
     });
 
+    it('does not mutate a deletion marker when its lease expires during response transformation', async () => {
+      vi.useFakeTimers();
+      const startedAt = new Date('2026-01-01T00:00:00Z').getTime();
+      vi.setSystemTime(startedAt);
+      const storage = localStorage as Storage & Record<string, string>;
+      const markerKey = 'biblocal:shelf:deleted:v1:test-user-123\u0000atomic-book';
+      try {
+        storage[markerKey] = JSON.stringify({
+          deletedAt: startedAt - 1,
+          absenceConfirmed: false,
+          expiresAt: startedAt + 24 * 60 * 60 * 1000,
+        });
+        window.dispatchEvent(new PageTransitionEvent('pageshow'));
+        const serverBook: Record<string, unknown> = {
+          title: 'Atomic Book', author: 'Author', isbn: null,
+          coverUrl: null, fetchedCoverUrl: null, status: 'visible', visibility: 'visible',
+          ownership: 'have', intents: '[]', addedVia: 'manual', subjects: null, notes: [],
+          createdAt: new Date(1).toISOString(),
+        };
+        Object.defineProperty(serverBook, 'id', {
+          enumerable: true,
+          get: () => {
+            vi.setSystemTime(startedAt + 120_001);
+            return 'atomic-book';
+          },
+        });
+        vi.mocked(fetch).mockResolvedValue({
+          ok: true,
+          json: async () => ({ books: [serverBook] }),
+        } as Response);
+
+        await loadBooksFromServer();
+
+        expect(storage[markerKey]).toBeDefined();
+        expect(shelf.get()['atomic-book']).toBeUndefined();
+      } finally {
+        delete storage[markerKey];
+        window.dispatchEvent(new StorageEvent('storage', { key: markerKey, newValue: null }));
+        vi.useRealTimers();
+      }
+    });
+
+    it('physically prunes remote coordination only after its expiry', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+      const storage = localStorage as Storage & Record<string, string>;
+      const leaseKey = 'biblocal:shelf:loads:v2:test-user-123\u0000remote-expiring';
+      const markerKey = 'biblocal:shelf:deleted:v1:test-user-123\u0000remote-expiring-book';
+      try {
+        storage[leaseKey] = JSON.stringify({
+          version: 2,
+          startedAt: Date.now(),
+          expiresAt: Date.now() + 1_000,
+        });
+        storage[markerKey] = JSON.stringify({
+          deletedAt: Date.now(),
+          absenceConfirmed: false,
+          expiresAt: Date.now() + 1_000,
+        });
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: leaseKey,
+          newValue: storage[leaseKey],
+        }));
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: markerKey,
+          newValue: storage[markerKey],
+        }));
+
+        vi.advanceTimersByTime(999);
+        expect(storage[leaseKey]).toBeDefined();
+        expect(storage[markerKey]).toBeDefined();
+
+        vi.advanceTimersByTime(2);
+        expect(storage[leaseKey]).toBeUndefined();
+        expect(storage[markerKey]).toBeUndefined();
+      } finally {
+        delete storage[leaseKey];
+        delete storage[markerKey];
+        window.dispatchEvent(new StorageEvent('storage', { key: leaseKey, newValue: null }));
+        window.dispatchEvent(new StorageEvent('storage', { key: markerKey, newValue: null }));
+        vi.useRealTimers();
+      }
+    });
+
     it('accepts a post-delete same-id restoration after a crashed lease expires', async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
@@ -517,6 +601,7 @@ describe('Shelf Store', () => {
 
         await loadBooksFromServer();
         expect(shelf.get()[bookId]).toBeUndefined();
+        expect(storage[leaseKey]).toBeDefined();
 
         vi.advanceTimersByTime(24 * 60 * 60 * 1000 + 1);
         await loadBooksFromServer();
