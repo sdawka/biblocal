@@ -555,9 +555,11 @@ describe('ShelfIsland', () => {
       expect(rowRule).toMatch(/overflow-x:\s*auto/);
       expect(rowRule).toMatch(/width:\s*100%/);
 
-      const bookcaseRuleMatch = styleBlock.match(/\.bookcase\s*\{[^}]*\}/);
-      expect(bookcaseRuleMatch).toBeTruthy();
-      expect(bookcaseRuleMatch![0]).not.toMatch(/\boverflow(?:-[xy])?\s*:/);
+      const bookcaseRules = [...styleBlock.matchAll(/\.bookcase\s*\{[^}]*\}/g)];
+      expect(bookcaseRules).toHaveLength(2);
+      bookcaseRules.forEach(([rule]) => {
+        expect(rule).not.toMatch(/\boverflow(?:-[xy])?\s*:/);
+      });
     });
   });
 });
