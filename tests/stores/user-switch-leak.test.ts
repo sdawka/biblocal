@@ -26,7 +26,7 @@ vi.mock('../../src/stores/sync', () => ({
   clearUserData: vi.fn(),
 }));
 
-import { shelf, addBook } from '../../src/stores/shelf';
+import { shelf, addBook, loadBooksFromServer, endShelfSession } from '../../src/stores/shelf';
 import { profile, DEFAULT_PROFILE } from '../../src/stores/profile';
 import { connectionRequests } from '../../src/stores/connections';
 import { onUserChange, currentUserId } from '../../src/stores/auth';
@@ -122,5 +122,41 @@ describe('Bug B: user-switch leaks previous user books', () => {
     await Promise.race([onUserChange('user-B'), new Promise((r) => setTimeout(r, 30))]);
 
     expect(connectionRequests.get()).toHaveLength(0);
+  });
+
+  it('releases only this tab old-user lease when switching accounts', async () => {
+    const storage = localStorage as Storage & Record<string, string>;
+    currentUserId.set('user-A');
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => { /* suspended loads */ })));
+    void loadBooksFromServer();
+    await Promise.resolve();
+
+    const ownLeaseKey = Object.keys(storage).find(
+      (key) => key.startsWith('biblocal:shelf:loads:v2:user-A\u0000'),
+    );
+    expect(ownLeaseKey).toBeDefined();
+    const remoteLeaseKey = 'biblocal:shelf:loads:v2:user-A\u0000remote-tab';
+    const markerKey = 'biblocal:shelf:deleted:v1:user-A\u0000remote-book';
+    storage[remoteLeaseKey] = JSON.stringify({
+      version: 2,
+      startedAt: Date.now(),
+      expiresAt: Date.now() + 120_000,
+    });
+    storage[markerKey] = JSON.stringify({
+      deletedAt: Date.now() + 1,
+      absenceConfirmed: false,
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+    });
+    window.dispatchEvent(new PageTransitionEvent('pageshow'));
+    vi.mocked(checkUserIdentity).mockReturnValue('different');
+
+    await onUserChange('user-B');
+
+    expect(storage[ownLeaseKey!]).toBeUndefined();
+    expect(storage[remoteLeaseKey]).toBeDefined();
+    expect(storage[markerKey]).toBeDefined();
+    endShelfSession('user-B');
+    delete storage[remoteLeaseKey];
+    delete storage[markerKey];
   });
 });

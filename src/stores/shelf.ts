@@ -9,7 +9,11 @@ const SYNC_ERROR_MESSAGE = 'Could not save your change. Please try again.';
 const LOAD_SYNC_ERROR_MESSAGE = 'Could not load your shelf from the server. Please try again.';
 const COVER_SYNC_ERROR_MESSAGE = 'Could not update the cover. Please try again.';
 const DELETION_MARKERS_STORAGE_PREFIX = 'biblocal:shelf:deleted:v1:';
-const ACTIVE_LOADS_STORAGE_PREFIX = 'biblocal:shelf:loads:v1:';
+const LEGACY_ACTIVE_LOADS_STORAGE_PREFIX = 'biblocal:shelf:loads:v1:';
+const ACTIVE_LOADS_STORAGE_PREFIX = 'biblocal:shelf:loads:v2:';
+const LOAD_LEASE_TTL_MS = 2 * 60 * 1000;
+const LEGACY_COORDINATION_TTL_MS = 24 * 60 * 60 * 1000;
+const DELETION_MARKER_TTL_MS = 24 * 60 * 60 * 1000;
 
 interface UserSession {
   userId: string;
@@ -25,22 +29,22 @@ interface DeletionFence {
   session: UserSession;
 }
 
-interface DeleteTombstone {
-  createdAtOperation: number;
-  absenceConfirmed: boolean;
-}
-
 interface PersistedDeleteMarker {
   deletedAt: number;
   absenceConfirmed: boolean;
+  expiresAt?: number;
+}
+
+interface PersistedLoadLease {
+  version: 2;
+  startedAt: number;
+  expiresAt: number;
 }
 
 const pendingCreates = new Map<string, Set<PendingCreate>>();
 const deletionFences = new Map<string, DeletionFence>();
 const canonicalBookIds = new Map<string, { session: UserSession; id: string }>();
-const deleteTombstones = new Map<string, Map<string, DeleteTombstone>>();
-const activeLoads = new Map<string, Set<number>>();
-let operationSequence = 0;
+const ownedLoadLeases = new Map<string, { userId: string; lease: PersistedLoadLease }>();
 let observedUserId: string | null | undefined;
 let userSessionGeneration = 0;
 
@@ -50,15 +54,23 @@ const persistedDeletionMarkers = persistentMap<Record<string, PersistedDeleteMar
   {
     encode: JSON.stringify,
     decode: safeJsonDecode<PersistedDeleteMarker>({
-      deletedAt: Number.MAX_SAFE_INTEGER,
+      deletedAt: Number.NaN,
       absenceConfirmed: false,
     }),
   },
 );
-const persistedActiveLoads = persistentMap<Record<string, number>>(
+const persistedLegacyActiveLoads = persistentMap<Record<string, unknown>>(
+  LEGACY_ACTIVE_LOADS_STORAGE_PREFIX,
+  {},
+  { encode: JSON.stringify, decode: safeJsonDecode<unknown>(null) },
+);
+const persistedActiveLoads = persistentMap<Record<string, PersistedLoadLease>>(
   ACTIVE_LOADS_STORAGE_PREFIX,
   {},
-  { encode: JSON.stringify, decode: safeJsonDecode(0) },
+  {
+    encode: JSON.stringify,
+    decode: safeJsonDecode<PersistedLoadLease>({ version: 2, startedAt: 0, expiresAt: 0 }),
+  },
 );
 const subscribeToUserId = (currentUserId as unknown as {
   subscribe?: (listener: (userId: string | null) => void) => () => void;
@@ -103,6 +115,9 @@ function resolvedBookId(id: string, session: UserSession): string {
 
 function reconcileCreatedBookId(clientId: string, canonicalId: string, session: UserSession): void {
   if (clientId === canonicalId || !isCurrentUserSession(session)) return;
+  // A successful explicit add is an authoritative restoration, including when
+  // server-side ISBN dedup maps the client id back to a previously deleted id.
+  clearPersistedDeletion(session.userId, canonicalId);
   canonicalBookIds.set(clientId, { session, id: canonicalId });
 
   const clientFence = deletionFences.get(clientId);
@@ -129,40 +144,114 @@ function fencedBookIds(session: UserSession): string[] {
   return ids;
 }
 
-function tombstonesFor(userId: string): Map<string, DeleteTombstone> {
-  let tombstones = deleteTombstones.get(userId);
-  if (!tombstones) {
-    tombstones = new Map();
-    deleteTombstones.set(userId, tombstones);
-  }
-  return tombstones;
-}
-
 function deletionMarkerKey(userId: string, bookId: string): string {
   return `${userId}\u0000${bookId}`;
 }
 
-function persistedDeletionEntries(userId: string): Array<[string, PersistedDeleteMarker]> {
+function isFiniteTimestamp(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+function normalizeDeletionMarker(
+  marker: PersistedDeleteMarker,
+  now: number,
+): PersistedDeleteMarker {
+  const deletedAt = isFiniteTimestamp(marker?.deletedAt)
+    && marker.deletedAt <= now + DELETION_MARKER_TTL_MS
+    ? marker.deletedAt
+    : now;
+  const latestExpiry = deletedAt + DELETION_MARKER_TTL_MS;
+  const expiresAt = isFiniteTimestamp(marker?.expiresAt)
+    ? Math.min(marker.expiresAt, latestExpiry, now + DELETION_MARKER_TTL_MS)
+    : Math.min(latestExpiry, now + DELETION_MARKER_TTL_MS);
+  return {
+    deletedAt,
+    absenceConfirmed: marker?.absenceConfirmed === true,
+    expiresAt,
+  };
+}
+
+function normalizeLoadLease(value: PersistedLoadLease, now: number): PersistedLoadLease | null {
+  if (value?.version !== 2
+    || !isFiniteTimestamp(value.startedAt)
+    || !isFiniteTimestamp(value.expiresAt)) return null;
+  const startedAt = value.startedAt <= now + LOAD_LEASE_TTL_MS ? value.startedAt : now;
+  const expiresAt = Math.min(value.expiresAt, startedAt + LEGACY_COORDINATION_TTL_MS);
+  return { version: 2, startedAt, expiresAt };
+}
+
+function migrateLegacyLoadLeases(now: number): void {
+  for (const [key, rawStartedAt] of Object.entries(persistedLegacyActiveLoads.get())) {
+    if (!persistedActiveLoads.get()[key]) {
+      const startedAt = isFiniteTimestamp(rawStartedAt)
+        && rawStartedAt <= now + LEGACY_COORDINATION_TTL_MS
+        ? rawStartedAt
+        : now;
+      persistedActiveLoads.setKey(key, {
+        version: 2,
+        startedAt,
+        expiresAt: Math.min(startedAt + LEGACY_COORDINATION_TTL_MS, now + LEGACY_COORDINATION_TTL_MS),
+      });
+    }
+    persistedLegacyActiveLoads.setKey(key, undefined);
+  }
+}
+
+let pruningCoordination = false;
+
+function pruneCoordination(now: number): void {
+  if (pruningCoordination) return;
+  pruningCoordination = true;
+  try {
+    migrateLegacyLoadLeases(now);
+    for (const [key, rawLease] of Object.entries(persistedActiveLoads.get())) {
+      const lease = normalizeLoadLease(rawLease, now);
+      if (!lease || lease.expiresAt <= now) {
+        persistedActiveLoads.setKey(key, undefined);
+        ownedLoadLeases.delete(key);
+      } else if (JSON.stringify(lease) !== JSON.stringify(rawLease)) {
+        persistedActiveLoads.setKey(key, lease);
+      }
+    }
+    for (const [key, rawMarker] of Object.entries(persistedDeletionMarkers.get())) {
+      const marker = normalizeDeletionMarker(rawMarker, now);
+      if ((marker.expiresAt ?? 0) <= now) {
+        persistedDeletionMarkers.setKey(key, undefined);
+      } else if (JSON.stringify(marker) !== JSON.stringify(rawMarker)) {
+        persistedDeletionMarkers.setKey(key, marker);
+      }
+    }
+  } finally {
+    pruningCoordination = false;
+  }
+}
+
+function persistedDeletionEntries(
+  userId: string,
+  now = Date.now(),
+): Array<[string, PersistedDeleteMarker]> {
+  pruneCoordination(now);
   const prefix = `${userId}\u0000`;
   return Object.entries(persistedDeletionMarkers.get())
     .filter(([key]) => key.startsWith(prefix))
     .map(([key, marker]) => [key.slice(prefix.length), marker]);
 }
 
-function persistedActiveLoadStarts(userId: string): number[] {
+function persistedActiveLoadStarts(userId: string, now = Date.now()): number[] {
+  pruneCoordination(now);
   const prefix = `${userId}\u0000`;
   return Object.entries(persistedActiveLoads.get())
     .filter(([key]) => key.startsWith(prefix))
-    .map(([, startedAt]) => startedAt);
+    .map(([, lease]) => lease.startedAt);
 }
 
-function markDeletionPersisted(userId: string, bookIds: Iterable<string>): void {
-  const newestLoadStart = Math.max(0, ...persistedActiveLoadStarts(userId));
-  const deletedAt = Math.max(Date.now(), newestLoadStart + 1);
+function markDeletionPersisted(userId: string, bookIds: Iterable<string>, now = Date.now()): void {
+  const newestLoadStart = Math.max(0, ...persistedActiveLoadStarts(userId, now));
+  const deletedAt = Math.max(now, newestLoadStart + 1);
   for (const bookId of bookIds) {
     persistedDeletionMarkers.setKey(
       deletionMarkerKey(userId, bookId),
-      { deletedAt, absenceConfirmed: false },
+      { deletedAt, absenceConfirmed: false, expiresAt: deletedAt + DELETION_MARKER_TTL_MS },
     );
   }
 }
@@ -174,26 +263,52 @@ function clearPersistedDeletion(userId: string, bookId: string): void {
   persistedDeletionMarkers.setKey(key, undefined);
 }
 
-function beginPersistedLoad(userId: string): { key: string; startedAt: number } {
+function beginPersistedLoad(userId: string, now = Date.now()): { key: string; lease: PersistedLoadLease } {
+  pruneCoordination(now);
   const key = deletionMarkerKey(userId, crypto.randomUUID());
   const newestDeletion = Math.max(
     0,
-    ...persistedDeletionEntries(userId).map(([, marker]) => marker.deletedAt),
+    ...persistedDeletionEntries(userId, now).map(([, marker]) => marker.deletedAt),
   );
-  const startedAt = Math.max(Date.now(), newestDeletion + 1);
-  persistedActiveLoads.setKey(key, startedAt);
-  return { key, startedAt };
+  const startedAt = Math.max(now, newestDeletion + 1);
+  const lease: PersistedLoadLease = {
+    version: 2,
+    startedAt,
+    expiresAt: startedAt + LOAD_LEASE_TTL_MS,
+  };
+  persistedActiveLoads.setKey(key, lease);
+  ownedLoadLeases.set(key, { userId, lease });
+  return { key, lease };
 }
 
-function finishPersistedLoad(loadKey: string): void {
-  const current = persistedActiveLoads.get();
-  if (!(loadKey in current)) return;
-  persistedActiveLoads.setKey(loadKey, undefined);
+function sameLoadLease(left: PersistedLoadLease | undefined, right: PersistedLoadLease): boolean {
+  return left?.version === right.version
+    && left.startedAt === right.startedAt
+    && left.expiresAt === right.expiresAt;
 }
 
-function clearConfirmedPersistedDeletions(userId: string): void {
-  const activeLoadStarts = persistedActiveLoadStarts(userId);
-  for (const [bookId, marker] of persistedDeletionEntries(userId)) {
+function isPersistedLoadLive(
+  load: { key: string; lease: PersistedLoadLease },
+  now = Date.now(),
+): boolean {
+  pruneCoordination(now);
+  return load.lease.expiresAt > now
+    && sameLoadLease(persistedActiveLoads.get()[load.key], load.lease);
+}
+
+function finishPersistedLoad(
+  load: { key: string; lease: PersistedLoadLease },
+  now = Date.now(),
+): void {
+  const current = persistedActiveLoads.get()[load.key];
+  if (sameLoadLease(current, load.lease)) persistedActiveLoads.setKey(load.key, undefined);
+  ownedLoadLeases.delete(load.key);
+  pruneCoordination(now);
+}
+
+function clearConfirmedPersistedDeletions(userId: string, now = Date.now()): void {
+  const activeLoadStarts = persistedActiveLoadStarts(userId, now);
+  for (const [bookId, marker] of persistedDeletionEntries(userId, now)) {
     const olderLoadStillActive = activeLoadStarts.some((startedAt) => startedAt <= marker.deletedAt);
     if (marker.absenceConfirmed && !olderLoadStillActive) {
       persistedDeletionMarkers.setKey(deletionMarkerKey(userId, bookId), undefined);
@@ -201,25 +316,16 @@ function clearConfirmedPersistedDeletions(userId: string): void {
   }
 }
 
-function activeLoadsFor(userId: string): Set<number> {
-  let loads = activeLoads.get(userId);
-  if (!loads) {
-    loads = new Set();
-    activeLoads.set(userId, loads);
+export function endShelfSession(userId: string, now = Date.now()): void {
+  for (const [key, owned] of ownedLoadLeases) {
+    if (owned.userId !== userId) continue;
+    if (sameLoadLease(persistedActiveLoads.get()[key], owned.lease)) {
+      persistedActiveLoads.setKey(key, undefined);
+    }
+    ownedLoadLeases.delete(key);
   }
-  return loads;
-}
-
-function clearConfirmedTombstones(userId: string): void {
-  const tombstones = deleteTombstones.get(userId);
-  if (!tombstones) return;
-  const loads = activeLoads.get(userId) ?? new Set<number>();
-  for (const [id, tombstone] of tombstones) {
-    const olderLoadStillActive = [...loads].some(
-      (loadOperation) => loadOperation < tombstone.createdAtOperation,
-    );
-    if (tombstone.absenceConfirmed && !olderLoadStillActive) tombstones.delete(id);
-  }
+  pruneCoordination(now);
+  clearConfirmedPersistedDeletions(userId, now);
 }
 
 function safeJsonDecode<T>(defaultValue: T) {
@@ -237,24 +343,48 @@ export const shelf = persistentAtom<Record<string, Book>>('biblocal:shelf:v1', {
   decode: safeJsonDecode({}),
 });
 
-// Keep coordination listeners mounted even though these stores are not
-// rendered. A remote marker also removes any stale book another tab managed to
-// write before its storage event was delivered.
-void persistedDeletionMarkers.listen(() => {
+let sanitizingShelf = false;
+
+function sanitizeShelfForLiveMarkers(
+  current: Record<string, Book>,
+  now = Date.now(),
+): void {
+  if (sanitizingShelf) return;
   const session = captureUserSession();
   if (!session) return;
-  const current = shelf.get();
+  pruneCoordination(now);
   const next = { ...current };
   let changed = false;
-  for (const [bookId] of persistedDeletionEntries(session.userId)) {
+  for (const [bookId] of persistedDeletionEntries(session.userId, now)) {
     if (next[bookId]) {
       delete next[bookId];
       changed = true;
     }
   }
-  if (changed) shelf.set(next);
+  if (changed) {
+    sanitizingShelf = true;
+    try {
+      shelf.set(next);
+    } finally {
+      sanitizingShelf = false;
+    }
+  }
+}
+
+// Keep coordination listeners mounted even though these stores are not
+// rendered. Every shelf write is sanitized so a stale storage event cannot
+// reinsert a row while its cross-tab deletion marker is live.
+void persistedDeletionMarkers.listen(() => {
+  if (pruningCoordination) return;
+  sanitizeShelfForLiveMarkers(shelf.get());
 });
-void persistedActiveLoads.listen(() => {});
+void persistedLegacyActiveLoads.listen(() => {
+  if (!pruningCoordination) pruneCoordination(Date.now());
+});
+void persistedActiveLoads.listen(() => {
+  if (!pruningCoordination) pruneCoordination(Date.now());
+});
+void shelf.listen((current) => sanitizeShelfForLiveMarkers(current));
 
 // Signals when the initial shelf load has settled (success or failure), so
 // the UI can tell "empty because still loading" apart from "empty because
@@ -655,13 +785,6 @@ export async function removeBook(id: string): Promise<boolean> {
     delete next[id];
     delete next[deleteId];
     shelf.set(next);
-    const deletionOperation = ++operationSequence;
-    for (const deletedId of deletedIds) {
-      tombstonesFor(deletingFor.userId).set(deletedId, {
-        createdAtOperation: deletionOperation,
-        absenceConfirmed: false,
-      });
-    }
     canonicalBookIds.delete(id);
     return true;
   } finally {
@@ -829,6 +952,14 @@ function findLocalOnlyBooks(
   return localOnly;
 }
 
+function canCommitLoad(
+  load: { key: string; lease: PersistedLoadLease },
+  session: UserSession,
+  now = Date.now(),
+): boolean {
+  return isCurrentUserSession(session) && isPersistedLoadLive(load, now);
+}
+
 export async function loadBooksFromServer(): Promise<void> {
   // Capture the user this load is for; if it changes mid-flight (fast re-login
   // as a different user), bail before set() so a slow response can't overwrite
@@ -839,20 +970,18 @@ export async function loadBooksFromServer(): Promise<void> {
     return;
   }
   const loadingFor = loadingSession.userId;
-  const loadOperation = ++operationSequence;
-  activeLoadsFor(loadingFor).add(loadOperation);
   const persistedLoad = beginPersistedLoad(loadingFor);
   // Snapshot local shelf before the request so legacy-only books can be recovered.
   const preLoadSnapshot = shelf.get();
   try {
     const res = await fetch('/api/books?mine=true');
-    if (!isCurrentUserSession(loadingSession)) return;
+    if (!canCommitLoad(persistedLoad, loadingSession)) return;
     if (!res.ok) {
       reportSyncError(LOAD_SYNC_ERROR_MESSAGE);
       return;
     }
     const data = await res.json() as { books: ServerBook[] };
-    if (!isCurrentUserSession(loadingSession)) return;
+    if (!canCommitLoad(persistedLoad, loadingSession)) return;
     const serverBooks: Record<string, Book> = {};
     for (const b of data.books) {
       serverBooks[b.id] = {
@@ -880,22 +1009,24 @@ export async function loadBooksFromServer(): Promise<void> {
         addedAt: new Date(b.createdAt).getTime(),
       };
     }
-    // A confirmed DELETE wins over responses from GETs that were already in
-    // flight. Only a load started after the deletion may clear its tombstone,
-    // and only when that response also confirms the row is absent.
-    const userTombstones = tombstonesFor(loadingFor);
-    for (const [id, tombstone] of userTombstones) {
-      const serverConfirmedAbsent = !serverBooks[id];
-      delete serverBooks[id];
-      if (serverConfirmedAbsent && loadOperation > tombstone.createdAtOperation) {
-        tombstone.absenceConfirmed = true;
-      }
-    }
+    // A confirmed DELETE wins over pre-delete GET responses. Once every older
+    // lease is gone, a post-delete GET becomes authoritative: absence retires
+    // the marker, while a same-id row is accepted as a genuine restoration.
     const persistedDeletions = persistedDeletionEntries(loadingFor);
+    const activeLoadStarts = persistedActiveLoadStarts(loadingFor);
     for (const [id, marker] of persistedDeletions) {
       const serverConfirmedAbsent = !serverBooks[id];
+      const olderLoadStillActive = activeLoadStarts.some(
+        (startedAt) => startedAt <= marker.deletedAt,
+      );
+      const isPostDeleteLoad = persistedLoad.lease.startedAt > marker.deletedAt;
+      if (isPostDeleteLoad && !olderLoadStillActive) {
+        clearPersistedDeletion(loadingFor, id);
+        continue;
+      }
+
       delete serverBooks[id];
-      if (serverConfirmedAbsent && persistedLoad.startedAt > marker.deletedAt && !marker.absenceConfirmed) {
+      if (serverConfirmedAbsent && isPostDeleteLoad && !marker.absenceConfirmed) {
         persistedDeletionMarkers.setKey(
           deletionMarkerKey(loadingFor, id),
           { ...marker, absenceConfirmed: true },
@@ -910,7 +1041,6 @@ export async function loadBooksFromServer(): Promise<void> {
     // have their own syncAddBook POST in flight and must NOT be double-posted.
     const withoutDeleted = (books: Record<string, Book>): Record<string, Book> => {
       const active = { ...books };
-      for (const id of userTombstones.keys()) delete active[id];
       for (const id of persistedDeletedIds) delete active[id];
       for (const id of fencedIds) delete active[id];
       return active;
@@ -929,18 +1059,20 @@ export async function loadBooksFromServer(): Promise<void> {
       const fencedBook = postFetchSnapshot[id];
       if (fencedBook) merged[id] = fencedBook;
     }
+    if (!canCommitLoad(persistedLoad, loadingSession)) return;
     shelf.set(merged);
     // Upload each legacy-local-only book fire-and-forget. `merged` (not
     // `serverBooks`) must be the prior snapshot: on upload failure, rollback
     // restores the book instead of deleting the only surviving copy from localStorage.
-    for (const book of legacyLocalOnly) void trackCreate(book, merged, loadingSession);
+    for (const book of legacyLocalOnly) {
+      if (!canCommitLoad(persistedLoad, loadingSession)) return;
+      void trackCreate(book, merged, loadingSession);
+    }
   } catch (e) {
     console.error('Failed to load books from server:', e);
     reportSyncError(LOAD_SYNC_ERROR_MESSAGE);
   } finally {
-    activeLoadsFor(loadingFor).delete(loadOperation);
-    clearConfirmedTombstones(loadingFor);
-    finishPersistedLoad(persistedLoad.key);
+    finishPersistedLoad(persistedLoad);
     clearConfirmedPersistedDeletions(loadingFor);
     // Settle hydration on both success and failure so the UI never hangs on
     // a loading skeleton. Safe even on a stale mid-flight bail: the newer

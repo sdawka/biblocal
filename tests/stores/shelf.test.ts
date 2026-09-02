@@ -409,6 +409,185 @@ describe('Shelf Store', () => {
       expect(recoveryPosts).toEqual([]);
     });
 
+    it('does not commit or recover books when a suspended load lease expires', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+      try {
+        const legacyBook: Book = {
+          id: 'expired-load-book', title: 'Expired Load', author: 'Author', visibility: 'visible',
+          ownership: 'have', intents: [], addedVia: 'manual', addedAt: 1,
+        };
+        shelf.set({ [legacyBook.id]: legacyBook });
+        let releaseLoad!: () => void;
+        const loadGate = new Promise<void>((resolve) => { releaseLoad = resolve; });
+        const recoveryPosts: string[] = [];
+        vi.mocked(fetch).mockImplementation(async (url, init) => {
+          if (url === '/api/books?mine=true') {
+            await loadGate;
+            return { ok: true, json: async () => ({ books: [] }) } as Response;
+          }
+          if (url === '/api/books' && init?.method === 'POST') recoveryPosts.push(String(url));
+          return { ok: true, json: async () => ({}) } as Response;
+        });
+
+        const load = loadBooksFromServer();
+        let writesAfterStart = 0;
+        const stopWatching = shelf.subscribe(() => { writesAfterStart += 1; });
+        writesAfterStart = 0;
+        vi.advanceTimersByTime(120_001);
+        releaseLoad();
+        await load;
+        stopWatching();
+
+        expect(shelf.get()).toEqual({ [legacyBook.id]: legacyBook });
+        expect(writesAfterStart).toBe(0);
+        expect(recoveryPosts).toEqual([]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('accepts a post-delete same-id restoration after a crashed lease expires', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+      const storage = localStorage as Storage & Record<string, string>;
+      const userId = 'test-user-123';
+      const bookId = 'restored-book';
+      const leaseKey = `biblocal:shelf:loads:v2:${userId}\u0000crashed-tab`;
+      const markerKey = `biblocal:shelf:deleted:v1:${userId}\u0000${bookId}`;
+      try {
+        storage[leaseKey] = JSON.stringify({
+          version: 2,
+          startedAt: Date.now(),
+          expiresAt: Date.now() + 120_000,
+        });
+        storage[markerKey] = JSON.stringify({
+          deletedAt: Date.now() + 1,
+          absenceConfirmed: false,
+        });
+        window.dispatchEvent(new PageTransitionEvent('pageshow'));
+        vi.advanceTimersByTime(120_001);
+
+        vi.mocked(fetch).mockResolvedValue({
+          ok: true,
+          json: async () => ({ books: [{
+            id: bookId, title: 'Restored Book', author: 'Author', isbn: null,
+            coverUrl: null, fetchedCoverUrl: null, status: 'visible', visibility: 'visible',
+            ownership: 'have', intents: '[]', addedVia: 'manual', subjects: null, notes: [],
+            createdAt: new Date(1).toISOString(),
+          }] }),
+        } as Response);
+
+        await loadBooksFromServer();
+
+        expect(shelf.get()[bookId]?.title).toBe('Restored Book');
+        expect(storage[leaseKey]).toBeUndefined();
+        expect(storage[markerKey]).toBeUndefined();
+      } finally {
+        delete storage[leaseKey];
+        delete storage[markerKey];
+        vi.useRealTimers();
+      }
+    });
+
+    it('bounds legacy load tokens and markers before accepting restoration', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+      const storage = localStorage as Storage & Record<string, string>;
+      const userId = 'test-user-123';
+      const bookId = 'legacy-marker-book';
+      const leaseKey = `biblocal:shelf:loads:v1:${userId}\u0000legacy-tab`;
+      const markerKey = `biblocal:shelf:deleted:v1:${userId}\u0000${bookId}`;
+      try {
+        storage[leaseKey] = JSON.stringify(Date.now());
+        storage[markerKey] = JSON.stringify({
+          deletedAt: Date.now() + 1,
+          absenceConfirmed: false,
+        });
+        window.dispatchEvent(new PageTransitionEvent('pageshow'));
+        vi.mocked(fetch).mockResolvedValue({
+          ok: true,
+          json: async () => ({ books: [{
+            id: bookId, title: 'Restored Book', author: 'Author', isbn: null,
+            coverUrl: null, fetchedCoverUrl: null, status: 'visible', visibility: 'visible',
+            ownership: 'have', intents: '[]', addedVia: 'manual', subjects: null, notes: [],
+            createdAt: new Date(1).toISOString(),
+          }] }),
+        } as Response);
+
+        await loadBooksFromServer();
+        expect(shelf.get()[bookId]).toBeUndefined();
+
+        vi.advanceTimersByTime(24 * 60 * 60 * 1000 + 1);
+        await loadBooksFromServer();
+        expect(shelf.get()[bookId]?.title).toBe('Restored Book');
+        expect(storage[leaseKey]).toBeUndefined();
+        expect(storage[markerKey]).toBeUndefined();
+      } finally {
+        delete storage[leaseKey];
+        delete storage[markerKey];
+        vi.useRealTimers();
+      }
+    });
+
+    it('keeps deletion markers scoped to their user across an A to B to A load race', async () => {
+      const storage = localStorage as Storage & Record<string, string>;
+      const markerKey = 'biblocal:shelf:deleted:v1:user-A\u0000shared-book';
+      let releaseOldLoad!: () => void;
+      const oldLoadGate = new Promise<void>((resolve) => { releaseOldLoad = resolve; });
+      let requestNumber = 0;
+      try {
+        setMockUserId('user-A');
+        vi.mocked(fetch).mockImplementation(async () => {
+          requestNumber += 1;
+          if (requestNumber === 1) await oldLoadGate;
+          const title = requestNumber === 1 ? 'Stale A Book' : 'User B Book';
+          return { ok: true, json: async () => ({ books: [{
+            id: 'shared-book', title, author: 'Author', isbn: null,
+            coverUrl: null, fetchedCoverUrl: null, status: 'visible', visibility: 'visible',
+            ownership: 'have', intents: '[]', addedVia: 'manual', subjects: null, notes: [],
+            createdAt: new Date(1).toISOString(),
+          }] }) } as Response;
+        });
+        const staleA = loadBooksFromServer();
+        storage[markerKey] = JSON.stringify({ deletedAt: Date.now() + 1, absenceConfirmed: false });
+        window.dispatchEvent(new PageTransitionEvent('pageshow'));
+
+        setMockUserId('user-B');
+        await loadBooksFromServer();
+        expect(shelf.get()['shared-book']?.title).toBe('User B Book');
+
+        setMockUserId('user-A');
+        releaseOldLoad();
+        await staleA;
+        expect(shelf.get()['shared-book']?.title).toBe('User B Book');
+      } finally {
+        delete storage[markerKey];
+        setMockUserId('test-user-123');
+      }
+    });
+
+    it('strips a marked book reinserted by a stale shelf storage event', () => {
+      const storage = localStorage as Storage & Record<string, string>;
+      const markerKey = 'biblocal:shelf:deleted:v1:test-user-123\u0000storage-race-book';
+      const staleBook: Book = {
+        id: 'storage-race-book', title: 'Storage Race', author: 'Author', visibility: 'visible',
+        ownership: 'have', intents: [], addedVia: 'manual', addedAt: 1,
+      };
+      try {
+        storage[markerKey] = JSON.stringify({ deletedAt: Date.now(), absenceConfirmed: false });
+        window.dispatchEvent(new PageTransitionEvent('pageshow'));
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'biblocal:shelf:v1',
+          newValue: JSON.stringify({ [staleBook.id]: staleBook }),
+        }));
+
+        expect(shelf.get()[staleBook.id]).toBeUndefined();
+      } finally {
+        delete storage[markerKey];
+      }
+    });
+
     it('keeps the book on failed DELETE and allows a successful retry', async () => {
       const book: Book = {
         id: 'retry-book', title: 'Retry Book', author: 'Author', visibility: 'visible',
