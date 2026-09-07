@@ -26,9 +26,11 @@ export default {
   local: {
     search: 'Search title or author',
     fit: 'fit',
-    seeOwner: 'See {name} nearby',
+    seeOwner: 'See {name}',
   },
   map: {
+    tileError: "The map could not load. Use the list to keep browsing.",
+    showList: "View list",
     legend: 'Legend',
     you: 'You',
     people: 'People',
@@ -42,6 +44,10 @@ export default {
     chooseView: 'Choose discovery view',
   },
   hub: {
+    allResults: 'all results',
+    clearSearch: "Clear search",
+    emptySearch: "No results for this search.",
+
     panelBooks: 'Books',
     panelPeople: 'People',
     panelStores: 'Bookstores',
@@ -54,6 +60,10 @@ export default {
     emptyStores: 'No bookstores in view. Try panning or zooming out.',
   },
   card: {
+    viewContact: "View contact",
+    loadingContact: "Loading contact…",
+    contactUnavailable: "Contact is unavailable. Try again.",
+
     facets: {
       shelfTwin: 'Shelf Twin',
       readingMentor: 'Reading Mentor',
@@ -83,6 +93,8 @@ export default {
     failedToSend: 'Failed to send request',
   },
   requests: {
+    couldNotLoad: "Couldn’t load connections. Try again.",
+    retry: "Retry",
     title: 'Connection Requests',
     someone: 'Someone',
     accept: 'Accept',

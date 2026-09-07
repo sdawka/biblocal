@@ -17,7 +17,7 @@ export default {
     more: '+{n} de plus',
   },
   nav: {
-    backToMatches: '← Retour aux rencontres',
+    backToMatches: '← Retour à Local',
   },
   form: {
     eyebrow: 'Près de chez vous',
@@ -44,6 +44,8 @@ export default {
     errorGeneric: 'Une erreur est survenue',
   },
   detail: {
+    retry: "Réessayer",
+    notFound: "Cette librairie est introuvable.",
     loading: 'Chargement de la librairie...',
     errorLoadFailed: 'Échec du chargement de la librairie',
     errorGeneric: 'Une erreur est survenue',

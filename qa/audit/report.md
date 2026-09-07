@@ -1,5 +1,7 @@
 # Biblocal journey and UI/UX audit
 
+The original audit below is preserved as baseline evidence. The authorized implementation follow-up and current verification are recorded in [Surgical follow-up](#surgical-follow-up).
+
 Audit date: 2026-09-07. Application baseline: `80c4bd1`. Scope: web application, English/French/Spanish, local synthetic QA data. Product code was not changed. This report and focused regression tests are the deliverables; known failures are intentionally retained.
 
 ## 1. Decisions needed
@@ -193,7 +195,7 @@ The 17 existing `qa/journeys/*.sh` scripts were inventoried but **not executed**
 
 ### Reproduction environment
 
-Use disposable local state only. The configuration imports the real root Astro config and overrides just Cloudflare persistence. Do not use a production endpoint, `--remote`, or the repository's deployment/remote seeding scripts for these fixtures.
+Use disposable local state only. The configuration imports the real root Astro config and isolates Cloudflare persistence and the development dependency cache. Do not use a production endpoint, `--remote`, or the repository's deployment/remote seeding scripts for these fixtures.
 
 ```sh
 npx wrangler d1 migrations apply biblocal-qa-db --env qa --local --persist-to /tmp/biblocal-audit-state
@@ -222,3 +224,25 @@ The contact fixture assumes a freshly seeded database and inserts one incoming r
 4. Take quick wins: localized hero containment (A08), state-specific recovery (A11), malformed JSON handling (A12), and post-create View store (part of A09).
 5. Complete geographic/contributor store behavior (A09), readable interest presentation (A13), and existing-doc/public-copy alignment (A14).
 6. Run the full green suite, the missing authenticated two-user journey, keyboard/import/camera/location paths, responsive article checks and a fresh production smoke before treating a subsequent implementation as release-ready. This audit branch itself intentionally documents failures and makes no deployment claim.
+
+## Surgical follow-up
+
+The user authorized implementation after the audit. Terra-high agents handled backend invariants, contact state, profile persistence and independent review; a luna-xhigh agent handled keyboard/layout and store recovery. Work stayed in the existing application architecture, without new routes, infrastructure, migrations or production data changes.
+
+| Findings | Implemented outcome | Evidence / remaining boundary |
+|---|---|---|
+| A01 | Accepted contacts are actionable from Local and retained in Profile. Authorized details use the existing protected endpoint; loads have retry, session-generation guards and cache eviction. | Component/store tests and [mobile contact](evidence/fixes/accepted-contact-mobile.jpg). Real two-account Clerk smoke remains unexecuted. |
+| A02/A03 | Conditional SQL checks and writes enforce reciprocal-request exclusion, five-per-day quota and hidden-recipient rejection. Legacy reciprocal declined history can recover without deleting records. | Real-handler tests plus [local Cloudflare runtime result](evidence/fixes/runtime-connections.json): five creates, one 429, hidden 403, five persisted outgoing rows. Independent deployed D1 concurrency remains a release gap. |
+| A04 | Saving/Saved feedback follows persistence; Done waits, failure retains the edit draft, and typing invalidates stale acknowledgments. Session and field ownership protect rollback and loads; profile PATCHes are serialized within a session to preserve edit order. | Deferred-response tests; browser rejection → retained editor → correction → reload verified. Cross-device conflict resolution is outside this repair. |
+| A05 | Unbounded discovery says “all results”; bounded map results say “in view.” Book-to-person navigation reveals the person in mobile List/People. Owner actions no longer imply proximity. | Geography filtering is deliberately unchanged; city/radius policy remains open. |
+| A06/A08 | A native button opens CSV selection with keyboard focus. Responsive hero tracks shrink and metadata wraps in all three languages. | [Five passing browser checks](evidence/fixes/browser-results.json), [ES 390px](evidence/fixes/es-hero-390.jpg), [FR 320px](evidence/fixes/fr-hero-320.jpg). Actual CSV file transfer remains blocked by extension permission. |
+| A07 | Standard OSM tiles render with attribution; tile failures expose a List fallback. | [Loaded mobile map](evidence/fixes/map-mobile.jpg). Ordinary browser use follows the [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/). A transient tile error can leave the fallback notice visible; minor follow-up, not a reason to hide the available list. |
+| A09/A11 | Store creation links to its detail page; missing stores and retryable errors have distinct recovery; failed add-book submissions retain the form and draft. Empty Local searches offer Clear search. | [Creation](evidence/fixes/store-created.jpg), [404](evidence/fixes/store-not-found.jpg), [search recovery](evidence/fixes/empty-search-mobile.jpg), four store regression tests. Bookstore geography and creator-management scope remain deferred. |
+| A12 | Invalid note JSON syntax, invalid object/text shapes and non-string IDs return 400 before persistence. Existing string-ID idempotency remains supported. | Real-handler and existing note-idempotency tests pass. |
+| A10/A13/A14 | Deferred: book-edit dismissal policy, interest presentation and broader marketing/documentation alignment. | These need product/design choices beyond the surgical defect fixes. |
+
+The two unanswered policy questions were implemented with stated conservative assumptions, not recorded as user decisions: respect the current “Hidden (no contact)” label at the API, and correct geography wording without changing discovery eligibility. The explicit implementation authorization is in `docs/decision_log.md`.
+
+Independent review caught and prompted fixes for legacy declined-row recovery, malformed note body shapes, save→Done draft loss, A→B→A stale responses, obsolete save errors and contact-cache lifetime. Final command results are retained in [follow-up execution evidence](evidence/fixes/execution.txt). The original red audit results above are historical and have not been rewritten as if they had passed then.
+
+Final integrated verification: **851/851 tests across 80 files**, **5/5 connected browser checks**, Svelte/Astro checks and production build pass. Existing diagnostics remain three Svelte warnings and six Astro hints. No merge or deployment was performed.

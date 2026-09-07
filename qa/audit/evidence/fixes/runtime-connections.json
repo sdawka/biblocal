@@ -1,0 +1,14 @@
+{
+  "environment": "local Astro/Cloudflare runtime with isolated D1",
+  "concurrentStatuses": [
+    201,
+    201,
+    201,
+    201,
+    429,
+    201
+  ],
+  "hiddenStatus": 403,
+  "persistedOutgoing": 5,
+  "passed": true
+}

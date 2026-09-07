@@ -37,9 +37,26 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       .limit(1);
     if (owned.length === 0) return json({ error: 'Book not found' }, 404);
 
-    const body = (await request.json()) as { id?: string; text?: string; visibility?: string };
+    let parsed: unknown;
+    try {
+      parsed = await request.json();
+    } catch {
+      return json({ error: 'Invalid JSON body' }, 400);
+    }
 
-    const text = body.text?.trim();
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return json({ error: 'Note text required' }, 400);
+    }
+    const body = parsed as { id?: unknown; text?: unknown; visibility?: string };
+    if (typeof body.text !== 'string') return json({ error: 'Note text required' }, 400);
+
+    let clientNoteId: string | undefined;
+    if (body.id !== undefined && body.id !== null) {
+      if (typeof body.id !== 'string') return json({ error: 'Invalid note id' }, 400);
+      clientNoteId = body.id || undefined;
+    }
+
+    const text = body.text.trim();
     if (!text) return json({ error: 'Note text required' }, 400);
     if (text.length > MAX_NOTE_TEXT_LEN) {
       return json({ error: `Note text must be at most ${MAX_NOTE_TEXT_LEN} characters` }, 400);
@@ -53,12 +70,12 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     // Idempotency: if a client-supplied id already exists for this user+book,
     // return the existing note rather than crashing on the PRIMARY KEY constraint.
     // A different user/book owning that id gets a fresh UUID (no leak).
-    let noteId = body.id || crypto.randomUUID();
-    if (body.id) {
+    let noteId = clientNoteId || crypto.randomUUID();
+    if (clientNoteId) {
       const [existingNote] = await db
         .select()
         .from(bookNotes)
-        .where(eq(bookNotes.id, body.id))
+        .where(eq(bookNotes.id, clientNoteId))
         .limit(1);
       if (existingNote) {
         if (existingNote.userId === userId && existingNote.bookId === bookId) {

@@ -6,6 +6,7 @@
   import 'leaflet.markercluster/dist/MarkerCluster.css';
   import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
   import { discovery, discoveryBooks } from '../stores/matches';
+  import { loadConnections } from '../stores/connections';
   import { profile } from '../stores/profile';
   import { loadDiscoveryUsers, usersLoading, usersError } from '../stores/users';
   import type { Match, LocalBook } from '../lib/types';
@@ -39,6 +40,7 @@
   let viewBounds = $state<MapBounds | null>(null);
   let isMobile = $state(false);
   let mobileView = $state<'list' | 'map'>('list');
+  let mapTileError = $state(false);
 
   let loadingUsers = $state(usersLoading.get());
   let loadError = $state<string | null>(usersError.get());
@@ -102,6 +104,12 @@
   const inViewCount = $derived(
     panel === 'books' ? booksInView.length : panel === 'people' ? peopleInView.length : storesInView.length
   );
+  // Mobile's list is not bound to map bounds, and desktop remains unbounded
+  // until Leaflet reports its first viewport. Avoid calling either state
+  // "Nearby" when remote profiles can be present.
+  const resultScope = $derived(
+    isMobile || viewBounds == null ? matchesT.hub.allResults : matchesT.hub.inView
+  );
 
   // Track the discovery-user fetch so the panel can tell loading/error apart from a
   // genuinely empty match list.
@@ -124,13 +132,6 @@
     if (typeof window === 'undefined') return fallback;
     const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     return v || fallback;
-  }
-
-  function isDark(): boolean {
-    if (typeof window === 'undefined') return false;
-    const explicit = document.documentElement.getAttribute('data-theme');
-    if (explicit) return explicit === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
 
   function getMapCenter(): { lat: number; lng: number } {
@@ -268,6 +269,9 @@
     // Discovery data is independent of Leaflet so the list is ready before a
     // mobile visitor chooses Map.
     loadDiscoveryUsers();
+    // Local is a direct entry point, so relationship state cannot rely on the
+    // Profile inbox having mounted first. Retry once for a transient reload.
+    loadConnections({ retries: 1 });
     const unsubMatches = discovery.subscribe((m) => {
       matchList = m;
       if (map) updateMarkers();
@@ -317,24 +321,21 @@
     });
     map.addLayer(clusterGroup);
 
-    // Use Carto basemap so the map adopts a clean light/dark surface matching the theme.
-    const tileUrl = isDark()
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-    const tiles = L.tileLayer(tileUrl, {
+    // Standard OSM tiles are credential-free and work for the app's ordinary
+    // on-demand viewport loading. Pins retain theme-aware colors.
+    const tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    L.tileLayer(tileUrl, {
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
       maxZoom: 20,
-    }).addTo(map);
+      maxNativeZoom: 19,
+    })
+      .once('tileerror', () => (mapTileError = true))
+      .addTo(map);
 
-    // Swap tiles when the theme toggles, keeping dark-mode legibility.
+    // Marker colors update with the page theme; the neutral map tiles stay
+    // stable and do not require a provider-specific key.
     const themeObserver = new MutationObserver(() => {
-      tiles.setUrl(
-        isDark()
-          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-          : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-      );
       updateMarkers();
     });
     themeObserver.observe(document.documentElement, {
@@ -407,9 +408,9 @@
     panel = owned?.user.type === 'bookstore' ? 'bookstores' : 'people';
     expandedId = ownerId;
     applySelectionStyles();
-    // A row in the list has a clear visual continuation: show the owner on
-    // the map, rather than silently switching the list to another panel.
-    mobileView = 'map';
+    // The destination card remains visible on mobile rather than being hidden
+    // behind the separate Map surface.
+    mobileView = 'list';
     focusMarker(ownerId);
   }
 
@@ -420,6 +421,10 @@
       await ensureMap();
       map?.invalidateSize({ animate: false });
     }
+  }
+
+  function showListFromMapError() {
+    mobileView = 'list';
   }
 </script>
 
@@ -432,6 +437,13 @@
 
   <div class:mobile-hidden={isMobile && mobileView === 'list'} class="map-wrap">
     <div class="map-container" bind:this={mapContainer}></div>
+
+    {#if mapTileError}
+      <div class="map-error card" role="alert">
+        <p>{t.tileError}</p>
+        <button class="btn btn-sm" type="button" onclick={showListFromMapError}>{t.showList}</button>
+      </div>
+    {/if}
 
     <!-- Floating glass legend over the map -->
     <div class="legend glass card">
@@ -457,7 +469,7 @@
       {storesInView}
       {storesUnlocated}
       {inViewCount}
-      resultScope={isMobile ? t.nearby : undefined}
+      {resultScope}
       {expandedId}
       onToggle={toggleExpanded}
       onOwner={focusFromRow}
@@ -490,6 +502,21 @@
     width: 100%;
     height: 100%;
   }
+
+  .map-error {
+    position: absolute;
+    z-index: 600;
+    top: var(--s-4);
+    left: var(--s-4);
+    right: var(--s-4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    padding: var(--s-3);
+  }
+
+  .map-error p { margin: 0; font-family: var(--font-ui); font-size: 0.875rem; }
 
   /* Floating glass legend */
   .legend {

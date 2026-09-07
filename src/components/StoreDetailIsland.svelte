@@ -3,7 +3,7 @@
   import BookCardShell from './BookCardShell.svelte';
   import BookDetail from './BookDetail.svelte';
   import { safeExternalUrl } from '../lib/url';
-  import { localizeTopicLabel, useTranslations, type Lang } from '../i18n';
+  import { localizePath, localizeTopicLabel, useTranslations, type Lang } from '../i18n';
   import type { BookVisibility, BookOwnership, BookIntent } from '../lib/types';
 
   interface Props {
@@ -43,20 +43,32 @@
   let canEdit = $state(false);
   let loading = $state(true);
   let error = $state('');
+  let errorKind = $state<'not-found' | 'retryable' | null>(null);
 
   let showAddBook = $state(false);
   let newBookTitle = $state('');
   let newBookAuthor = $state('');
   let newBookIsbn = $state('');
   let addingBook = $state(false);
+  let addBookError = $state('');
 
-  onMount(async () => {
+  function responseError(body: unknown): string | undefined {
+    if (typeof body !== 'object' || body === null || !('error' in body)) return undefined;
+    return typeof body.error === 'string' ? body.error : undefined;
+  }
+
+  async function loadStore() {
+    loading = true;
+    error = '';
+    errorKind = null;
+
     try {
       const res = await fetch(`/api/stores/${storeId}`);
       if (!res.ok) {
-        const data: { error?: string } = await res.json();
-        console.error('Failed to load store:', data.error);
-        error = t.detail.errorLoadFailed;
+        const body: unknown = await res.json().catch(() => null);
+        console.error('Failed to load store:', responseError(body));
+        errorKind = res.status === 404 ? 'not-found' : 'retryable';
+        error = res.status === 404 ? t.detail.notFound : t.detail.errorLoadFailed;
         return;
       }
       const data: { store: StoreData; books: BookData[]; canEdit: boolean } = await res.json();
@@ -65,18 +77,29 @@
       canEdit = data.canEdit;
     } catch (e) {
       console.error('Failed to load store:', e);
+      errorKind = 'retryable';
       error = t.detail.errorGeneric;
     } finally {
       loading = false;
     }
+  }
+
+  onMount(() => {
+    void loadStore();
   });
 
+  function toggleAddBook() {
+    showAddBook = !showAddBook;
+    if (!showAddBook) addBookError = '';
+  }
+
   async function handleAddBook() {
-    if (!newBookTitle.trim() || !newBookAuthor.trim()) {
+    if (addingBook || !newBookTitle.trim() || !newBookAuthor.trim()) {
       return;
     }
 
     addingBook = true;
+    addBookError = '';
     try {
       const res = await fetch(`/api/stores/${storeId}/books`, {
         method: 'POST',
@@ -90,9 +113,9 @@
       });
 
       if (!res.ok) {
-        const data: { error?: string } = await res.json();
-        console.error('Failed to add store book:', data.error);
-        error = t.detail.errorAddBookFailed;
+        const body: unknown = await res.json().catch(() => null);
+        console.error('Failed to add store book:', responseError(body));
+        addBookError = t.detail.errorAddBookFailed;
         return;
       }
 
@@ -104,7 +127,7 @@
       showAddBook = false;
     } catch (e) {
       console.error('Failed to add store book:', e);
-      error = t.detail.errorAddBookFailed;
+      addBookError = t.detail.errorAddBookFailed;
     } finally {
       addingBook = false;
     }
@@ -115,7 +138,16 @@
   {#if loading}
     <div class="loading muted">{t.detail.loading}</div>
   {:else if error}
-    <div class="error">{error}</div>
+    <div class="error-state" role="alert">
+      <p>{error}</p>
+      {#if errorKind === 'not-found'}
+        <a class="btn btn-outline" href={localizePath('/stores', lang)}>{t.index.title}</a>
+      {:else}
+        <button type="button" class="btn btn-outline" onclick={() => void loadStore()} disabled={loading}>
+          {t.detail.retry}
+        </button>
+      {/if}
+    </div>
   {:else if store}
     <header class="store-header">
       <div class="store-badge" aria-hidden="true">🏪</div>
@@ -159,7 +191,7 @@
       <div class="section-header">
         <h2>{t.detail.featuredHeading}</h2>
         {#if canEdit}
-          <button class="btn btn-tinted btn-sm" onclick={() => showAddBook = !showAddBook}>
+          <button class="btn btn-tinted btn-sm" onclick={toggleAddBook}>
             {showAddBook ? t.detail.cancel : t.detail.addBook}
           </button>
         {/if}
@@ -174,6 +206,7 @@
             placeholder={t.detail.bookTitlePlaceholder}
             aria-label={t.detail.bookTitlePlaceholder}
             disabled={addingBook}
+            aria-describedby={addBookError ? 'store-book-error' : undefined}
           />
           <input
             class="input"
@@ -182,6 +215,7 @@
             placeholder={t.detail.authorPlaceholder}
             aria-label={t.detail.authorPlaceholder}
             disabled={addingBook}
+            aria-describedby={addBookError ? 'store-book-error' : undefined}
           />
           <input
             class="input"
@@ -190,8 +224,13 @@
             placeholder={t.detail.isbnPlaceholder}
             aria-label={t.detail.isbnPlaceholder}
             disabled={addingBook}
+            aria-describedby={addBookError ? 'store-book-error' : undefined}
           />
+          {#if addBookError}
+            <p class="add-book-error" id="store-book-error" role="alert">{addBookError}</p>
+          {/if}
           <button
+            type="button"
             class="btn btn-filled"
             onclick={handleAddBook}
             disabled={addingBook || !newBookTitle.trim() || !newBookAuthor.trim()}
@@ -232,13 +271,14 @@
   }
 
   .loading,
-  .error {
+  .error-state {
     padding: var(--s-6);
     text-align: center;
     font-family: var(--font-ui);
   }
 
-  .error {
+  .error-state p {
+    margin: 0 0 var(--s-4);
     color: var(--danger);
   }
 
@@ -349,6 +389,13 @@
     background: var(--surface-sunken);
     border: 1px solid var(--hairline);
     border-radius: var(--r-md);
+  }
+
+  .add-book-error {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    color: var(--danger);
   }
 
   .btn:disabled {

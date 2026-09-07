@@ -305,8 +305,19 @@
 
   /* ── Responsive ─────────────────────────────────────── */
   @media (max-width: 920px) {
-    .grid { grid-template-columns: 1fr; gap: clamp(2.5rem, 8vw, 4rem); }
-    .copy { max-width: none; }
+    .grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: clamp(2.5rem, 8vw, 4rem);
+      min-width: 0;
+    }
+    .copy {
+      max-width: none;
+      min-width: 0;
+    }
+    .meta {
+      flex-wrap: wrap;
+      row-gap: var(--s-2);
+    }
     .wall { perspective: none; justify-self: stretch; }
     .wall-inner {
       grid-template-columns: repeat(5, 1fr);

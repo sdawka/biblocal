@@ -8,6 +8,7 @@ export default {
     heading: 'Your Profile',
   },
   edit: {
+    saving: "Saving…",
     heading: 'Edit Profile',
     done: 'Done',
     saved: 'Saved',

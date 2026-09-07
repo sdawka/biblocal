@@ -58,6 +58,7 @@
   const emptyMessage = $derived(
     panel === 'books' ? th.emptyBooks : panel === 'people' ? th.emptyPeople : th.emptyStores
   );
+  const hasSearch = $derived(query.trim().length > 0);
 </script>
 
 <div class="panel-head">
@@ -115,7 +116,10 @@
 {:else if panel === 'books'}
   {#if bookGroups.length === 0 && bookGroupsUnlocated.length === 0}
     <div class="empty">
-      <p>{emptyMessage}</p>
+      <p>{hasSearch ? th.emptySearch : emptyMessage}</p>
+      {#if hasSearch}
+        <button class="btn btn-sm" type="button" onclick={() => onQueryChange('')}>{th.clearSearch}</button>
+      {/if}
     </div>
   {:else}
     <div class="cards-list">
@@ -150,7 +154,10 @@
 {:else if panel === 'people'}
   {#if peopleInView.length === 0 && peopleUnlocated.length === 0}
     <div class="empty">
-      <p>{emptyMessage}</p>
+      <p>{hasSearch ? th.emptySearch : emptyMessage}</p>
+      {#if hasSearch}
+        <button class="btn btn-sm" type="button" onclick={() => onQueryChange('')}>{th.clearSearch}</button>
+      {/if}
     </div>
   {:else}
     <div class="cards-list">
@@ -186,7 +193,10 @@
   {/if}
 {:else if storesInView.length === 0 && storesUnlocated.length === 0}
   <div class="empty">
-    <p>{emptyMessage}</p>
+    <p>{hasSearch ? th.emptySearch : emptyMessage}</p>
+    {#if hasSearch}
+      <button class="btn btn-sm" type="button" onclick={() => onQueryChange('')}>{th.clearSearch}</button>
+    {/if}
   </div>
 {:else}
   <div class="cards-list">

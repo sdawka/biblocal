@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import MatchCardIsland from '../../src/components/MatchCardIsland.svelte';
 import MatchMapIsland from '../../src/components/MatchMapIsland.svelte';
 import { currentUserId } from '../../src/stores/auth';
-import { connectionRequests } from '../../src/stores/connections';
+import { authorizedContacts, connectionRequests } from '../../src/stores/connections';
 import { profile } from '../../src/stores/profile';
 import { shelf } from '../../src/stores/shelf';
 import { discoveryUsers, discoveryUsersLoaded, usersError, usersLoading } from '../../src/stores/users';
@@ -33,6 +33,7 @@ const onRequestMatch: Match = {
 describe('accepted on-request contact audit', () => {
   let priorUserId: string | null;
   let priorConnections: ReturnType<typeof connectionRequests.get>;
+  let priorContacts: ReturnType<typeof authorizedContacts.get>;
   let priorProfile: ReturnType<typeof profile.get>;
   let priorShelf: ReturnType<typeof shelf.get>;
   let priorDiscoveryUsers: ReturnType<typeof discoveryUsers.get>;
@@ -44,6 +45,7 @@ describe('accepted on-request contact audit', () => {
   beforeEach(() => {
     priorUserId = currentUserId.get();
     priorConnections = connectionRequests.get();
+    priorContacts = authorizedContacts.get();
     priorProfile = profile.get();
     priorShelf = shelf.get();
     priorDiscoveryUsers = discoveryUsers.get();
@@ -60,11 +62,13 @@ describe('accepted on-request contact audit', () => {
       createdAt: 1,
       respondedAt: 2,
     }]);
+    authorizedContacts.set({});
   });
 
   afterEach(() => {
     currentUserId.set(priorUserId);
     connectionRequests.set(priorConnections);
+    authorizedContacts.set(priorContacts);
     profile.set(priorProfile);
     shelf.set(priorShelf);
     discoveryUsers.set(priorDiscoveryUsers);
@@ -92,6 +96,46 @@ describe('accepted on-request contact audit', () => {
     } else if (usableContactPath?.tagName === 'BUTTON') {
       expect((usableContactPath as HTMLButtonElement).disabled).toBe(false);
     }
+  });
+
+  it('retries the authorized contact lookup and only reveals the returned contact', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'offline' }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          profile: { contactMethod: 'email', contactValue: 'reader@example.test' },
+        }),
+      } as Response);
+    render(MatchCardIsland, { props: { match: onRequestMatch, expanded: true } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'View contact' }));
+    await waitFor(() => {
+      expect(screen.getByText('Contact is unavailable. Try again.')).toBeTruthy();
+    });
+    expect(screen.queryByText('reader@example.test')).toBeNull();
+
+    await fireEvent.click(screen.getByRole('button', { name: 'View contact' }));
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: /reader@example\.test/ }).getAttribute('href')).toBe(
+        'mailto:reader@example.test'
+      );
+    });
+    expect(screen.queryByText('Contact is unavailable. Try again.')).toBeNull();
+  });
+
+  it('removes a previously displayed contact when relationship refresh evicts it', async () => {
+    authorizedContacts.set({
+      [recipientId]: { method: 'email', value: 'reader@example.test' },
+    });
+    render(MatchCardIsland, { props: { match: onRequestMatch, expanded: true } });
+    expect(screen.getByRole('link', { name: /reader@example\.test/ })).toBeTruthy();
+
+    authorizedContacts.set({});
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: /reader@example\.test/ })).toBeNull();
+      expect(screen.getByRole('button', { name: 'View contact' })).toBeTruthy();
+    });
   });
 
   it('shows an already accepted local connection as connected after the Local hub mounts', async () => {

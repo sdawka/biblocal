@@ -49,6 +49,12 @@ function setContact(userId: string, visibility: 'hidden' | 'on-request' | 'publi
   ).bind('email', `${userId}@example.test`, visibility, userId).run();
 }
 
+function setContactWithLegacyVisibility(userId: string): void {
+  db.prepare(
+    'UPDATE users SET contact_method = ?, contact_value = ?, contact_visibility = NULL WHERE id = ?'
+  ).bind('email', `${userId}@example.test`, userId).run();
+}
+
 async function noteText(id: string): Promise<string | undefined> {
   const { results } = await db.prepare('SELECT text FROM book_notes WHERE id = ?').bind(id).all();
   return (results[0] as { text?: string } | undefined)?.text;
@@ -163,6 +169,24 @@ describe('book and note domain audit', () => {
     expect(results).toEqual([]);
   });
 
+  it('treats a legacy recipient without contact visibility as hidden', async () => {
+    setContact(OWNER);
+    setContactWithLegacyVisibility(OTHER_USER);
+
+    const { status } = await callApiAs(OWNER, postConnectionHandler, {
+      method: 'POST',
+      url: `${BASE}/api/connections`,
+      body: { toUserId: OTHER_USER },
+    });
+
+    expect(status).toBe(403);
+    const { results } = await db
+      .prepare('SELECT id FROM connection_requests WHERE from_user_id = ? AND to_user_id = ?')
+      .bind(OWNER, OTHER_USER)
+      .all();
+    expect(results).toEqual([]);
+  });
+
   it('allows at most one pending relationship when users request each other concurrently', async () => {
     setContact(OWNER);
     setContact(OTHER_USER);
@@ -218,6 +242,87 @@ describe('book and note domain audit', () => {
     expect(results).toHaveLength(5);
   });
 
+  it('counts stale-declined reactivations toward the five-per-day cap atomically', async () => {
+    setContact(OWNER);
+    const recipients = Array.from({ length: 6 }, (_, index) => `audit-reactivation-${index}`);
+    const staleCreatedAt = Math.floor((Date.now() - 31 * 24 * 60 * 60 * 1000) / 1000);
+
+    for (const recipient of recipients) {
+      seedUser(db, recipient);
+      setContact(recipient);
+      db.prepare(
+        `INSERT INTO connection_requests
+          (id, from_user_id, to_user_id, status, created_at, responded_at)
+         VALUES (?, ?, ?, 'declined', ?, ?)`
+      ).bind(`declined-${recipient}`, OWNER, recipient, staleCreatedAt, staleCreatedAt).run();
+    }
+
+    const responses = await Promise.all(
+      recipients.map((toUserId) =>
+        callApiAs(OWNER, postConnectionHandler, {
+          method: 'POST',
+          url: `${BASE}/api/connections`,
+          body: { toUserId },
+        })
+      )
+    );
+
+    expect(responses.filter((response) => response.status === 201)).toHaveLength(5);
+    expect(responses.filter((response) => response.status === 429)).toHaveLength(1);
+    const { results } = await db
+      .prepare(
+        `SELECT id FROM connection_requests
+         WHERE from_user_id = ? AND status = 'pending' AND created_at > ?`
+      )
+      .bind(OWNER, Math.floor(Date.now() / 1000) - 24 * 60 * 60)
+      .all();
+    expect(results).toHaveLength(5);
+  });
+
+  it('reactivates the caller\'s row from legacy reciprocal declines without deleting history', async () => {
+    setContact(OWNER);
+    setContact(OTHER_USER);
+    const olderDecline = Math.floor((Date.now() - 32 * 24 * 60 * 60 * 1000) / 1000);
+    const newerDecline = Math.floor((Date.now() - 31 * 24 * 60 * 60 * 1000) / 1000);
+
+    db.prepare(
+      `INSERT INTO connection_requests
+        (id, from_user_id, to_user_id, status, created_at, responded_at)
+       VALUES ('legacy-owner-other', ?, ?, 'declined', ?, ?)`
+    ).bind(OWNER, OTHER_USER, olderDecline, olderDecline).run();
+    db.prepare(
+      `INSERT INTO connection_requests
+        (id, from_user_id, to_user_id, status, created_at, responded_at)
+       VALUES ('legacy-other-owner', ?, ?, 'declined', ?, ?)`
+    ).bind(OTHER_USER, OWNER, newerDecline, newerDecline).run();
+
+    const first = await callApiAs(OWNER, postConnectionHandler, {
+      method: 'POST',
+      url: `${BASE}/api/connections`,
+      body: { toUserId: OTHER_USER },
+    });
+    const reciprocal = await callApiAs(OTHER_USER, postConnectionHandler, {
+      method: 'POST',
+      url: `${BASE}/api/connections`,
+      body: { toUserId: OWNER },
+    });
+
+    expect(first.status).toBe(201);
+    expect(reciprocal.status).toBe(400);
+    const { results } = await db
+      .prepare(
+        `SELECT id, from_user_id, to_user_id, status FROM connection_requests
+         WHERE (from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)
+         ORDER BY id`
+      )
+      .bind(OWNER, OTHER_USER, OTHER_USER, OWNER)
+      .all();
+    expect(results).toEqual([
+      { id: 'legacy-other-owner', from_user_id: OTHER_USER, to_user_id: OWNER, status: 'declined' },
+      { id: 'legacy-owner-other', from_user_id: OWNER, to_user_id: OTHER_USER, status: 'pending' },
+    ]);
+  });
+
   it('rejects malformed note-create JSON as a client error without creating a note', async () => {
     insertBook();
 
@@ -232,5 +337,52 @@ describe('book and note domain audit', () => {
     expect(status).toBe(400);
     const { results } = await db.prepare('SELECT id FROM book_notes WHERE book_id = ?').bind(BOOK_ID).all();
     expect(results).toEqual([]);
+  });
+
+  it('rejects non-object note JSON or non-string text without creating a note', async () => {
+    insertBook();
+    const invalidBodies = [null, [], { text: 123 }];
+
+    const responses = await Promise.all(
+      invalidBodies.map((body) =>
+        callApiAs(OWNER, postNoteHandler, {
+          method: 'POST',
+          url: `${BASE}/api/books/${BOOK_ID}/notes`,
+          params: { id: BOOK_ID },
+          body,
+        })
+      )
+    );
+
+    expect(responses.map((response) => response.status)).toEqual([400, 400, 400]);
+    const { results } = await db.prepare('SELECT id FROM book_notes WHERE book_id = ?').bind(BOOK_ID).all();
+    expect(results).toEqual([]);
+  });
+
+  it('treats a null optional note id as omitted and rejects non-string ids before persistence', async () => {
+    insertBook();
+
+    const omittedId = await callApiAs(OWNER, postNoteHandler, {
+      method: 'POST',
+      url: `${BASE}/api/books/${BOOK_ID}/notes`,
+      params: { id: BOOK_ID },
+      body: { id: null, text: 'generated id note' },
+    });
+    const invalidIds = await Promise.all(
+      [{}, 123].map((id) =>
+        callApiAs(OWNER, postNoteHandler, {
+          method: 'POST',
+          url: `${BASE}/api/books/${BOOK_ID}/notes`,
+          params: { id: BOOK_ID },
+          body: { id, text: 'invalid id note' },
+        })
+      )
+    );
+
+    expect(omittedId.status).toBe(201);
+    expect((omittedId.json as { note: { id: string } }).note.id).toEqual(expect.any(String));
+    expect(invalidIds.map((response) => response.status)).toEqual([400, 400]);
+    const { results } = await db.prepare('SELECT id FROM book_notes WHERE book_id = ?').bind(BOOK_ID).all();
+    expect(results).toHaveLength(1);
   });
 });

@@ -14,6 +14,11 @@
   let parseErrors: Array<{ row: number; message: string }> = $state([]);
   let importResult: { imported: number; skipped: number; errors: string[] } | null = $state(null);
   let error = $state('');
+  let fileInput = $state<HTMLInputElement>();
+
+  function openFilePicker() {
+    fileInput?.click();
+  }
 
   function handleFileSelect(e: Event) {
     const input = e.target as HTMLInputElement;
@@ -112,10 +117,12 @@
       <p class="instructions">
         {t.instructions}
       </p>
-      <label class="file-input">
-        <input type="file" accept=".csv" onchange={handleFileSelect} />
-        <span class="btn btn-filled file-btn">{t.chooseFile}</span>
-      </label>
+      <div class="file-input">
+        <input type="file" accept=".csv" bind:this={fileInput} onchange={handleFileSelect} />
+        <button type="button" class="btn btn-filled file-btn" onclick={openFilePicker}>
+          {t.chooseFile}
+        </button>
+      </div>
       {#if error}
         <p class="error">{error}</p>
       {/if}
@@ -239,7 +246,8 @@
   }
 
   .file-input {
-    display: block;
+    position: relative;
+    display: inline-flex;
   }
 
   .file-input input {

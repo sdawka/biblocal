@@ -4,5 +4,6 @@ import cloudflare from '@astrojs/cloudflare';
 
 export default {
   ...base,
+  vite: { ...base.vite, cacheDir: '/tmp/biblocal-audit-vite' },
   adapter: cloudflare({ persistState: { path: '/tmp/biblocal-audit-state' } }),
 };

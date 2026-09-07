@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import MatchMapIsland from '../../src/components/MatchMapIsland.svelte';
 import { profile } from '../../src/stores/profile';
 import { shelf } from '../../src/stores/shelf';
@@ -82,7 +82,7 @@ describe('discovery scope audit', () => {
     window.matchMedia = priorMatchMedia;
   });
 
-  it('does not call global discovery results Nearby when the profile has no coordinates', async () => {
+  it('labels unbounded discovery results honestly when the profile has no coordinates', async () => {
     render(MatchMapIsland, { props: { lang: 'en' } });
 
     await waitFor(() => {
@@ -90,5 +90,37 @@ describe('discovery scope audit', () => {
     });
 
     expect(screen.queryByText('2 Nearby')).toBeNull();
+    expect(screen.getByText('2 all results')).toBeTruthy();
+  });
+
+  it('keeps a book owner visible in the mobile People list', async () => {
+    const { container } = render(MatchMapIsland, { props: { lang: 'en' } });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Yuki's book/ })).toBeTruthy();
+    });
+    await fireEvent.click(screen.getByRole('button', { name: /Yuki's book/ }));
+    await fireEvent.click(screen.getByRole('button', { name: 'See Yuki', exact: true }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'People' }).getAttribute('aria-selected')).toBe('true');
+      expect(container.querySelector('.cards-panel')?.classList.contains('mobile-hidden')).toBe(false);
+      expect(screen.getByRole('heading', { name: 'Yuki' })).toBeTruthy();
+    });
+  });
+
+  it('offers a search-specific reset instead of map-panning advice', async () => {
+    render(MatchMapIsland, { props: { lang: 'en' } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Yuki's book")).toBeTruthy();
+    });
+    const search = screen.getByPlaceholderText('Search title, author, or name');
+    await fireEvent.input(search, { target: { value: 'not a book' } });
+
+    expect(screen.getByText('No results for this search.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Clear search' })).toBeTruthy();
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+    expect((search as HTMLInputElement).value).toBe('');
   });
 });

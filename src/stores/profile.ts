@@ -41,11 +41,156 @@ export const dismissedPrompts = persistentAtom<string[]>('biblocal:dismissed:v1'
 
 const PROFILE_SYNC_ERROR = 'Could not save your profile. Please try again.';
 
-// `prior` is the profile snapshot captured before the optimistic set, so a
-// failed sync can revert the local change instead of letting it persist only
-// locally (and silently vanish on the next server-backed reload).
-async function syncProfile(updates: Partial<UserProfile>, prior?: UserProfile): Promise<void> {
-  if (!currentUserId.get()) return;
+interface UserSession {
+  userId: string;
+  generation: number;
+}
+
+type ProfileField = Exclude<keyof UserProfile, 'topics'> | 'topics.curated' | 'topics.freeform';
+type ProfileUpdates = Omit<Partial<UserProfile>, 'topics'> & { topics?: Partial<UserTopics> };
+
+interface ProfileFieldMutation {
+  token: symbol;
+  value: unknown;
+  status: 'pending' | 'succeeded' | 'failed';
+}
+
+interface ProfileFieldProvenance {
+  confirmed: unknown;
+  mutations: ProfileFieldMutation[];
+}
+
+const PROFILE_SERVER_FIELDS = [
+  'name',
+  'city',
+  'radiusKm',
+  'borrowStyle',
+  'currentObsessions',
+  'latitude',
+  'longitude',
+  'locationPrecision',
+  'contactMethod',
+  'contactValue',
+  'contactVisibility',
+] as const satisfies ReadonlyArray<Exclude<keyof UserProfile, 'topics'>>;
+
+const profileFieldProvenance = new Map<ProfileField, ProfileFieldProvenance>();
+let profileSyncTail: Promise<void> | null = null;
+let observedUserId: string | null | undefined;
+let userSessionGeneration = 0;
+
+function resetProfileMutationState(): void {
+  profileFieldProvenance.clear();
+  profileSyncTail = null;
+}
+
+function observeUser(userId: string | null): void {
+  if (userId === observedUserId) return;
+  observedUserId = userId;
+  userSessionGeneration += 1;
+  resetProfileMutationState();
+}
+
+const subscribeToUserId = (currentUserId as unknown as {
+  subscribe?: (listener: (userId: string | null) => void) => () => void;
+}).subscribe;
+if (subscribeToUserId) {
+  subscribeToUserId.call(currentUserId, observeUser);
+}
+
+function captureUserSession(): UserSession | null {
+  const userId = currentUserId.get();
+  observeUser(userId);
+  return userId ? { userId, generation: userSessionGeneration } : null;
+}
+
+function isCurrentUserSession(session: UserSession): boolean {
+  const current = captureUserSession();
+  return current !== null
+    && current.userId === session.userId
+    && current.generation === session.generation;
+}
+
+function fieldValue(source: UserProfile, field: ProfileField): unknown {
+  if (field === 'topics.curated') return source.topics.curated;
+  if (field === 'topics.freeform') return source.topics.freeform;
+  return source[field];
+}
+
+function setFieldValue(source: UserProfile, field: ProfileField, value: unknown): UserProfile {
+  if (field === 'topics.curated') {
+    return { ...source, topics: { ...source.topics, curated: value as string[] } };
+  }
+  if (field === 'topics.freeform') {
+    return { ...source, topics: { ...source.topics, freeform: value as string[] } };
+  }
+  return { ...source, [field]: value } as UserProfile;
+}
+
+function mutationFields(prior: UserProfile, updates: ProfileUpdates): Map<ProfileField, symbol> {
+  const fields = new Map<ProfileField, symbol>();
+  for (const field of PROFILE_SERVER_FIELDS) {
+    if (updates[field] === undefined) continue;
+    const token = Symbol(field);
+    const provenance = profileFieldProvenance.get(field) ?? {
+      confirmed: fieldValue(prior, field),
+      mutations: [],
+    };
+    provenance.mutations.push({ token, value: updates[field], status: 'pending' });
+    profileFieldProvenance.set(field, provenance);
+    fields.set(field, token);
+  }
+  for (const key of ['curated', 'freeform'] as const) {
+    if (updates.topics?.[key] === undefined) continue;
+    const field = `topics.${key}` as const;
+    const token = Symbol(field);
+    const provenance = profileFieldProvenance.get(field) ?? {
+      confirmed: fieldValue(prior, field),
+      mutations: [],
+    };
+    provenance.mutations.push({ token, value: updates.topics[key], status: 'pending' });
+    profileFieldProvenance.set(field, provenance);
+    fields.set(field, token);
+  }
+  return fields;
+}
+
+function latestProfileFieldValue(provenance: ProfileFieldProvenance): unknown {
+  for (let index = provenance.mutations.length - 1; index >= 0; index -= 1) {
+    const mutation = provenance.mutations[index];
+    if (mutation.status !== 'failed') return mutation.value;
+  }
+  return provenance.confirmed;
+}
+
+function settleProfileFields(fields: Map<ProfileField, symbol>, outcome: 'succeeded' | 'failed'): boolean {
+  let next = profile.get();
+  let shouldReportFailure = false;
+  for (const [field, token] of fields) {
+    const provenance = profileFieldProvenance.get(field);
+    if (!provenance) continue;
+    const mutation = provenance.mutations.find((entry) => entry.token === token);
+    if (!mutation) continue;
+    mutation.status = outcome;
+    if (outcome === 'failed' && provenance.mutations.at(-1)?.status === 'failed') {
+      shouldReportFailure = true;
+    }
+    const value = latestProfileFieldValue(provenance);
+    if (!Object.is(fieldValue(next, field), value)) {
+      next = setFieldValue(next, field, value);
+    }
+    while (provenance.mutations[0]?.status !== 'pending') {
+      const settled = provenance.mutations.shift();
+      if (!settled) break;
+      if (settled.status === 'succeeded') provenance.confirmed = settled.value;
+    }
+    if (provenance.mutations.length === 0) profileFieldProvenance.delete(field);
+  }
+  if (next !== profile.get()) profile.set(next);
+  return shouldReportFailure;
+}
+
+function serverProfileUpdates(updates: ProfileUpdates): Record<string, unknown> {
   const serverUpdates: Record<string, unknown> = {};
   if (updates.name !== undefined) serverUpdates.name = updates.name;
   if (updates.city !== undefined) serverUpdates.city = updates.city;
@@ -62,27 +207,65 @@ async function syncProfile(updates: Partial<UserProfile>, prior?: UserProfile): 
   if (updates.contactMethod !== undefined) serverUpdates.contactMethod = updates.contactMethod;
   if (updates.contactValue !== undefined) serverUpdates.contactValue = updates.contactValue;
   if (updates.contactVisibility !== undefined) serverUpdates.contactVisibility = updates.contactVisibility;
-  if (Object.keys(serverUpdates).length === 0) return;
+  return serverUpdates;
+}
+
+async function sendProfilePatch(
+  serverUpdates: Record<string, unknown>,
+  session: UserSession,
+  fields: Map<ProfileField, symbol>,
+): Promise<boolean> {
   try {
     const res = await fetch('/api/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(serverUpdates),
     });
+    if (!isCurrentUserSession(session)) return false;
     if (!res.ok) {
       console.error('Failed to sync profile:', await res.text());
-      if (prior) profile.set(prior);
-      reportSyncError(PROFILE_SYNC_ERROR);
+      if (!isCurrentUserSession(session)) return false;
+      if (settleProfileFields(fields, 'failed')) reportSyncError(PROFILE_SYNC_ERROR);
+      return false;
     }
+    settleProfileFields(fields, 'succeeded');
+    return true;
   } catch (e) {
+    if (!isCurrentUserSession(session)) return false;
     console.error('Failed to sync profile:', e);
-    if (prior) profile.set(prior);
-    reportSyncError(PROFILE_SYNC_ERROR);
+    if (settleProfileFields(fields, 'failed')) reportSyncError(PROFILE_SYNC_ERROR);
+    return false;
   }
+}
+
+function syncProfile(
+  updates: ProfileUpdates,
+  session: UserSession | null,
+  fields: Map<ProfileField, symbol>,
+): Promise<boolean> {
+  const serverUpdates = serverProfileUpdates(updates);
+  if (Object.keys(serverUpdates).length === 0) return Promise.resolve(true);
+  if (!session) return Promise.resolve(false);
+
+  const run = () => {
+    if (!isCurrentUserSession(session)) return false;
+    return sendProfilePatch(serverUpdates, session, fields);
+  };
+  const queued = profileSyncTail ? profileSyncTail.then(run) : Promise.resolve(run());
+  // Each queue link resolves regardless of the PATCH outcome, so a failure
+  // rolls back its optimistic fields but never blocks the user's next save.
+  const tail = queued.then(() => undefined, () => undefined);
+  profileSyncTail = tail;
+  void tail.then(() => {
+    if (profileSyncTail === tail) profileSyncTail = null;
+  });
+  return queued;
 }
 
 export function initProfile(name: string, city: string): void {
   const prior = profile.get();
+  const session = captureUserSession();
+  const fields = mutationFields(prior, { name, city });
   const newProfile = {
     ...DEFAULT_PROFILE,
     id: crypto.randomUUID(),
@@ -90,7 +273,7 @@ export function initProfile(name: string, city: string): void {
     city,
   };
   profile.set(newProfile);
-  syncProfile({ name, city }, prior);
+  void syncProfile({ name, city }, session, fields);
 }
 
 export function isOnboarded(): boolean {
@@ -98,21 +281,31 @@ export function isOnboarded(): boolean {
   return p.id !== '' && p.name !== '' && p.city !== '';
 }
 
-export function updateProfile(updates: Partial<UserProfile>): void {
+export function updateProfile(updates: Partial<UserProfile>): Promise<boolean> {
   const current = profile.get();
-  profile.set({ ...current, ...updates });
-  syncProfile(updates, current);
+  const session = captureUserSession();
+  const fields = mutationFields(current, updates);
+  profile.set({
+    ...current,
+    ...updates,
+    topics: updates.topics ? { ...current.topics, ...updates.topics } : current.topics,
+  });
+  return syncProfile(updates, session, fields);
 }
 
-export function updateTopics(topics: Partial<UserTopics>): void {
+export function updateTopics(topics: Partial<UserTopics>): Promise<boolean> {
   const current = profile.get();
+  const session = captureUserSession();
+  const updates = { topics };
+  const fields = mutationFields(current, updates);
   profile.set({
     ...current,
     topics: { ...current.topics, ...topics },
   });
   if (topics.curated !== undefined || topics.freeform !== undefined) {
-    syncProfile({ topics: { ...current.topics, ...topics } }, current);
+    return syncProfile(updates, session, fields);
   }
+  return Promise.resolve(true);
 }
 
 interface ServerProfile {
@@ -138,14 +331,14 @@ export async function loadProfileFromServer(): Promise<void> {
   // Capture the user this load is for; if it changes mid-flight (fast re-login
   // as a different user), bail before set() so a slow response can't overwrite
   // the newer user's freshly-loaded profile.
-  const loadingFor = currentUserId.get();
+  const loadingFor = captureUserSession();
   if (!loadingFor) return;
   try {
     const res = await fetch('/api/profile');
-    if (currentUserId.get() !== loadingFor) return;
+    if (!isCurrentUserSession(loadingFor)) return;
     if (!res.ok) return;
     const data = await res.json() as { profile: ServerProfile };
-    if (currentUserId.get() !== loadingFor) return;
+    if (!isCurrentUserSession(loadingFor)) return;
     const sp = data.profile;
     const current = profile.get();
     profile.set({
@@ -225,8 +418,8 @@ export function deriveLendingPersonality(): string {
   return 'Private collector';
 }
 
-export function updateLendingPersonality(personality: string, isOverride: boolean = true): void {
-  updateProfile({
+export function updateLendingPersonality(personality: string, isOverride: boolean = true): Promise<boolean> {
+  return updateProfile({
     lendingPersonality: personality,
     lendingPersonalityOverride: isOverride,
   });
@@ -277,23 +470,24 @@ export async function requestGeolocation(precision: LocationPrecision = 'approxi
   });
 }
 
-export function setLocationFromCity(city: string): void {
+export function setLocationFromCity(city: string): Promise<boolean> {
   const coords = getCityCoordinates(city);
   if (coords) {
-    updateProfile({
+    return updateProfile({
       latitude: coords.lat,
       longitude: coords.lng,
       locationPrecision: 'city',
     });
   }
+  return Promise.resolve(true);
 }
 
 export function updateContactInfo(
   method: ContactMethod,
   value: string,
   visibility: ContactVisibility
-): void {
-  updateProfile({
+): Promise<boolean> {
+  return updateProfile({
     contactMethod: method,
     contactValue: value,
     contactVisibility: visibility,

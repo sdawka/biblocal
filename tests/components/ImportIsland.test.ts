@@ -66,6 +66,21 @@ describe('ImportIsland', () => {
       expect(fileInput?.getAttribute('accept')).toBe('.csv');
     });
 
+    it('exposes the localized chooser as a keyboard-focusable file control', () => {
+      const { container } = render(ImportIsland, { props: { lang: 'en' } });
+
+      const chooser = screen.getByRole('button', { name: 'Choose CSV file' });
+      expect(chooser.tagName).toBe('BUTTON');
+
+      chooser.focus();
+      expect(document.activeElement).toBe(chooser);
+
+      const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+      const openPicker = vi.spyOn(fileInput, 'click');
+      fireEvent.click(chooser);
+      expect(openPicker).toHaveBeenCalledOnce();
+    });
+
     it('shows choose file button', () => {
       render(ImportIsland, { props: { lang: 'en' } });
 

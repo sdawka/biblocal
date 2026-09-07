@@ -6,6 +6,7 @@ export default {
     heading: 'Tu perfil',
   },
   edit: {
+    saving: "Guardando…",
     heading: 'Editar perfil',
     done: 'Listo',
     saved: 'Guardado',

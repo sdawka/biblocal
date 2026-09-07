@@ -15,7 +15,7 @@ export default {
     more: '+{n} más',
   },
   nav: {
-    backToMatches: '← Volver a coincidencias',
+    backToMatches: '← Volver a Local',
   },
   form: {
     eyebrow: 'Local',
@@ -42,6 +42,8 @@ export default {
     errorGeneric: 'Algo salió mal',
   },
   detail: {
+    retry: "Reintentar",
+    notFound: "No se pudo encontrar esta librería.",
     loading: 'Cargando librería...',
     errorLoadFailed: 'No se pudo cargar la librería',
     errorGeneric: 'Algo salió mal',

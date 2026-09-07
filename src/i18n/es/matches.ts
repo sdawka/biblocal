@@ -24,9 +24,11 @@ export default {
   local: {
     search: 'Buscar por título o autor',
     fit: 'afinidad',
-    seeOwner: 'Ver a {name} cerca',
+    seeOwner: 'Ver a {name}',
   },
   map: {
+    tileError: "No se pudo cargar el mapa. Usa la lista para seguir explorando.",
+    showList: "Ver lista",
     legend: 'Leyenda',
     you: 'Tú',
     people: 'Personas',
@@ -40,6 +42,10 @@ export default {
     chooseView: 'Elegir vista de descubrimiento',
   },
   hub: {
+    allResults: 'todos los resultados',
+    clearSearch: "Borrar búsqueda",
+    emptySearch: "No hay resultados para esta búsqueda.",
+
     panelBooks: 'Libros',
     panelPeople: 'Personas',
     panelStores: 'Librerías',
@@ -52,6 +58,10 @@ export default {
     emptyStores: 'No hay librerías a la vista. Desplaza el mapa o aléjalo.',
   },
   card: {
+    viewContact: "Ver contacto",
+    loadingContact: "Cargando contacto…",
+    contactUnavailable: "El contacto no está disponible. Inténtalo de nuevo.",
+
     facets: {
       shelfTwin: 'Estantería gemela',
       readingMentor: 'Mentor de lectura',
@@ -79,6 +89,8 @@ export default {
     failedToSend: 'No se pudo enviar la solicitud',
   },
   requests: {
+    couldNotLoad: "No se pudieron cargar las conexiones. Inténtalo de nuevo.",
+    retry: "Reintentar",
     title: 'Solicitudes de conexión',
     someone: 'Alguien',
     accept: 'Aceptar',
