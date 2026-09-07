@@ -180,7 +180,7 @@ describe('book and note domain audit', () => {
       }),
     ]);
 
-    expect(responses.map((response) => response.status).sort()).toEqual([400, 201]);
+    expect(responses.map((response) => response.status).sort()).toEqual([201, 400]);
     const { results } = await db
       .prepare(
         `SELECT id FROM connection_requests

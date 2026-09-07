@@ -11,6 +11,11 @@ Tests: 8 failed | 805 passed (813)
 Start at: 16:06:20
 Duration: 8.30s
 
+Focused domain rerun after correcting the sorted expected status order:
+npx vitest run tests/integration/audit-domain.test.ts
+Tests: 4 failed | 4 passed (8), same four application regressions
+Start at: 16:14:39; Duration: 1.16s
+
 Failing cases:
 - accepted requester has no usable contact action
 - Local mount does not initialize accepted relationships
