@@ -22,12 +22,12 @@ import { readJsonBody } from '../../lib/request';
 
 interface CreateStoreBody {
   name: string;
+  city: string;
   neighborhood: string;
   address: string;
   website?: string;
   phone?: string;
   specialties?: string[];
-  city?: string;
 }
 
 // GET /api/stores - list stores with pagination and filters
@@ -122,16 +122,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (!parsed.ok) return parsed.response;
     const body = parsed.body as CreateStoreBody;
 
-    if (!body.name || !body.neighborhood || !body.address) {
-      return new Response(
-        JSON.stringify({ error: 'Name, neighborhood, and address are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Length checks below assume strings; a non-string (e.g. numeric name)
-    // would bypass them and be persisted raw.
-    for (const field of ['name', 'neighborhood', 'address', 'website', 'phone', 'city'] as const) {
+    // Validate types before reading string properties so malformed JSON gets
+    // a client error rather than being persisted or throwing a 500.
+    for (const field of ['name', 'city', 'neighborhood', 'address', 'website', 'phone'] as const) {
       const value = body[field];
       if (value !== undefined && typeof value !== 'string') {
         return new Response(JSON.stringify({ error: `${field} must be a string` }), {
@@ -140,6 +133,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
         });
       }
     }
+
+    if (!body.name?.trim() || !body.city?.trim() || !body.neighborhood?.trim() || !body.address?.trim()) {
+      return new Response(
+        JSON.stringify({ error: 'Name, city, neighborhood, and address are required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (body.specialties !== undefined && !Array.isArray(body.specialties)) {
       return new Response(JSON.stringify({ error: 'specialties must be an array' }), {
         status: 400,
@@ -147,19 +148,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    if (body.name.length > MAX_STORE_NAME_LEN) {
+    const name = body.name.trim();
+    const city = body.city.trim();
+    const neighborhood = body.neighborhood.trim();
+    const address = body.address.trim();
+    const website = body.website?.trim();
+    const phone = body.phone?.trim();
+
+    if (name.length > MAX_STORE_NAME_LEN) {
       return new Response(JSON.stringify({ error: `Store name must be at most ${MAX_STORE_NAME_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    if (body.neighborhood.length > MAX_NEIGHBORHOOD_LEN) {
+    if (neighborhood.length > MAX_NEIGHBORHOOD_LEN) {
       return new Response(JSON.stringify({ error: `Neighborhood must be at most ${MAX_NEIGHBORHOOD_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    if (body.address.length > MAX_ADDRESS_LEN) {
+    if (address.length > MAX_ADDRESS_LEN) {
       return new Response(JSON.stringify({ error: `Address must be at most ${MAX_ADDRESS_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    if (body.city && body.city.length > MAX_CITY_LEN) {
+    if (city.length > MAX_CITY_LEN) {
       return new Response(JSON.stringify({ error: `City must be at most ${MAX_CITY_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    if (body.phone && body.phone.length > MAX_PHONE_LEN) {
+    if (phone && phone.length > MAX_PHONE_LEN) {
       return new Response(JSON.stringify({ error: `Phone must be at most ${MAX_PHONE_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -170,13 +178,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     await db.insert(users).values({
       id: storeId,
       email: `${storeId}@biblocal.local`,
-      name: body.name,
-      city: body.city || 'Montreal',
+      name,
+      city,
       type: 'bookstore',
-      neighborhood: body.neighborhood,
-      address: body.address,
-      website: body.website ? safeExternalUrl(body.website) : null,
-      phone: body.phone || null,
+      neighborhood,
+      address,
+      website: website ? safeExternalUrl(website) : null,
+      phone: phone || null,
       specialties: body.specialties ? JSON.stringify(body.specialties) : null,
       addedBy: userId,
       createdAt: now,

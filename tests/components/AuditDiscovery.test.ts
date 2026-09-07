@@ -4,6 +4,7 @@ import MatchMapIsland from '../../src/components/MatchMapIsland.svelte';
 import { profile } from '../../src/stores/profile';
 import { shelf } from '../../src/stores/shelf';
 import { discoveryUsers, discoveryUsersLoaded, usersError, usersLoading } from '../../src/stores/users';
+import { discoveryScope } from '../../src/stores/matches';
 import type { UserProfile } from '../../src/lib/types';
 
 function makeRemoteReader(id: string, name: string, city: string, latitude: number, longitude: number): UserProfile {
@@ -35,6 +36,7 @@ describe('discovery scope audit', () => {
   let priorDiscoveryLoaded: boolean;
   let priorUsersLoading: boolean;
   let priorUsersError: ReturnType<typeof usersError.get>;
+  let priorDiscoveryScope: ReturnType<typeof discoveryScope.get>;
   let priorMatchMedia: typeof window.matchMedia;
 
   beforeEach(() => {
@@ -44,6 +46,7 @@ describe('discovery scope audit', () => {
     priorDiscoveryLoaded = discoveryUsersLoaded.get();
     priorUsersLoading = usersLoading.get();
     priorUsersError = usersError.get();
+    priorDiscoveryScope = discoveryScope.get();
     priorMatchMedia = window.matchMedia;
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       matches: query === '(max-width: 900px)',
@@ -70,6 +73,7 @@ describe('discovery scope audit', () => {
     discoveryUsersLoaded.set(true);
     usersLoading.set(false);
     usersError.set(null);
+    discoveryScope.set('local');
   });
 
   afterEach(() => {
@@ -79,22 +83,55 @@ describe('discovery scope audit', () => {
     discoveryUsersLoaded.set(priorDiscoveryLoaded);
     usersLoading.set(priorUsersLoading);
     usersError.set(priorUsersError);
+    discoveryScope.set(priorDiscoveryScope);
     window.matchMedia = priorMatchMedia;
   });
 
-  it('labels unbounded discovery results honestly when the profile has no coordinates', async () => {
+  it('uses the profile city as an explicit approximate local scope when coordinates are absent', async () => {
     render(MatchMapIsland, { props: { lang: 'en' } });
 
     await waitFor(() => {
-      expect(screen.getByText("Yuki's book")).toBeTruthy();
+      expect(screen.getByText('Within 5 km of Montreal (approximate)')).toBeTruthy();
     });
 
-    expect(screen.queryByText('2 Nearby')).toBeNull();
-    expect(screen.getByText('2 all results')).toBeTruthy();
+    expect(screen.queryByText("Yuki's book")).toBeNull();
+    expect(screen.getByLabelText('0 Within 5 km of Montreal (approximate)')).toBeTruthy();
   });
 
-  it('keeps a book owner visible in the mobile People list', async () => {
+  it('recreates the map after toggling an unconfigured local profile through worldwide', async () => {
+    profile.set({
+      id: 'audit-reader',
+      name: 'No Location Reader',
+      city: '',
+      radiusKm: 5,
+      topics: { curated: [], freeform: [], inferred: [] },
+    });
     const { container } = render(MatchMapIsland, { props: { lang: 'en' } });
+
+    expect(container.querySelector('.map-container')).toBeNull();
+    await fireEvent.click(screen.getByRole('button', { name: 'Browse worldwide' }));
+    await waitFor(() => expect(container.querySelector('.map-container')).toBeTruthy());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(container.querySelector('.map-container')?.classList.contains('leaflet-container')).toBe(false);
+    await fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    await waitFor(() => expect(container.querySelector('.map-container')?.classList.contains('leaflet-container')).toBe(true));
+    await fireEvent.click(screen.getByRole('button', { name: 'List' }));
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Show local results' }));
+    await waitFor(() => expect(container.querySelector('.map-container')).toBeNull());
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Browse worldwide' }));
+    await waitFor(() => expect(container.querySelector('.map-container')).toBeTruthy());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(container.querySelector('.map-container')?.classList.contains('leaflet-container')).toBe(false);
+    await fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    await waitFor(() => expect(container.querySelector('.map-container')?.classList.contains('leaflet-container')).toBe(true));
+  });
+
+  it('keeps a book owner visible in the mobile People list after choosing worldwide', async () => {
+    const { container } = render(MatchMapIsland, { props: { lang: 'en' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Browse worldwide' }));
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Yuki's book/ })).toBeTruthy();
@@ -111,6 +148,8 @@ describe('discovery scope audit', () => {
 
   it('offers a search-specific reset instead of map-panning advice', async () => {
     render(MatchMapIsland, { props: { lang: 'en' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Browse worldwide' }));
 
     await waitFor(() => {
       expect(screen.getByText("Yuki's book")).toBeTruthy();

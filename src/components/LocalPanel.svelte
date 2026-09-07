@@ -2,7 +2,8 @@
   import type { LocalBookGroup, Match } from '../lib/types';
   import BookDiscoveryRow from './BookDiscoveryRow.svelte';
   import MatchCardIsland from './MatchCardIsland.svelte';
-  import { useTranslations, type Lang } from '../i18n';
+  import { localizePath, useTranslations, type Lang } from '../i18n';
+  import type { DiscoveryScope } from '../stores/matches';
 
   type Panel = 'books' | 'people' | 'bookstores';
 
@@ -18,8 +19,10 @@
     storesInView: Match[];
     storesUnlocated: Match[];
     inViewCount: number;
-    /** "In view" on desktop, "Nearby" when the mobile list is not map-bound. */
-    resultScope?: string;
+    scopeLabel: string;
+    scopeMode: DiscoveryScope;
+    onScopeChange: (scope: DiscoveryScope) => void;
+    needsLocation: boolean;
     expandedId: string | null;
     onToggle: (id: string) => void;
     onOwner: (ownerId: string) => void;
@@ -41,7 +44,10 @@
     storesInView,
     storesUnlocated,
     inViewCount,
-    resultScope,
+    scopeLabel,
+    scopeMode,
+    onScopeChange,
+    needsLocation,
     expandedId,
     onToggle,
     onOwner,
@@ -54,6 +60,7 @@
   const t = $derived(useTranslations(lang).matches);
   const th = $derived(t.hub);
   const locationNotShared = $derived(t.map.locationNotShared);
+  const profilePath = $derived(localizePath('/profile', lang));
 
   const emptyMessage = $derived(
     panel === 'books' ? th.emptyBooks : panel === 'people' ? th.emptyPeople : th.emptyStores
@@ -97,7 +104,20 @@
     oninput={(e) => onQueryChange((e.target as HTMLInputElement).value)}
   />
 
-  <span class="in-view-count">{inViewCount} {resultScope ?? th.inView}</span>
+  <div class="scope-row">
+    <span class="scope-label">{scopeLabel}</span>
+    <span class="in-view-count" aria-label={`${inViewCount} ${scopeLabel}`}>{inViewCount}</span>
+    {#if needsLocation}
+      <a class="scope-profile" href={profilePath}>{t.prompts.editProfile}</a>
+    {/if}
+    <button
+      class="scope-action"
+      type="button"
+      onclick={() => onScopeChange(scopeMode === 'local' ? 'worldwide' : 'local')}
+    >
+      {scopeMode === 'local' ? th.browseWorldwide : th.showLocal}
+    </button>
+  </div>
 </div>
 
 {#if loading && !hasAnyData}
@@ -240,10 +260,12 @@
 
   .tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--s-2);
     margin-bottom: var(--s-3);
   }
   .tabs button {
+    min-width: 0;
     padding: 0.4rem 0.9rem;
     border-radius: var(--r-full);
     border: 1px solid var(--hairline-strong);
@@ -280,6 +302,55 @@
     background: var(--accent-tint);
     padding: 0.1rem 0.55rem;
     border-radius: var(--r-full);
+  }
+
+  .scope-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    margin-bottom: var(--s-2);
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+  }
+  .scope-label {
+    flex: 1 1 100%;
+    color: var(--ink-muted);
+  }
+  .scope-action {
+    flex: 0 0 auto;
+    border: 0;
+    padding: 0.2rem 0;
+    color: var(--accent);
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 650;
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+  .scope-profile {
+    flex: 0 0 auto;
+    color: var(--accent);
+    font-weight: 650;
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+
+  @media (max-width: 420px) {
+    .tabs {
+      gap: 0.35rem;
+    }
+    .tabs button {
+      flex: 1 0 auto;
+      padding-inline: 0.55rem;
+      font-size: 0.8125rem;
+    }
+    .scope-action {
+      flex: 1 1 auto;
+      text-align: left;
+    }
   }
 
   .empty {

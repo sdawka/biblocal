@@ -20,7 +20,13 @@ import { tick } from 'svelte';
 
 // Must be hoisted before any import that pulls in shelf.ts
 vi.mock('../../src/stores/auth', () => ({
-  currentUserId: { get: () => 'test-user-123' },
+  currentUserId: {
+    get: () => 'test-user-123',
+    subscribe: (listener: (userId: string | null) => void) => {
+      listener('test-user-123');
+      return () => {};
+    },
+  },
 }));
 vi.mock('../../src/stores/topics', () => ({
   inferTopicsFromSubjects: (subjects: string[]) => subjects.slice(0, 3),

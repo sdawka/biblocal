@@ -246,3 +246,19 @@ The two unanswered policy questions were implemented with stated conservative as
 Independent review caught and prompted fixes for legacy declined-row recovery, malformed note body shapes, save→Done draft loss, A→B→A stale responses, obsolete save errors and contact-cache lifetime. Final command results are retained in [follow-up execution evidence](evidence/fixes/execution.txt). The original red audit results above are historical and have not been rewritten as if they had passed then.
 
 Final integrated verification: **851/851 tests across 80 files**, **5/5 connected browser checks**, Svelte/Astro checks and production build pass. Existing diagnostics remain three Svelte warnings and six Astro hints. No merge or deployment was performed.
+
+
+### Approved decisions follow-up — 2026-09-07
+
+D2/D4/D5 are resolved in `docs/decision_log.md`: Local starts from city/radius with explicit worldwide browsing; bookstore city is required; closing book details preserves volatile drafts. Hidden-contact rejection remains enforced. Interest presentation and broader public-copy alignment remain deferred.
+
+| Journey / finding | Implemented behavior | Verification |
+|---|---|---|
+| J2 / A05 | One local/worldwide scope drives Books, People and map markers. Known city fallback is approximate; unknown cities use same-city matching; missing location links to Profile. Worldwide resets across account changes. | Real store/domain tests; browser Paris book excluded locally and included worldwide on mobile and desktop; zoom keeps scope; missing-location → worldwide → map recreation; FR 320 controls fit. |
+| J5 / A09 | Explicit trimmed city and freeform neighborhood; API rejects missing/blank/non-string city and invalid updates; shared field caps; city shown in detail and directory. | Migrated SQLite POST/GET/PATCH, ownership and invalid-write tests; mobile form focuses missing City, Toronto creation → detail succeeds; Spanish city label verified. |
+| J1/J7 / A10 | Title/author and new-note text/privacy survive sheet close/reopen in memory. Cancel clears title draft; save/submit/delete clear relevant drafts; account generations reject stale writers/deletions. | Store/component tests and browser Escape → reopen with both drafts restored. No reload or cross-page-navigation draft persistence promised. |
+| J3 / A02 | Hidden recipients continue rejecting new incoming requests on the backend. | Existing actual-route integration suite: 9/9 passed. |
+
+Final local validation: **887/887 tests, 83 files** (36 more than the preceding 851-test baseline); Svelte 0 errors with 3 existing CSS warnings; Astro 137 files, 0 errors/0 warnings/6 existing hints; production build passed. A full-run flake in an existing ordering fixture was reproduced and corrected with equal timestamps to exercise the documented ID tie-breaker. Port-denied build/check attempts were environmental; permitted reruns passed. Independent review found no remaining web blocker.
+
+Screenshots: [restored draft](evidence/decisions/draft-restored-mobile.jpg), [local scope](evidence/decisions/local-mobile.jpg), [worldwide result](evidence/decisions/worldwide-mobile.jpg), [desktop](evidence/decisions/worldwide-desktop.jpg), [French 320](evidence/decisions/local-fr-320.jpg), [Toronto store](evidence/decisions/store-toronto-mobile.jpg). All data is isolated local QA data. Real Clerk two-account flows and production smoke remain unexecuted. The separate native repository retains a minor validation gap: clearing its prefilled city produces an API 400 after submit; normal nonempty-city submissions remain compatible.

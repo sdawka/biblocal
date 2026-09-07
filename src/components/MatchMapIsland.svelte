@@ -5,7 +5,7 @@
   import 'leaflet/dist/leaflet.css';
   import 'leaflet.markercluster/dist/MarkerCluster.css';
   import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-  import { discovery, discoveryBooks } from '../stores/matches';
+  import { discovery, discoveryBooks, discoveryScope, type DiscoveryScope } from '../stores/matches';
   import { loadConnections } from '../stores/connections';
   import { profile } from '../stores/profile';
   import { loadDiscoveryUsers, usersLoading, usersError } from '../stores/users';
@@ -16,10 +16,9 @@
   import {
     splitDiscovery,
     sortByDistance,
-    bookOwnerLocated,
-    isWithinBounds,
     hasLocation,
-    type MapBounds,
+    resolveDiscoveryLocation,
+    type DiscoveryLocation,
   } from '../lib/localHub';
   import { useTranslations, type Lang } from '../i18n';
 
@@ -37,7 +36,6 @@
   // parse.
   let panel = $state<Panel>('books');
   let query = $state('');
-  let viewBounds = $state<MapBounds | null>(null);
   let isMobile = $state(false);
   let mobileView = $state<'list' | 'map'>('list');
   let mapTileError = $state(false);
@@ -45,10 +43,34 @@
   let loadingUsers = $state(usersLoading.get());
   let loadError = $state<string | null>(usersError.get());
   let expandedId = $state<string | null>(null);
+  let profileData = $state(profile.get());
+  let activeScope = $state<DiscoveryScope>(discoveryScope.get());
+  const localScope = $derived(resolveDiscoveryLocation(profileData));
+  const canRenderMap = $derived(activeScope === 'worldwide' || localScope?.kind === 'radius');
 
-  // Panel derivations: three filtered + sorted lists synced to the current
-  // map viewport (viewBounds === null before the map reports its first
-  // bounds, so nothing is filtered out yet).
+  function scopeText(scope: DiscoveryLocation | null, mode: DiscoveryScope): string {
+    if (mode === 'worldwide') return matchesT.hub.worldwide;
+    if (!scope) return matchesT.hub.locationNeeded;
+    if (scope.kind === 'city') {
+      return matchesT.hub.cityScopeApproximate.replace('{city}', scope.city);
+    }
+    if (scope.approximate && scope.city) {
+      return matchesT.hub.localScopeApproximate
+        .replace('{radius}', String(scope.radiusKm))
+        .replace('{city}', scope.city);
+    }
+    if (scope.city) {
+      return matchesT.hub.localScopeWithCity
+        .replace('{radius}', String(scope.radiusKm))
+        .replace('{city}', scope.city);
+    }
+    return matchesT.hub.localScope.replace('{radius}', String(scope.radiusKm));
+  }
+
+  const scopeLabel = $derived(scopeText(localScope, activeScope));
+
+  // The stored Local/worldwide scope governs every surface. Map movement must
+  // never make desktop and mobile show a different discovery set.
   const q = $derived(query.trim().toLowerCase());
   // `$derived` destructuring isn't reactive-safe in Svelte 5 — derive the
   // split object once, then read each field via its own `$derived`.
@@ -65,7 +87,6 @@
       people.filter(
         (m) =>
           hasLocation(m) &&
-          (isMobile || viewBounds == null || isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds)) &&
           matchesSearch(m)
       )
     )
@@ -79,7 +100,6 @@
       stores.filter(
         (m) =>
           hasLocation(m) &&
-          (isMobile || viewBounds == null || isWithinBounds(m.user.latitude!, m.user.longitude!, viewBounds)) &&
           matchesSearch(m)
       )
     )
@@ -89,7 +109,6 @@
   const booksInView = $derived(
     books.filter(
       (row) =>
-        bookOwnerLocated(row, isMobile ? null : viewBounds) &&
         !(row.owner.latitude == null || row.owner.longitude == null) &&
         bookMatchesSearch(row)
     )
@@ -102,20 +121,17 @@
   const bookGroups = $derived(groupByIntent(booksInView));
   const bookGroupsUnlocated = $derived(groupByIntent(booksUnlocated));
   const inViewCount = $derived(
-    panel === 'books' ? booksInView.length : panel === 'people' ? peopleInView.length : storesInView.length
+    panel === 'books'
+      ? booksInView.length + booksUnlocated.length
+      : panel === 'people'
+        ? peopleInView.length + peopleUnlocated.length
+        : storesInView.length + storesUnlocated.length
   );
-  // Mobile's list is not bound to map bounds, and desktop remains unbounded
-  // until Leaflet reports its first viewport. Avoid calling either state
-  // "Nearby" when remote profiles can be present.
-  const resultScope = $derived(
-    isMobile || viewBounds == null ? matchesT.hub.allResults : matchesT.hub.inView
-  );
-
   // Track the discovery-user fetch so the panel can tell loading/error apart from a
   // genuinely empty match list.
   $effect(() => usersLoading.subscribe((v) => (loadingUsers = v)));
   $effect(() => usersError.subscribe((v) => (loadError = v)));
-  let mapContainer: HTMLDivElement;
+  let mapContainer = $state<HTMLDivElement>();
   let map: any;
   let clusterGroup: any;
   // markerId -> { marker, isStore, baseRadius }
@@ -135,8 +151,11 @@
   }
 
   function getMapCenter(): { lat: number; lng: number } {
-    const p = profile.get();
-    if (p.latitude && p.longitude) {
+    if (activeScope === 'local' && localScope?.kind === 'radius') {
+      return { lat: localScope.lat, lng: localScope.lng };
+    }
+    const p = profileData;
+    if (p.latitude != null && p.longitude != null) {
       return { lat: p.latitude, lng: p.longitude };
     }
     if (p.city && CITY_COORDINATES[p.city]) {
@@ -252,12 +271,37 @@
   let mapDestroyed = false;
   let mapCleanup: (() => void) | null = null;
   let mapInitPromise: Promise<void> | null = null;
+  let mapGeneration = 0;
+
+  function destroyMap() {
+    mapGeneration += 1;
+    mapCleanup?.();
+    mapCleanup = null;
+    map = undefined;
+    clusterGroup = undefined;
+    markerMap.clear();
+    mapInitPromise = null;
+    mapTileError = false;
+  }
+
+  // The map container is conditional: a profile with no usable local source
+  // intentionally has no map until worldwide is chosen. Wait for that DOM
+  // branch before initializing, and fully reset Leaflet before it disappears.
+  $effect(() => {
+    if (!canRenderMap) {
+      destroyMap();
+      return;
+    }
+    if (!isMobile || mobileView === 'map') {
+      void tick().then(() => ensureMap());
+    }
+  });
 
   function updateMobileMode() {
     isMobile = window.matchMedia('(max-width: 900px)').matches;
     // Desktop keeps the established split map. Mobile starts with the useful
     // result list, avoiding an expensive map and an empty-looking first screen.
-    if (!isMobile) ensureMap();
+    if (!isMobile && canRenderMap) ensureMap();
   }
 
   onMount(() => {
@@ -272,6 +316,11 @@
     // Local is a direct entry point, so relationship state cannot rely on the
     // Profile inbox having mounted first. Retry once for a transient reload.
     loadConnections({ retries: 1 });
+    const unsubProfile = profile.subscribe((p) => (profileData = p));
+    const unsubScope = discoveryScope.subscribe((scope) => {
+      activeScope = scope;
+      if ((!isMobile || mobileView === 'map') && canRenderMap) ensureMap();
+    });
     const unsubMatches = discovery.subscribe((m) => {
       matchList = m;
       if (map) updateMarkers();
@@ -283,23 +332,26 @@
       media.removeEventListener('change', onChange);
       unsubMatches();
       unsubBooks();
-      mapCleanup?.();
+      unsubProfile();
+      unsubScope();
+      destroyMap();
     };
   });
 
   async function ensureMap() {
-    if (map || mapDestroyed) return;
-    mapInitPromise ??= initMap();
+    if (map || mapDestroyed || !canRenderMap) return;
+    const generation = mapGeneration;
+    mapInitPromise ??= initMap(generation);
     await mapInitPromise;
   }
 
-  async function initMap() {
+  async function initMap(generation: number) {
     const L = await import('leaflet');
     await import('leaflet.markercluster');
 
     // The component may have unmounted while the awaits above were pending;
     // bail before creating the map so nothing leaks.
-    if (mapDestroyed) return;
+    if (mapDestroyed || !canRenderMap || generation !== mapGeneration || !mapContainer) return;
 
     const center = getMapCenter();
     // maxZoom must be on the map itself: leaflet.markercluster reads it from the
@@ -362,23 +414,7 @@
     // does not need to initialize Leaflet. Render their current values now.
     await updateMarkers();
 
-    // Keep the panel's lists synced to what's actually visible on the map:
-    // read the initial bounds now, then re-read (debounced) on every pan/zoom.
-    const readBounds = (): MapBounds => {
-      const b = map.getBounds();
-      return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
-    };
-    viewBounds = readBounds();
-    let moveTimer: ReturnType<typeof setTimeout> | undefined;
-    map.on('moveend', () => {
-      clearTimeout(moveTimer);
-      moveTimer = setTimeout(() => {
-        viewBounds = readBounds();
-      }, 150);
-    });
-
     mapCleanup = () => {
-      clearTimeout(moveTimer);
       themeObserver.disconnect();
       map?.remove();
     };
@@ -428,35 +464,37 @@
   }
 </script>
 
-<div class="match-map">
-  <!-- Kept outside either surface so Map never becomes a dead end on mobile. -->
-  <div class="mobile-view-toggle" role="group" aria-label={matchesT.map.chooseView}>
-    <button class:active={mobileView === 'list'} onclick={() => setMobileView('list')}>{matchesT.views.list}</button>
-    <button class:active={mobileView === 'map'} onclick={() => setMobileView('map')}>{matchesT.views.map}</button>
-  </div>
-
-  <div class:mobile-hidden={isMobile && mobileView === 'list'} class="map-wrap">
-    <div class="map-container" bind:this={mapContainer}></div>
-
-    {#if mapTileError}
-      <div class="map-error card" role="alert">
-        <p>{t.tileError}</p>
-        <button class="btn btn-sm" type="button" onclick={showListFromMapError}>{t.showList}</button>
-      </div>
-    {/if}
-
-    <!-- Floating glass legend over the map -->
-    <div class="legend glass card">
-      <span class="eyebrow">{t.legend}</span>
-      <ul>
-        <li><span class="dot dot-you"></span> {t.you}</li>
-        <li><span class="dot dot-person"></span> {t.people}</li>
-        <li><span class="dot dot-store"></span> {t.bookstores}</li>
-      </ul>
+<div class="match-map" class:map-unavailable={!canRenderMap}>
+  {#if canRenderMap}
+    <!-- Kept outside either surface so Map never becomes a dead end on mobile. -->
+    <div class="mobile-view-toggle" role="group" aria-label={matchesT.map.chooseView}>
+      <button class:active={mobileView === 'list'} onclick={() => setMobileView('list')}>{matchesT.views.list}</button>
+      <button class:active={mobileView === 'map'} onclick={() => setMobileView('map')}>{matchesT.views.map}</button>
     </div>
-  </div>
 
-  <div class:mobile-hidden={isMobile && mobileView === 'map'} class="cards-panel card">
+    <div class:mobile-hidden={isMobile && mobileView === 'list'} class="map-wrap">
+      <div class="map-container" bind:this={mapContainer}></div>
+
+      {#if mapTileError}
+        <div class="map-error card" role="alert">
+          <p>{t.tileError}</p>
+          <button class="btn btn-sm" type="button" onclick={showListFromMapError}>{t.showList}</button>
+        </div>
+      {/if}
+
+      <!-- Floating glass legend over the map -->
+      <div class="legend glass card">
+        <span class="eyebrow">{t.legend}</span>
+        <ul>
+          <li><span class="dot dot-you"></span> {t.you}</li>
+          <li><span class="dot dot-person"></span> {t.people}</li>
+          <li><span class="dot dot-store"></span> {t.bookstores}</li>
+        </ul>
+      </div>
+    </div>
+  {/if}
+
+  <div class:mobile-hidden={canRenderMap && isMobile && mobileView === 'map'} class="cards-panel card">
     <LocalPanel
       {panel}
       onPanelChange={(p) => (panel = p)}
@@ -469,7 +507,10 @@
       {storesInView}
       {storesUnlocated}
       {inViewCount}
-      {resultScope}
+      {scopeLabel}
+      scopeMode={activeScope}
+      onScopeChange={(scope) => discoveryScope.set(scope)}
+      needsLocation={activeScope === 'local' && localScope === null}
       {expandedId}
       onToggle={toggleExpanded}
       onOwner={focusFromRow}
@@ -488,6 +529,12 @@
     gap: var(--s-5);
     height: calc(100vh - 220px);
     min-height: 500px;
+  }
+  .match-map.map-unavailable {
+    grid-template-columns: minmax(0, 720px);
+    justify-content: center;
+    height: auto;
+    min-height: 0;
   }
 
   .map-wrap {

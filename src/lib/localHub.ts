@@ -1,10 +1,62 @@
 import type { Match, LocalBook, UserProfile } from './types';
+import { getCityCoordinates } from './geo';
+import type { LocationFilter } from './matching';
 
 export interface MapBounds {
   north: number;
   south: number;
   east: number;
   west: number;
+}
+
+export type DiscoveryLocation =
+  | ({ kind: 'radius'; city?: string; approximate: boolean } & Required<Pick<LocationFilter, 'lat' | 'lng' | 'radiusKm'>>)
+  | { kind: 'city'; city: string; approximate: true };
+
+function validCoordinates(profile: UserProfile): profile is UserProfile & Required<Pick<UserProfile, 'latitude' | 'longitude'>> {
+  return (
+    Number.isFinite(profile.latitude) &&
+    Number.isFinite(profile.longitude) &&
+    profile.latitude! >= -90 &&
+    profile.latitude! <= 90 &&
+    profile.longitude! >= -180 &&
+    profile.longitude! <= 180
+  );
+}
+
+/**
+ * Resolve Local's deliberate scope from stored profile data. Exact coordinates
+ * win; a known city falls back to its centre; an unknown city remains a
+ * same-city scope. Returning null is intentional: callers must offer the
+ * explicit worldwide mode instead of silently broadening discovery.
+ */
+export function resolveDiscoveryLocation(profile: UserProfile): DiscoveryLocation | null {
+  const city = profile.city.trim();
+  const radiusKm = Number.isFinite(profile.radiusKm) && profile.radiusKm > 0 ? profile.radiusKm : 5;
+
+  if (validCoordinates(profile)) {
+    return {
+      kind: 'radius',
+      lat: profile.latitude,
+      lng: profile.longitude,
+      radiusKm,
+      city: city || undefined,
+      approximate: profile.locationPrecision !== 'exact',
+    };
+  }
+
+  const cityCoordinates = city ? getCityCoordinates(city) : null;
+  if (cityCoordinates) {
+    return {
+      kind: 'radius',
+      ...cityCoordinates,
+      radiusKm,
+      city,
+      approximate: true,
+    };
+  }
+
+  return city ? { kind: 'city', city, approximate: true } : null;
 }
 
 export function isWithinBounds(lat: number, lng: number, b: MapBounds): boolean {

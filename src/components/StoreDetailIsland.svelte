@@ -17,6 +17,7 @@
   interface StoreData {
     id: string;
     name: string;
+    city?: string;
     neighborhood?: string;
     address?: string;
     website?: string;
@@ -154,8 +155,8 @@
       <div class="store-info">
         <span class="eyebrow">{t.detail.eyebrow}</span>
         <h1 class="serif">{store.name}</h1>
-        {#if store.neighborhood}
-          <p class="neighborhood">{store.neighborhood}</p>
+        {#if store.city || store.neighborhood}
+          <p class="neighborhood">{[store.city, store.neighborhood].filter(Boolean).join(' · ')}</p>
         {/if}
       </div>
     </header>

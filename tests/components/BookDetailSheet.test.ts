@@ -355,4 +355,35 @@ describe('BookDetailSheet', () => {
       expect(screen.getByLabelText('Edit title & author')).toBeTruthy();
     });
   });
+
+  describe('draft dismissal', () => {
+    it('keeps Escape immediate while restoring an unfinished title draft after reopening', async () => {
+      const onClose = vi.fn();
+      const first = render(BookDetailSheet, {
+        props: {
+          book: makeBook({ id: 'escape-draft-book', title: 'Dune', author: 'Frank Herbert' }),
+          lang: 'en',
+          onClose,
+          onUpdateDetails: vi.fn(),
+        },
+      });
+
+      await fireEvent.click(screen.getByLabelText('Edit title & author'));
+      await fireEvent.input(screen.getByLabelText('Title'), { target: { value: 'Dune Messiah' } });
+      await fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+      expect(onClose).toHaveBeenCalledTimes(1);
+      first.unmount();
+
+      render(BookDetailSheet, {
+        props: {
+          book: makeBook({ id: 'escape-draft-book', title: 'Dune', author: 'Frank Herbert' }),
+          lang: 'en',
+          onClose: vi.fn(),
+          onUpdateDetails: vi.fn(),
+        },
+      });
+
+      expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('Dune Messiah');
+    });
+  });
 });

@@ -1,5 +1,12 @@
 import { it, expect } from 'vitest';
-import { isWithinBounds, splitDiscovery, sortByDistance, hasLocation, bookOwnerLocated } from '../../src/lib/localHub';
+import {
+  isWithinBounds,
+  splitDiscovery,
+  sortByDistance,
+  hasLocation,
+  bookOwnerLocated,
+  resolveDiscoveryLocation,
+} from '../../src/lib/localHub';
 import type { Match, LocalBook, UserProfile } from '../../src/lib/types';
 
 const bounds = { north: 46, south: 45, east: -73, west: -74 };
@@ -53,4 +60,52 @@ it('isWithinBounds normal (non-wrapped) bounds still work', () => {
   const b = { north: 46, south: 45, east: -73, west: -74 };
   expect(isWithinBounds(45.5, -73.5, b)).toBe(true);
   expect(isWithinBounds(45.5, 0, b)).toBe(false);
+});
+
+it('uses the profile coordinates for local discovery when they are available', () => {
+  expect(resolveDiscoveryLocation(user('me', {
+    city: 'Montreal',
+    radiusKm: 8,
+    latitude: 45.61,
+    longitude: -73.72,
+    locationPrecision: 'exact',
+  }))).toEqual({
+    kind: 'radius',
+    lat: 45.61,
+    lng: -73.72,
+    radiusKm: 8,
+    city: 'Montreal',
+    approximate: false,
+  });
+});
+
+it('uses a known city centre as an explicitly approximate local scope', () => {
+  expect(resolveDiscoveryLocation(user('me', { city: 'Montreal', radiusKm: 8 }))).toEqual({
+    kind: 'radius',
+    lat: 45.5017,
+    lng: -73.5673,
+    radiusKm: 8,
+    city: 'Montreal',
+    approximate: true,
+  });
+});
+
+it('keeps an unknown city local by matching its exact city name', () => {
+  expect(resolveDiscoveryLocation(user('me', { city: 'North Star', radiusKm: 8 }))).toEqual({
+    kind: 'city',
+    city: 'North Star',
+    approximate: true,
+  });
+});
+
+it('does not create a global local scope when the profile has no city or coordinates', () => {
+  expect(resolveDiscoveryLocation(user('me', { city: '', latitude: undefined, longitude: undefined }))).toBeNull();
+});
+
+it('does not treat invalid stored coordinates as a local coordinate source', () => {
+  expect(resolveDiscoveryLocation(user('me', {
+    city: '',
+    latitude: 120,
+    longitude: -73.72,
+  }))).toBeNull();
 });

@@ -2,9 +2,19 @@ import type { Book, BookIntent, UserProfile, Match, MatchFacets, MatchFacet } fr
 import { haversineDistance } from './geo';
 
 export interface LocationFilter {
-  lat: number;
-  lng: number;
-  radiusKm: number;
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
+  /** A city-only fallback when no coordinate source exists for that city. */
+  city?: string;
+}
+
+function sameCity(left: string | undefined, right: string | undefined): boolean {
+  return left?.trim().toLocaleLowerCase() === right?.trim().toLocaleLowerCase();
+}
+
+function hasRadius(location: LocationFilter): location is LocationFilter & Required<Pick<LocationFilter, 'lat' | 'lng' | 'radiusKm'>> {
+  return location.lat != null && location.lng != null && location.radiusKm != null;
 }
 
 const WEIGHTS = {
@@ -141,7 +151,7 @@ export function calculateMatches(
   for (const user of users) {
     // Filter by distance if location provided
     let distanceKm: number | undefined;
-    if (location && user.latitude != null && user.longitude != null) {
+    if (location && hasRadius(location) && user.latitude != null && user.longitude != null) {
       distanceKm = haversineDistance(
         location.lat,
         location.lng,
@@ -151,6 +161,10 @@ export function calculateMatches(
       if (distanceKm > location.radiusKm) {
         continue;
       }
+    } else if (location?.city && !sameCity(location.city, user.city)) {
+      // A profile without coordinates can still participate in its stated
+      // city, but it must never turn a local request into a global feed.
+      continue;
     }
 
     // Filter out private books from their shelf to prevent titles leaking
@@ -203,7 +217,7 @@ export function calculateDiscovery(
 
   for (const user of users) {
     let distanceKm: number | undefined;
-    if (location && user.latitude != null && user.longitude != null) {
+    if (location && hasRadius(location) && user.latitude != null && user.longitude != null) {
       distanceKm = haversineDistance(
         location.lat,
         location.lng,
@@ -213,6 +227,10 @@ export function calculateDiscovery(
       if (distanceKm > location.radiusKm) {
         continue;
       }
+    } else if (location?.city && !sameCity(location.city, user.city)) {
+      // Unlocated readers are surfaced separately by the Local UI when their
+      // stated city matches; other cities remain outside a local scope.
+      continue;
     }
 
     const theirBooks = filterVisible(user.shelf);

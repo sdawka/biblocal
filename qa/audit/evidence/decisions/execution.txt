@@ -1,0 +1,34 @@
+Final web validation — 2026-09-07
+
+
+> biblocal@0.0.1 test:run
+> vitest run
+
+
+ RUN  v4.1.5 /Users/sdawka/Code/biblocal
+
+
+ Test Files  83 passed (83)
+      Tests  887 passed (887)
+   Start at  19:01:35
+   Duration  18.93s (transform 19.25s, setup 1.54s, import 48.85s, tests 22.42s, environment 77.22s)
+
+
+Astro:
+137 files): 
+- 0 errors
+- 0 warnings
+- 6 hints
+
+
+Build:
+19:05:11 [build] Rearranging server assets...
+19:05:11 [build] ✓ Completed in 4.84s.
+19:05:11 [@astrojs/sitemap] `sitemap-index.xml` created at `dist/client`
+19:05:11 [build] Server built in 5.81s
+19:05:11 [build] Complete!
+
+Svelte: 0 errors, 3 existing line-clamp warnings in BookCard/BookSpine.
+Targeted hidden-contact/actual connection API: 9/9.
+Final storage assertion refinement: book-detail-drafts 3/3.
+Browser evidence uses real local Worker/D1 and synthetic data; no production data writes.

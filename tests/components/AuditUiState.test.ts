@@ -2,10 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, screen, waitFor } from '@testing-library/svelte';
 import BookDetailSheet from '../../src/components/BookDetailSheet.svelte';
 
-let mockUserId: string | null = 'audit-user';
+const authState = vi.hoisted(() => ({ userId: 'audit-user' as string | null }));
 
 vi.mock('../../src/stores/auth', () => ({
-  currentUserId: { get: () => mockUserId },
+  currentUserId: {
+    get: () => authState.userId,
+    subscribe: (listener: (userId: string | null) => void) => {
+      listener(authState.userId);
+      return () => {};
+    },
+  },
 }));
 
 import ProfileIsland from '../../src/components/ProfileIsland.svelte';
@@ -30,9 +36,9 @@ function makeBook(overrides: Partial<Book> = {}): Book {
 
 describe('UI state audit', () => {
   beforeEach(async () => {
-    mockUserId = null;
+    authState.userId = null;
     await updateProfile({});
-    mockUserId = 'audit-user';
+    authState.userId = 'audit-user';
     await updateProfile({});
     clearSyncError();
     profile.set({

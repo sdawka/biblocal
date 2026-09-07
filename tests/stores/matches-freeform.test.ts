@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { shelf } from '../../src/stores/shelf';
 import { profile, DEFAULT_PROFILE } from '../../src/stores/profile';
 import { discoveryUsers } from '../../src/stores/users';
-import { matches, discovery } from '../../src/stores/matches';
+import { matches, discovery, discoveryScope } from '../../src/stores/matches';
 import type { UserProfile } from '../../src/lib/types';
 
 function otherUserWithTopic(topic: string): UserProfile {
@@ -20,6 +20,7 @@ describe('freeform topics produce discussion matches', () => {
     shelf.set({});
     profile.set(DEFAULT_PROFILE);
     discoveryUsers.set([]);
+    discoveryScope.set('worldwide');
   });
 
   it('a freeform-only topic yields a discussionMatch facet in `matches`', () => {
