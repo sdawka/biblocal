@@ -9,6 +9,7 @@
     "dev": "astro dev",
     "dev:qa": "QA_MODE=true QA_USER_ID=qa-test-user astro dev",
     "build": "astro build",
+    "build:qa": "PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_aHVtYW5lLWxvbmdob3JuLTY2LmNsZXJrLmFjY291bnRzLmRldiQ astro build",
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest",

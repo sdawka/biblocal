@@ -25,7 +25,8 @@ npx wrangler d1 execute biblocal-qa-db --env qa --remote --file=scripts/seed-qa.
 
 # Build
 echo "→ Building..."
-npm run build
+# Clerk needs its public QA key while building browser scripts, before deploy.
+npm run build:qa
 
 # Patch generated wrangler.json for QA deployment
 # Astro's cloudflare adapter doesn't respect env-specific names, so we patch it

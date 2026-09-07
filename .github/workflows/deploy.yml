@@ -36,7 +36,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: npm run build:qa
 
       - name: Apply D1 migrations
         run: npx wrangler d1 migrations apply biblocal-qa-db --env qa --remote
