@@ -62,8 +62,10 @@ const storesList = stores.map((s) => ({
           >
             <span class="eyebrow store-eyebrow">{t.index.cardEyebrow}</span>
             <h2 class="serif">{store.name}</h2>
-            {store.neighborhood && (
-              <p class="neighborhood">{store.neighborhood}</p>
+            {(store.city || store.neighborhood) && (
+              <p class="neighborhood">
+                {[store.city, store.neighborhood].filter(Boolean).join(' · ')}
+              </p>
             )}
             {store.address && (
               <p class="address muted">{store.address}</p>

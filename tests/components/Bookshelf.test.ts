@@ -11,7 +11,13 @@ import { render, screen, fireEvent } from '@testing-library/svelte';
 
 // Must mock auth BEFORE any import that transitively pulls in shelf
 vi.mock('../../src/stores/auth', () => ({
-  currentUserId: { get: () => 'test-user-123' },
+  currentUserId: {
+    get: () => 'test-user-123',
+    subscribe: (listener: (userId: string | null) => void) => {
+      listener('test-user-123');
+      return () => {};
+    },
+  },
 }));
 vi.mock('../../src/stores/topics', () => ({
   inferTopicsFromSubjects: (subjects: string[]) => subjects.slice(0, 3),

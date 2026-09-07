@@ -2,6 +2,14 @@
   import type { Book, BookIntent, BookVisibility, BookOwnership } from '../lib/types';
   import { useTranslations, type Lang } from '../i18n';
   import { INTENT_OPTIONS } from '../lib/intents';
+  import {
+    bookDetailDraftEpoch,
+    clearBookDetailDraft,
+    getBookDetailDraft,
+    isCurrentBookDetailDraftSession,
+    startBookDetailDraftSession,
+    updateBookDetailDraft,
+  } from '../stores/book-detail-drafts';
 
   // Store pages (GET /api/stores/[id]) return books without provenance fields;
   // this sheet only reads addedVia (for the scanned badge), so accept books
@@ -48,11 +56,48 @@
   let editingDetails = $state(false);
   let draftTitle = $state('');
   let draftAuthor = $state('');
+  // svelte-ignore state_referenced_locally -- this token deliberately captures the opening book
+  let draftSession = startBookDetailDraftSession(book.id);
+  let observedDraftEpoch = $state($bookDetailDraftEpoch);
 
   function startEditDetails() {
-    draftTitle = book.title;
-    draftAuthor = book.author;
+    const details = getBookDetailDraft(draftSession)?.details;
+    draftTitle = details?.title ?? book.title;
+    draftAuthor = details?.author ?? book.author;
     editingDetails = true;
+  }
+
+  function writeDetailsDraft() {
+    const current = getBookDetailDraft(draftSession);
+    const details = draftTitle === book.title && draftAuthor === book.author
+      ? undefined
+      : { title: draftTitle, author: draftAuthor };
+    updateBookDetailDraft(draftSession, {
+      ...(details ? { details } : {}),
+      ...(current?.note ? { note: current.note } : {}),
+    });
+  }
+
+  function updateDraftTitle(event: Event) {
+    draftTitle = (event.currentTarget as HTMLInputElement).value;
+    writeDetailsDraft();
+  }
+
+  function updateDraftAuthor(event: Event) {
+    draftAuthor = (event.currentTarget as HTMLInputElement).value;
+    writeDetailsDraft();
+  }
+
+  function clearDetailsDraft() {
+    const note = getBookDetailDraft(draftSession)?.note;
+    updateBookDetailDraft(draftSession, note ? { note } : {});
+  }
+
+  function cancelDetails() {
+    editingDetails = false;
+    draftTitle = '';
+    draftAuthor = '';
+    clearDetailsDraft();
   }
 
   function saveDetails() {
@@ -61,6 +106,9 @@
     if (!title || !author) return;
     onUpdateDetails?.({ title, author });
     editingDetails = false;
+    draftTitle = '';
+    draftAuthor = '';
+    clearDetailsDraft();
   }
 
   function handleDeleteClick() {
@@ -70,11 +118,16 @@
 
   async function confirmDelete() {
     if (!onDelete || deletePending) return;
+    const sessionAtStart = draftSession;
     deletePending = true;
     deleteFailed = false;
     const removed = await onDelete(book.id);
+    if (draftSession !== sessionAtStart || !isCurrentBookDetailDraftSession(sessionAtStart)) return;
     deletePending = false;
-    if (removed) showDeleteConfirm = false;
+    if (removed) {
+      clearBookDetailDraft(sessionAtStart);
+      showDeleteConfirm = false;
+    }
     else deleteFailed = true;
   }
 
@@ -97,6 +150,44 @@
   let draftText = $state('');
   let draftVisibility = $state<BookVisibility>('private');
 
+  function restoreDraft() {
+    const savedDraft = getBookDetailDraft(draftSession);
+    editingDetails = !!savedDraft?.details;
+    draftTitle = savedDraft?.details?.title ?? '';
+    draftAuthor = savedDraft?.details?.author ?? '';
+    notesOpen = !!savedDraft?.note;
+    draftText = savedDraft?.note?.text ?? '';
+    draftVisibility = savedDraft?.note?.visibility ?? 'private';
+  }
+
+  function writeNoteDraft() {
+    const current = getBookDetailDraft(draftSession);
+    const note = draftText.trim()
+      ? { text: draftText, visibility: draftVisibility }
+      : undefined;
+    updateBookDetailDraft(draftSession, {
+      ...(current?.details ? { details: current.details } : {}),
+      ...(note ? { note } : {}),
+    });
+  }
+
+  function updateDraftNote(event: Event) {
+    draftText = (event.currentTarget as HTMLTextAreaElement).value;
+    writeNoteDraft();
+  }
+
+  function clearNoteDraft() {
+    const details = getBookDetailDraft(draftSession)?.details;
+    updateBookDetailDraft(draftSession, details ? { details } : {});
+  }
+
+  function setNoteVisibility(visibility: BookVisibility) {
+    draftVisibility = visibility;
+    writeNoteDraft();
+  }
+
+  restoreDraft();
+
   // Explicit draft-state reset keyed on the book id. The detail sheet keeps
   // one BookDetail instance alive while open, so if it ever switches books in
   // place (e.g. a future next/prev affordance) stale drafts must not leak
@@ -106,15 +197,25 @@
   $effect(() => {
     if (book.id === draftsBookId) return;
     draftsBookId = book.id;
-    editingDetails = false;
-    draftTitle = '';
-    draftAuthor = '';
+    draftSession = startBookDetailDraftSession(book.id);
     showDeleteConfirm = false;
     deletePending = false;
     deleteFailed = false;
-    notesOpen = false;
-    draftText = '';
-    draftVisibility = 'private';
+    restoreDraft();
+  });
+
+  // A draft token includes the authenticated session generation. Watching the
+  // epoch clears local fields too, so an A → B → A switch cannot reveal an old
+  // private draft from this still-mounted component.
+  $effect(() => {
+    const epoch = $bookDetailDraftEpoch;
+    if (epoch === observedDraftEpoch) return;
+    observedDraftEpoch = epoch;
+    draftSession = startBookDetailDraftSession(book.id);
+    showDeleteConfirm = false;
+    deletePending = false;
+    deleteFailed = false;
+    restoreDraft();
   });
 
   function submitNote() {
@@ -123,6 +224,7 @@
     onAddNote?.(text, draftVisibility);
     draftText = '';
     draftVisibility = 'private';
+    clearNoteDraft();
   }
 
   function toggleNoteVisibility(noteId: string, current: BookVisibility) {
@@ -136,14 +238,14 @@
       <div class="details-edit">
         <label class="details-field">
           <span class="details-label">{t.editTitleLabel}</span>
-          <input class="input" bind:value={draftTitle} />
+          <input class="input" value={draftTitle} oninput={updateDraftTitle} />
         </label>
         <label class="details-field">
           <span class="details-label">{t.editAuthorLabel}</span>
-          <input class="input" bind:value={draftAuthor} />
+          <input class="input" value={draftAuthor} oninput={updateDraftAuthor} />
         </label>
         <div class="details-actions">
-          <button class="btn btn-outline btn-sm" onclick={() => (editingDetails = false)}>{t.cancel}</button>
+          <button class="btn btn-outline btn-sm" onclick={cancelDetails}>{t.cancel}</button>
           <button class="btn btn-filled btn-sm" onclick={saveDetails} disabled={!draftTitle.trim() || !draftAuthor.trim()}>{t.save}</button>
         </div>
       </div>
@@ -270,14 +372,15 @@
               <div class="note-add">
                 <textarea
                   class="textarea note-input"
-                  bind:value={draftText}
+                  value={draftText}
+                  oninput={updateDraftNote}
                   placeholder={t.notes.placeholder}
                   rows="2"
                 ></textarea>
                 <div class="note-add-actions">
                   <div class="segmented segmented-sm" role="group" aria-label={t.notes.privacyGroupLabel}>
-                    <button type="button" aria-pressed={draftVisibility === 'private'} onclick={() => (draftVisibility = 'private')}>{t.notes.private}</button>
-                    <button type="button" aria-pressed={draftVisibility === 'visible'} onclick={() => (draftVisibility = 'visible')}>{t.notes.public}</button>
+                    <button type="button" aria-pressed={draftVisibility === 'private'} onclick={() => setNoteVisibility('private')}>{t.notes.private}</button>
+                    <button type="button" aria-pressed={draftVisibility === 'visible'} onclick={() => setNoteVisibility('visible')}>{t.notes.public}</button>
                   </div>
                   <button class="btn btn-filled btn-sm" onclick={submitNote} disabled={!draftText.trim()}>{t.notes.addNoteButton}</button>
                 </div>

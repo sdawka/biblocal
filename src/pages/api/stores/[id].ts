@@ -166,11 +166,14 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
         });
       }
     }
-    if (body.name !== undefined && body.name.trim() === '') {
-      return new Response(JSON.stringify({ error: 'Store name cannot be empty' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    for (const field of ['name', 'city', 'neighborhood', 'address'] as const) {
+      if (body[field] !== undefined && body[field].trim() === '') {
+        const label = field === 'name' ? 'Store name' : field[0].toUpperCase() + field.slice(1);
+        return new Response(JSON.stringify({ error: `${label} cannot be empty` }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
     }
     if (body.specialties !== undefined && !Array.isArray(body.specialties)) {
       return new Response(JSON.stringify({ error: 'specialties must be an array' }), {
@@ -179,19 +182,26 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    if (body.name !== undefined && body.name.length > MAX_STORE_NAME_LEN) {
+    const name = body.name?.trim();
+    const city = body.city?.trim();
+    const neighborhood = body.neighborhood?.trim();
+    const address = body.address?.trim();
+    const website = body.website?.trim();
+    const phone = body.phone?.trim();
+
+    if (name !== undefined && name.length > MAX_STORE_NAME_LEN) {
       return new Response(JSON.stringify({ error: `Store name must be at most ${MAX_STORE_NAME_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    if (body.neighborhood !== undefined && body.neighborhood.length > MAX_NEIGHBORHOOD_LEN) {
+    if (neighborhood !== undefined && neighborhood.length > MAX_NEIGHBORHOOD_LEN) {
       return new Response(JSON.stringify({ error: `Neighborhood must be at most ${MAX_NEIGHBORHOOD_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    if (body.address !== undefined && body.address.length > MAX_ADDRESS_LEN) {
+    if (address !== undefined && address.length > MAX_ADDRESS_LEN) {
       return new Response(JSON.stringify({ error: `Address must be at most ${MAX_ADDRESS_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    if (body.city !== undefined && body.city.length > MAX_CITY_LEN) {
+    if (city !== undefined && city.length > MAX_CITY_LEN) {
       return new Response(JSON.stringify({ error: `City must be at most ${MAX_CITY_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    if (body.phone !== undefined && body.phone.length > MAX_PHONE_LEN) {
+    if (phone !== undefined && phone.length > MAX_PHONE_LEN) {
       return new Response(JSON.stringify({ error: `Phone must be at most ${MAX_PHONE_LEN} characters` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -205,7 +215,17 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
           updates[field] = JSON.stringify(value);
         } else if (field === 'website') {
           // Never persist an unsafe URL scheme (javascript:/data:/etc).
-          updates[field] = typeof value === 'string' ? safeExternalUrl(value) : null;
+          updates[field] = website ? safeExternalUrl(website) : null;
+        } else if (field === 'name') {
+          updates[field] = name;
+        } else if (field === 'city') {
+          updates[field] = city;
+        } else if (field === 'neighborhood') {
+          updates[field] = neighborhood;
+        } else if (field === 'address') {
+          updates[field] = address;
+        } else if (field === 'phone') {
+          updates[field] = phone || null;
         } else {
           updates[field] = value;
         }

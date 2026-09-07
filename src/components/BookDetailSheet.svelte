@@ -2,6 +2,11 @@
   import type { Book, BookIntent, BookVisibility, BookOwnership } from '../lib/types';
   import { useTranslations, type Lang } from '../i18n';
   import { isHostedCoverUrl } from '../lib/coverImages';
+  import {
+    clearBookDetailDraft,
+    isCurrentBookDetailDraftSession,
+    startBookDetailDraftSession,
+  } from '../stores/book-detail-drafts';
   import BookDetail from './BookDetail.svelte';
 
   interface Props {
@@ -45,6 +50,8 @@
   let fileInputRef: HTMLInputElement | null = $state(null);
   let uploading = $state(false);
   let deleting = $state(false);
+  // svelte-ignore state_referenced_locally -- this token deliberately captures the opening book
+  let deleteDraftSession = startBookDetailDraftSession(book.id);
 
   // Explicit transient-state reset keyed on the book id: if the sheet ever
   // switches books while open (e.g. a future next/prev affordance), a stale
@@ -55,6 +62,7 @@
   $effect(() => {
     if (book.id === sheetBookId) return;
     sheetBookId = book.id;
+    deleteDraftSession = startBookDetailDraftSession(book.id);
     uploading = false;
   });
   const canReset = $derived(!!book.fetchedCoverUrl && isHostedCoverUrl(book.coverUrl));
@@ -78,11 +86,16 @@
 
   async function handleDelete(id: string): Promise<boolean> {
     if (!onDelete || deleting) return false;
+    const sessionAtStart = deleteDraftSession;
     deleting = true;
     dialogRef?.focus();
     const removed = await onDelete(id);
+    if (deleteDraftSession !== sessionAtStart || !isCurrentBookDetailDraftSession(sessionAtStart)) return false;
     deleting = false;
-    if (removed) onClose();
+    // A completion from a former account session must neither clear the new
+    // session's draft nor close its sheet. clearBookDetailDraft is generation
+    // fenced, including when the same account returns after A → B → A.
+    if (removed && clearBookDetailDraft(sessionAtStart)) onClose();
     return removed;
   }
 

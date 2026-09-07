@@ -77,6 +77,10 @@ function baseProps() {
     storesInView: [store],
     storesUnlocated: [] as Match[],
     inViewCount: 1,
+    scopeLabel: 'Within 5 km of Montreal',
+    scopeMode: 'local' as const,
+    onScopeChange: () => {},
+    needsLocation: false,
     expandedId: null,
     onToggle: () => {},
     onOwner: () => {},
@@ -123,9 +127,49 @@ describe('LocalPanel', () => {
     expect(selected).toBe('bookstores');
   });
 
-  it('shows the in-view count', () => {
+  it('shows the result count within the active scope', () => {
     render(LocalPanel, { props: { ...baseProps(), inViewCount: 3 } });
-    expect(screen.getByText(/3 in view/i)).toBeTruthy();
+    expect(screen.getByLabelText('3 Within 5 km of Montreal')).toBeTruthy();
+  });
+
+  it('labels the active local scope and lets readers explicitly browse worldwide', async () => {
+    let scope: string | null = null;
+    render(LocalPanel, {
+      props: { ...baseProps(), onScopeChange: (next: string) => (scope = next) },
+    });
+    expect(screen.getByText('Within 5 km of Montreal')).toBeTruthy();
+    await fireEvent.click(screen.getByRole('button', { name: /browse worldwide/i }));
+    expect(scope).toBe('worldwide');
+  });
+
+  it('does not disguise a missing local source as worldwide', async () => {
+    let scope: string | null = null;
+    render(LocalPanel, {
+      props: {
+        ...baseProps(),
+        scopeLabel: 'Add a city or location in your profile to browse locally.',
+        onScopeChange: (next: string) => (scope = next),
+        needsLocation: true,
+        lang: 'fr',
+      },
+    });
+    expect(screen.getByRole('link', { name: 'Modifier le profil' }).getAttribute('href')).toBe('/fr/profile');
+    await fireEvent.click(screen.getByRole('button', { name: /explorer le monde entier/i }));
+    expect(scope).toBe('worldwide');
+  });
+
+  it('lets an explicit worldwide browse return to local scope', async () => {
+    let scope: string | null = null;
+    render(LocalPanel, {
+      props: {
+        ...baseProps(),
+        scopeLabel: 'Worldwide',
+        scopeMode: 'worldwide',
+        onScopeChange: (next: string) => (scope = next),
+      },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: /show local results/i }));
+    expect(scope).toBe('local');
   });
 
   it('still shows a person with no shared location under "Location not shared", even with viewport filtering active', () => {
@@ -161,21 +205,21 @@ describe('LocalPanel', () => {
 
   it('shows a per-panel empty message when the people list is empty', () => {
     render(LocalPanel, { props: { ...baseProps(), peopleInView: [], inViewCount: 0 } });
-    expect(screen.getByText(/no people in view/i)).toBeTruthy();
+    expect(screen.getByText(/no people in this area/i)).toBeTruthy();
   });
 
   it('shows a per-panel empty message when the bookstores list is empty', () => {
     render(LocalPanel, {
       props: { ...baseProps(), panel: 'bookstores', storesInView: [], inViewCount: 0 },
     });
-    expect(screen.getByText(/no bookstores in view/i)).toBeTruthy();
+    expect(screen.getByText(/no bookstores in this area/i)).toBeTruthy();
   });
 
   it('shows a per-panel empty message when there are no books in view', () => {
     render(LocalPanel, {
       props: { ...baseProps(), panel: 'books', bookGroups: [], inViewCount: 0 },
     });
-    expect(screen.getByText(/no books in view/i)).toBeTruthy();
+    expect(screen.getByText(/no books in this area/i)).toBeTruthy();
   });
 
   it('calls onOwner when a book row owner action is used', async () => {

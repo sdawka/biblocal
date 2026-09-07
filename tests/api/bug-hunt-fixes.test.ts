@@ -383,7 +383,7 @@ describe('POST /api/stores — field length caps (finding #6)', () => {
     const { status, json } = await callApiAs(USER_A, storesPostHandler, {
       method: 'POST',
       url: `${BASE}/api/stores`,
-      body: { name: 'A'.repeat(121), neighborhood: 'Mile End', address: '1 Test St' },
+      body: { name: 'A'.repeat(121), city: 'Montreal', neighborhood: 'Mile End', address: '1 Test St' },
     });
     expect(status).toBe(400);
     expect((json as { error: string }).error).toMatch(/120/);
@@ -393,7 +393,7 @@ describe('POST /api/stores — field length caps (finding #6)', () => {
     const { status } = await callApiAs(USER_A, storesPostHandler, {
       method: 'POST',
       url: `${BASE}/api/stores`,
-      body: { name: 'Good Store', neighborhood: 'N'.repeat(121), address: '1 Test St' },
+      body: { name: 'Good Store', city: 'Montreal', neighborhood: 'N'.repeat(121), address: '1 Test St' },
     });
     expect(status).toBe(400);
   });
@@ -402,7 +402,7 @@ describe('POST /api/stores — field length caps (finding #6)', () => {
     const { status } = await callApiAs(USER_A, storesPostHandler, {
       method: 'POST',
       url: `${BASE}/api/stores`,
-      body: { name: 'Good Store', neighborhood: 'Mile End', address: 'A'.repeat(201) },
+      body: { name: 'Good Store', city: 'Montreal', neighborhood: 'Mile End', address: 'A'.repeat(201) },
     });
     expect(status).toBe(400);
   });
@@ -411,7 +411,7 @@ describe('POST /api/stores — field length caps (finding #6)', () => {
     const { status } = await callApiAs(USER_A, storesPostHandler, {
       method: 'POST',
       url: `${BASE}/api/stores`,
-      body: { name: 'A'.repeat(120), neighborhood: 'Mile End', address: '1 Test St' },
+      body: { name: 'A'.repeat(120), city: 'Montreal', neighborhood: 'Mile End', address: '1 Test St' },
     });
     expect(status).toBe(201);
   });

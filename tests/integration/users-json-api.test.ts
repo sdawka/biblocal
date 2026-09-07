@@ -213,8 +213,9 @@ describe('GET /api/users.json', () => {
   it('orders and bounds eligible profiles and their SQL-restricted visible books', async () => {
     insertUser('beta', { name: 'Beta' });
     insertUser('alpha', { name: 'Alpha' });
-    insertBook('beta-z', 'beta', { title: 'Z' });
-    insertBook('beta-a', 'beta', { title: 'A' });
+    // Equal timestamps exercise the ID tie-breaker independently of clock ticks.
+    insertBook('beta-z', 'beta', { title: 'Z', createdAt: 1_000 });
+    insertBook('beta-a', 'beta', { title: 'A', createdAt: 1_000 });
     const statements: string[] = [];
     const boundParameters: unknown[][] = [];
     setTestDb({

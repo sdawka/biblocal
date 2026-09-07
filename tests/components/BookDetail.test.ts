@@ -1,7 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, fireEvent, screen, waitFor, within } from '@testing-library/svelte';
 import BookDetail from '../../src/components/BookDetail.svelte';
 import type { Book } from '../../src/lib/types';
+import { currentUserId } from '../../src/stores/auth';
+import { clearBookDetailDrafts } from '../../src/stores/book-detail-drafts';
 
 // Mock i18n — mirrors the shape used by BookCard.test.ts, extended with the
 // `add` namespace (ownership/visibility prompts) and Task 7's card.* keys.
@@ -78,6 +80,11 @@ function makeBook(overrides: Partial<Book> = {}): Book {
 }
 
 describe('BookDetail', () => {
+  beforeEach(() => {
+    currentUserId.set(null);
+    clearBookDetailDrafts();
+  });
+
   describe('delete confirmation', () => {
     async function openConfirmation(onDelete: (id: string) => Promise<boolean>) {
       render(BookDetail, { props: { book: makeBook(), lang: 'en', onDelete } });
@@ -345,6 +352,120 @@ describe('BookDetail', () => {
       });
 
       expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('Dune Messiah');
+    });
+  });
+
+  describe('session draft preservation', () => {
+    it('restores unfinished detail and note drafts after the detail view closes and reopens', async () => {
+      const first = render(BookDetail, {
+        props: { book: makeBook({ id: 'draft-book', title: 'Dune', author: 'Frank Herbert' }), lang: 'en', onUpdateDetails: vi.fn(), onAddNote: vi.fn() },
+      });
+
+      await fireEvent.click(screen.getByLabelText('Edit title & author'));
+      await fireEvent.input(screen.getByLabelText('Title'), { target: { value: 'Dune Messiah' } });
+      await fireEvent.input(screen.getByLabelText('Author'), { target: { value: 'F. Herbert' } });
+      await fireEvent.click(screen.getByRole('button', { name: 'Add a note' }));
+      await fireEvent.input(screen.getByPlaceholderText('What did you like about this book?'), { target: { value: 'The politics are richer here.' } });
+      await fireEvent.click(screen.getByRole('button', { name: 'Public' }));
+      first.unmount();
+
+      render(BookDetail, {
+        props: { book: makeBook({ id: 'draft-book', title: 'Dune', author: 'Frank Herbert' }), lang: 'en', onUpdateDetails: vi.fn(), onAddNote: vi.fn() },
+      });
+
+      expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('Dune Messiah');
+      expect((screen.getByLabelText('Author') as HTMLInputElement).value).toBe('F. Herbert');
+      expect((screen.getByPlaceholderText('What did you like about this book?') as HTMLTextAreaElement).value).toBe('The politics are richer here.');
+      expect(screen.getByRole('button', { name: 'Public' }).getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('clears detail drafts when cancelled and note drafts when submitted', async () => {
+      const onAddNote = vi.fn();
+      const first = render(BookDetail, {
+        props: { book: makeBook({ id: 'clear-draft-book', title: 'Dune', author: 'Frank Herbert' }), lang: 'en', onUpdateDetails: vi.fn(), onAddNote },
+      });
+
+      await fireEvent.click(screen.getByLabelText('Edit title & author'));
+      await fireEvent.input(screen.getByLabelText('Title'), { target: { value: 'Dune Messiah' } });
+      await fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      await fireEvent.click(screen.getByRole('button', { name: 'Add a note' }));
+      await fireEvent.input(screen.getByPlaceholderText('What did you like about this book?'), { target: { value: 'A saved note.' } });
+      await fireEvent.click(screen.getByRole('button', { name: 'Add note' }));
+      first.unmount();
+
+      render(BookDetail, {
+        props: { book: makeBook({ id: 'clear-draft-book', title: 'Dune', author: 'Frank Herbert' }), lang: 'en', onUpdateDetails: vi.fn(), onAddNote },
+      });
+
+      expect(screen.queryByLabelText('Title')).toBeNull();
+      expect(screen.queryByPlaceholderText('What did you like about this book?')).toBeNull();
+      expect(onAddNote).toHaveBeenCalledWith('A saved note.', 'private');
+    });
+
+    it('clears a detail draft after save', async () => {
+      const onUpdateDetails = vi.fn();
+      const first = render(BookDetail, {
+        props: { book: makeBook({ id: 'saved-detail-book', title: 'Dune', author: 'Frank Herbert' }), lang: 'en', onUpdateDetails },
+      });
+
+      await fireEvent.click(screen.getByLabelText('Edit title & author'));
+      await fireEvent.input(screen.getByLabelText('Title'), { target: { value: 'Dune Messiah' } });
+      await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      first.unmount();
+
+      render(BookDetail, {
+        props: { book: makeBook({ id: 'saved-detail-book', title: 'Dune Messiah', author: 'Frank Herbert' }), lang: 'en', onUpdateDetails },
+      });
+
+      expect(screen.queryByLabelText('Title')).toBeNull();
+      expect(onUpdateDetails).toHaveBeenCalledWith({ title: 'Dune Messiah', author: 'Frank Herbert' });
+    });
+
+    it('clears every draft after a successful delete', async () => {
+      const first = render(BookDetail, {
+        props: { book: makeBook({ id: 'deleted-draft-book', title: 'Dune', author: 'Frank Herbert' }), lang: 'en', onUpdateDetails: vi.fn(), onAddNote: vi.fn(), onDelete: vi.fn().mockResolvedValue(true) },
+      });
+
+      await fireEvent.click(screen.getByLabelText('Edit title & author'));
+      await fireEvent.input(screen.getByLabelText('Title'), { target: { value: 'Dune Messiah' } });
+      await fireEvent.click(screen.getByRole('button', { name: 'Add a note' }));
+      await fireEvent.input(screen.getByPlaceholderText('What did you like about this book?'), { target: { value: 'A draft that will be deleted.' } });
+      await fireEvent.click(screen.getByLabelText('Delete Dune from shelf'));
+      await fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+      first.unmount();
+
+      render(BookDetail, {
+        props: { book: makeBook({ id: 'deleted-draft-book', title: 'Dune', author: 'Frank Herbert' }), lang: 'en', onUpdateDetails: vi.fn(), onAddNote: vi.fn() },
+      });
+
+      expect(screen.queryByLabelText('Title')).toBeNull();
+      expect(screen.queryByPlaceholderText('What did you like about this book?')).toBeNull();
+    });
+
+    it('does not let a delete completion from a prior A to B to A session clear or revive a draft', async () => {
+      let resolveDelete!: (removed: boolean) => void;
+      const onDelete = vi.fn(() => new Promise<boolean>((resolve) => { resolveDelete = resolve; }));
+      currentUserId.set('reader-a');
+      const first = render(BookDetail, {
+        props: { book: makeBook({ id: 'session-delete-book', title: 'Dune', author: 'Frank Herbert' }), lang: 'en', onUpdateDetails: vi.fn(), onDelete },
+      });
+
+      await fireEvent.click(screen.getByLabelText('Edit title & author'));
+      await fireEvent.input(screen.getByLabelText('Title'), { target: { value: 'Dune Messiah' } });
+      await fireEvent.click(screen.getByLabelText('Delete Dune from shelf'));
+      await fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+      currentUserId.set('reader-b');
+      currentUserId.set('reader-a');
+      resolveDelete(true);
+      await Promise.resolve();
+      first.unmount();
+
+      render(BookDetail, {
+        props: { book: makeBook({ id: 'session-delete-book', title: 'Dune', author: 'Frank Herbert' }), lang: 'en', onUpdateDetails: vi.fn() },
+      });
+
+      expect(screen.queryByLabelText('Title')).toBeNull();
     });
   });
 });

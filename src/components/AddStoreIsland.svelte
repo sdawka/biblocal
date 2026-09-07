@@ -1,6 +1,13 @@
 <script lang="ts">
   import { CURATED_TOPICS } from '../stores/topics';
   import { localizePath, localizeTopicLabel, useTranslations, type Lang } from '../i18n';
+  import {
+    MAX_ADDRESS_LEN,
+    MAX_CITY_LEN,
+    MAX_NEIGHBORHOOD_LEN,
+    MAX_PHONE_LEN,
+    MAX_STORE_NAME_LEN,
+  } from '../lib/validation';
 
   interface Props {
     onSuccess?: (storeId: string) => void;
@@ -12,6 +19,7 @@
   const matchesT = $derived(useTranslations(lang).matches.card);
 
   let name = $state('');
+  let city = $state('');
   let neighborhood = $state('');
   let address = $state('');
   let website = $state('');
@@ -22,27 +30,6 @@
   let success = $state(false);
   let createdStoreId = $state<string | null>(null);
 
-  const MONTREAL_NEIGHBORHOODS = [
-    'Mile End',
-    'Plateau Mont-Royal',
-    'Rosemont',
-    'Villeray',
-    'Saint-Henri',
-    'Verdun',
-    'NDG',
-    'Westmount',
-    'Outremont',
-    'McGill Ghetto',
-    'Shaughnessy Village',
-    'Old Montreal',
-    'Downtown',
-    'Griffintown',
-    'Little Italy',
-    'Hochelaga',
-    'Pointe-Saint-Charles',
-    'Other',
-  ];
-
   function toggleSpecialty(topic: string) {
     if (selectedSpecialties.includes(topic)) {
       selectedSpecialties = selectedSpecialties.filter((t) => t !== topic);
@@ -52,7 +39,9 @@
   }
 
   async function handleSubmit() {
-    if (!name.trim() || !neighborhood || !address.trim()) {
+    if (loading) return;
+
+    if (!name.trim() || !city.trim() || !neighborhood.trim() || !address.trim()) {
       error = t.form.validationRequired;
       return;
     }
@@ -66,7 +55,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
-          neighborhood,
+          city: city.trim(),
+          neighborhood: neighborhood.trim(),
           address: address.trim(),
           website: website.trim() || undefined,
           phone: phone.trim() || undefined,
@@ -98,6 +88,7 @@
 
   function reset() {
     name = '';
+    city = '';
     neighborhood = '';
     address = '';
     website = '';
@@ -141,25 +132,43 @@
           aria-required="true"
           aria-invalid={error && !name.trim() ? 'true' : undefined}
           aria-describedby={error ? 'store-error' : undefined}
+          maxlength={MAX_STORE_NAME_LEN}
+          required
+        />
+      </div>
+
+      <div class="field">
+        <label class="label" for="city">{t.form.cityLabel}</label>
+        <input
+          class="input"
+          id="city"
+          type="text"
+          bind:value={city}
+          placeholder={t.form.cityPlaceholder}
+          disabled={loading}
+          aria-required="true"
+          aria-invalid={error && !city.trim() ? 'true' : undefined}
+          aria-describedby={error ? 'store-error' : undefined}
+          maxlength={MAX_CITY_LEN}
+          required
         />
       </div>
 
       <div class="field">
         <label class="label" for="neighborhood">{t.form.neighborhoodLabel}</label>
-        <select
-          class="select"
+        <input
+          class="input"
           id="neighborhood"
+          type="text"
           bind:value={neighborhood}
+          placeholder={t.form.neighborhoodPlaceholder}
           disabled={loading}
           aria-required="true"
-          aria-invalid={error && !neighborhood ? 'true' : undefined}
+          aria-invalid={error && !neighborhood.trim() ? 'true' : undefined}
           aria-describedby={error ? 'store-error' : undefined}
-        >
-          <option value="">{t.form.neighborhoodPlaceholder}</option>
-          {#each MONTREAL_NEIGHBORHOODS as hood}
-            <option value={hood}>{hood}</option>
-          {/each}
-        </select>
+          maxlength={MAX_NEIGHBORHOOD_LEN}
+          required
+        />
       </div>
 
       <div class="field">
@@ -174,6 +183,8 @@
           aria-required="true"
           aria-invalid={error && !address.trim() ? 'true' : undefined}
           aria-describedby={error ? 'store-error' : undefined}
+          maxlength={MAX_ADDRESS_LEN}
+          required
         />
       </div>
 
@@ -198,6 +209,7 @@
           bind:value={phone}
           placeholder={t.form.phonePlaceholder}
           disabled={loading}
+          maxlength={MAX_PHONE_LEN}
         />
       </div>
 

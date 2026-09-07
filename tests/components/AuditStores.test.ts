@@ -3,10 +3,18 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import AddStoreIsland from '../../src/components/AddStoreIsland.svelte';
 import StoreDetailIsland from '../../src/components/StoreDetailIsland.svelte';
 import { useTranslations } from '../../src/i18n';
+import {
+  MAX_ADDRESS_LEN,
+  MAX_CITY_LEN,
+  MAX_NEIGHBORHOOD_LEN,
+  MAX_PHONE_LEN,
+  MAX_STORE_NAME_LEN,
+} from '../../src/lib/validation';
 
 const store = {
   id: 'store-corner',
   name: 'The Corner Books',
+  city: 'Montreal',
   neighborhood: 'Mile End',
   address: '123 Saint-Laurent Blvd',
   specialties: [],
@@ -36,7 +44,10 @@ describe('store journey audit', () => {
     await fireEvent.input(screen.getByLabelText(t.stores.form.nameLabel), {
       target: { value: 'Librairie du coin' },
     });
-    await fireEvent.change(screen.getByLabelText(t.stores.form.neighborhoodLabel), {
+    await fireEvent.input(screen.getByLabelText(t.stores.form.cityLabel), {
+      target: { value: 'Montréal' },
+    });
+    await fireEvent.input(screen.getByLabelText(t.stores.form.neighborhoodLabel), {
       target: { value: 'Mile End' },
     });
     await fireEvent.input(screen.getByLabelText(t.stores.form.addressLabel), {
@@ -47,6 +58,50 @@ describe('store journey audit', () => {
     const viewStore = await screen.findByRole('link', { name: t.matches.card.viewStoreDetails });
     expect(viewStore.getAttribute('href')).toBe('/fr/store/store-fr-123');
     expect(screen.getByRole('button', { name: t.stores.form.addAnother })).toBeTruthy();
+  });
+
+  it('sends one request when the form is submitted twice while pending', async () => {
+    const t = useTranslations('en');
+    let resolveResponse!: (value: Response) => void;
+    const pending = new Promise<Response>((resolve) => {
+      resolveResponse = resolve;
+    });
+    vi.mocked(fetch).mockReturnValueOnce(pending);
+
+    render(AddStoreIsland, { props: { lang: 'en' } });
+    await fireEvent.input(screen.getByLabelText(t.stores.form.nameLabel), {
+      target: { value: 'The City Shelf' },
+    });
+    await fireEvent.input(screen.getByLabelText(t.stores.form.cityLabel), {
+      target: { value: 'Montreal' },
+    });
+    await fireEvent.input(screen.getByLabelText(t.stores.form.neighborhoodLabel), {
+      target: { value: 'Mile End' },
+    });
+    await fireEvent.input(screen.getByLabelText(t.stores.form.addressLabel), {
+      target: { value: '123 Saint-Laurent Blvd' },
+    });
+
+    const form = screen.getByRole('button', { name: t.stores.form.submit }).closest('form');
+    expect(form).toBeTruthy();
+    const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+    form!.dispatchEvent(submitEvent);
+    form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    resolveResponse(response({ id: 'store-deduped' }, 201));
+    await screen.findByRole('link', { name: t.matches.card.viewStoreDetails });
+  });
+
+  it('uses the shared API length caps for bookstore fields', () => {
+    const t = useTranslations('en');
+    render(AddStoreIsland, { props: { lang: 'en' } });
+
+    expect((screen.getByLabelText(t.stores.form.nameLabel) as HTMLInputElement).maxLength).toBe(MAX_STORE_NAME_LEN);
+    expect((screen.getByLabelText(t.stores.form.cityLabel) as HTMLInputElement).maxLength).toBe(MAX_CITY_LEN);
+    expect((screen.getByLabelText(t.stores.form.neighborhoodLabel) as HTMLInputElement).maxLength).toBe(MAX_NEIGHBORHOOD_LEN);
+    expect((screen.getByLabelText(t.stores.form.addressLabel) as HTMLInputElement).maxLength).toBe(MAX_ADDRESS_LEN);
+    expect((screen.getByLabelText(t.stores.form.phoneLabel) as HTMLInputElement).maxLength).toBe(MAX_PHONE_LEN);
   });
 
   it('returns a missing store to the localized bookstore directory', async () => {
@@ -77,6 +132,9 @@ describe('store journey audit', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: store.name })).toBeTruthy();
     });
+    const location = document.querySelector('.store-detail .neighborhood');
+    expect(location?.textContent).toContain('Montreal');
+    expect(location?.textContent).toContain('Mile End');
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 

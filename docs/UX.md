@@ -27,10 +27,19 @@ Three sections:
 2. **Interests** — topic picker (curated + freeform) plus auto-inferred topics from shelf
 3. **Optional** — lending style, current obsessions
 
-### Matches (`/matches`)
-Split layout: map (Leaflet, sepia-tinted) + match cards panel.
-- Map shows nearby users as markers
-- Cards show match facets and can expand for details
+### Local (`/local`)
+Discovery starts with the profile's city and radius. Stored coordinates take precedence; a known city uses an approximate city center. Cities without known coordinates use an explicitly approximate same-city scope. Without a location, show a profile link and an explicit worldwide option.
+- Books, People, and Bookstores use the same geographic scope on desktop and mobile.
+- Worldwide browsing is an explicit choice. Panning the map does not silently change the selected scope.
+- People without coordinates remain identified separately; a city-only result does not imply a measured distance.
+- Discovery includes people with a taste match or a visible book to share.
+- Hidden contact rejects incoming connection requests on the backend.
+
+### Bookstore contributions (`/stores/new`)
+Require an explicit city, freeform neighborhood, name, and address. Show the city in the directory and detail page; never infer it from an address or default it to Montreal.
+
+### Book editing (`/biblio`)
+Closing a book's detail sheet preserves unfinished title, author, and new-note drafts in memory for reopening during the current page session. Explicit cancel discards the relevant draft. Drafts do not survive reloads or account changes.
 
 **Match facets:**
 - Shelf twin — shared books

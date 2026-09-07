@@ -474,6 +474,50 @@ describe('calculateMatches', () => {
 });
 
 describe('calculateDiscovery', () => {
+  it('keeps unlocated readers in a local radius while excluding distant readers', () => {
+    const nearby = makeUser({
+      id: 'nearby',
+      city: 'Montreal',
+      latitude: 45.52,
+      longitude: -73.58,
+      shelf: [makeBook({ title: 'Nearby offer', intents: ['borrowable'] })],
+    });
+    const distant = makeUser({
+      id: 'distant',
+      city: 'Tokyo',
+      latitude: 35.6762,
+      longitude: 139.6503,
+      shelf: [makeBook({ title: 'Distant offer', intents: ['borrowable'] })],
+    });
+    const unlocated = makeUser({
+      id: 'unlocated',
+      city: 'Montreal',
+      shelf: [makeBook({ title: 'Unlocated offer', intents: ['borrowable'] })],
+    });
+
+    expect(calculateDiscovery([], [], [nearby, distant, unlocated], {
+      lat: 45.5017,
+      lng: -73.5673,
+      radiusKm: 8,
+    }).map((match) => match.user.id)).toEqual(['nearby', 'unlocated']);
+  });
+
+  it('matches the same city when no city coordinates are available', () => {
+    const local = makeUser({
+      id: 'local',
+      city: 'North Star',
+      shelf: [makeBook({ title: 'Local offer', intents: ['borrowable'] })],
+    });
+    const elsewhere = makeUser({
+      id: 'elsewhere',
+      city: 'Elsewhere',
+      shelf: [makeBook({ title: 'Elsewhere offer', intents: ['borrowable'] })],
+    });
+
+    expect(calculateDiscovery([], [], [local, elsewhere], { city: 'North Star' })
+      .map((match) => match.user.id)).toEqual(['local']);
+  });
+
   it('includes a sharer with no location and no taste overlap', () => {
     const sharer = makeUser({
       name: 'Location-less Sharer',
