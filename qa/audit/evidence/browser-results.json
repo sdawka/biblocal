@@ -1,0 +1,25 @@
+[
+  {
+    "name": "Manual book creation survives a document reload",
+    "status": "passed"
+  },
+  {
+    "name": "CSV upload has a keyboard-reachable control",
+    "status": "failed",
+    "error": "AssertionError [ERR_ASSERTION]: CSV input is display:none and its visible label has no keyboard control\n\nfalse !== true\n"
+  },
+  {
+    "name": "en landing hero text and controls fit at 390px",
+    "status": "passed"
+  },
+  {
+    "name": "fr landing hero text and controls fit at 390px",
+    "status": "failed",
+    "error": "AssertionError [ERR_ASSERTION]: Hero paragraphs extend outside the viewport: [{\"left\":20,\"right\":435.921875,\"text\":\"Les idées veulent circuler\"},{\"left\":20,\"right\":435.921875,\"text\":\"Vous êtes ce quevous lisez. Faites tourner.\"},{\"left\":20,\"right\":435.921875,\"text\":\"PrêterEmprunterDiscuterOffrirChercher\"},{\"left\":20,\"right\":435.921875,\"text\":\"Les livres, c'est ainsi que les idées circulent. Ouvrez votre étagère, prêtez-en quelques-uns, et votre rue devient une bibliothèque. Pour ceux qui aiment les idées (et les gens).\"}]\n\n4 !== 0\n"
+  },
+  {
+    "name": "es landing hero text and controls fit at 390px",
+    "status": "failed",
+    "error": "AssertionError [ERR_ASSERTION]: Hero paragraphs extend outside the viewport: [{\"left\":20,\"right\":437.03125,\"text\":\"Las ideas quieren compartirse\"},{\"left\":20,\"right\":437.03125,\"text\":\"Eres lo quelees. Pásalo.\"},{\"left\":20,\"right\":437.03125,\"text\":\"PrestarPedir prestadoComentarRegalarBuscar\"},{\"left\":20,\"right\":437.03125,\"text\":\"Los libros hacen que las ideas circulen. Abre tu estantería, presta unos cuantos y tu calle se convertirá en una biblioteca. Para quienes aman las ideas (y a la gente).\"}]\n\n4 !== 0\n"
+  }
+]

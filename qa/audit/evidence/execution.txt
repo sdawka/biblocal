@@ -1,0 +1,50 @@
+Local audit execution — 2026-09-07
+Baseline application commit: 80c4bd1
+
+npm run test:run (before audit test additions, repaired native dependency)
+Test Files: 73 passed (73)
+Tests: 800 passed (800)
+
+npm run test:run (final audit tests)
+Test Files: 4 failed | 73 passed (77)
+Tests: 8 failed | 805 passed (813)
+Start at: 16:06:20
+Duration: 8.30s
+
+Failing cases:
+- accepted requester has no usable contact action
+- Local mount does not initialize accepted relationships
+- worldwide discovery results are labeled Nearby
+- rejected profile update announces Saved
+- hidden recipient accepts direct API request
+- reciprocal concurrent requests create two relationships
+- six concurrent requests bypass five-per-day limit
+- malformed note JSON returns 500 instead of 400
+
+npx astro check
+Result (136 files): 0 errors, 0 warnings, 6 hints
+
+npm run check:svelte
+Exit 0: 0 errors and 3 warnings in 2 files
+
+npx tsc --noEmit --pretty false
+Exit 0, no diagnostics
+
+npm run build
+Exit 0; Server built in 5.20s; Build Complete
+
+Connected browser runner:
+2 passed, 3 failed; exact outcomes in browser-results.json
+Real local app, synthetic QA data, 390x844 viewport
+Manual save/reload and EN hero pass
+Keyboard CSV control, FR hero, ES hero fail
+
+Environment distinction:
+Initial native dependency mismatch: Node 24 process / Node 22-built better-sqlite3.
+140 failures and 660 passes before npm rebuild better-sqlite3.
+Rebuild resolved the environment error; all 800 baseline cases then passed.
+No product changes were made to resolve it.
+
+Not executed: existing 17 agent-browser shell journeys, real Clerk authentication,
+camera/geolocation permissions, CSV file transfer, deployed D1 concurrency,
+production deployment or production smoke.
