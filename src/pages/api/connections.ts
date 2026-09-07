@@ -12,6 +12,22 @@ type Env = { DB: D1Database };
 
 const MAX_REQUESTS_PER_DAY = 5;
 
+function isConnectionPairConstraintError(error: unknown): boolean {
+  return error instanceof Error
+    && /connection_requests_pair_unique|UNIQUE constraint failed: connection_requests\.from_user_id, connection_requests\.to_user_id/.test(error.message);
+}
+
+function acceptsConnectionRequests(contactVisibility: string | null): boolean {
+  return contactVisibility === 'public' || contactVisibility === 'on-request';
+}
+
+function hiddenRecipientResponse(): Response {
+  return new Response(JSON.stringify({ error: 'This user does not accept connection requests' }), {
+    status: 403,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 export const GET: APIRoute = async ({ locals }) => {
   try {
     const userId = getUserId(locals);
@@ -100,17 +116,23 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Recipient must genuinely exist — do not auto-create.
-    const [recipient] = await db.select({ id: users.id }).from(users).where(eq(users.id, toUserId)).limit(1);
+    const [recipient] = await db
+      .select({ id: users.id, contactVisibility: users.contactVisibility })
+      .from(users)
+      .where(eq(users.id, toUserId))
+      .limit(1);
     if (!recipient) {
       return new Response(JSON.stringify({ error: 'User not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });
     }
+    if (!acceptsConnectionRequests(recipient.contactVisibility)) {
+      return hiddenRecipientResponse();
+    }
 
-    // Check for existing request. Order newest-first so a pending row in either
-    // direction is seen before any older declined row — prevents the reactivation
-    // path from flipping a stale declined row while a live pending one exists.
+    // Check every relationship row. Older versions could create reciprocal
+    // declined history, which must remain recoverable without deleting data.
     const existing = await db
       .select()
       .from(connectionRequests)
@@ -126,40 +148,163 @@ export const POST: APIRoute = async ({ request, locals }) => {
           )
         )
       )
-      .orderBy(desc(connectionRequests.createdAt))
-      .limit(1);
+      .orderBy(desc(connectionRequests.createdAt));
 
-    // A stale-declined request for the SAME ordered (from,to) pair must be
-    // reactivated in place — the unique index would reject a fresh insert.
+    // A stale-declined request is reactivated in place. Reorienting it when the
+    // decliner starts the next request preserves a single active relationship;
+    // reciprocal declined history remains intact for non-destructive recovery.
     let reactivateId: string | null = null;
+    if (existing.some((request) => request.status !== 'declined')) {
+      return new Response(JSON.stringify({ error: 'Connection request already exists' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     if (existing.length > 0) {
-      const req = existing[0];
-      if (req.status === 'declined') {
-        // Only the original requester is subject to the 30-day cooldown.
-        // The decliner (req.fromUserId !== userId) can initiate a new request freely.
-        if (req.fromUserId === userId) {
-          const cooldownStart = Date.now() - 30 * 24 * 60 * 60 * 1000;
-          if (req.respondedAt && req.respondedAt.getTime() > cooldownStart) {
-            return new Response(
-              JSON.stringify({ error: 'Request was declined. Please wait before trying again.' }),
-              { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
-          }
-          if (req.toUserId === toUserId) {
-            reactivateId = req.id;
-          }
+      // Prefer the caller's original row when legacy reciprocal declines exist.
+      // Updating that row keeps the ordered-pair unique index satisfied.
+      const req = existing.find(
+        (request) => request.fromUserId === userId && request.toUserId === toUserId
+      ) ?? existing[0];
+      // Only the original requester is subject to the 30-day cooldown.
+      // The decliner (req.fromUserId !== userId) can initiate a new request freely.
+      if (req.fromUserId === userId) {
+        const cooldownStart = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        if (req.respondedAt && req.respondedAt.getTime() > cooldownStart) {
+          return new Response(
+            JSON.stringify({ error: 'Request was declined. Please wait before trying again.' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } }
+          );
         }
-      } else {
-        return new Response(JSON.stringify({ error: 'Connection request already exists' }), {
-          status: 400,
+      }
+      reactivateId = req.id;
+    }
+
+    // Both guards have to execute with their write. D1 serializes each SQL
+    // statement, while independent preflight reads can interleave before a
+    // later insert/update and let reciprocal requests or a sixth request through.
+    const nowSec = Math.floor(Date.now() / 1000);
+    const dayAgoSec = nowSec - 24 * 60 * 60;
+    const cooldownStartSec = nowSec - 30 * 24 * 60 * 60;
+
+    if (reactivateId) {
+      const result = await (env as Env).DB.prepare(
+        `UPDATE connection_requests
+         SET from_user_id = ?, to_user_id = ?, status = 'pending', created_at = ?, responded_at = NULL
+         WHERE id = ?
+           AND status = 'declined'
+           AND (from_user_id <> ? OR responded_at IS NULL OR responded_at <= ?)
+           AND EXISTS (
+             SELECT 1 FROM users
+             WHERE id = ? AND contact_visibility IN ('public', 'on-request')
+           )
+           AND NOT EXISTS (
+             SELECT 1 FROM connection_requests AS other
+             WHERE other.id <> ?
+               AND other.status <> 'declined'
+               AND ((other.from_user_id = ? AND other.to_user_id = ?)
+                 OR (other.from_user_id = ? AND other.to_user_id = ?))
+           )
+           AND (SELECT COUNT(*) FROM connection_requests
+                WHERE from_user_id = ? AND created_at > ?) < ?`
+      ).bind(
+        userId,
+        toUserId,
+        nowSec,
+        reactivateId,
+        userId,
+        cooldownStartSec,
+        toUserId,
+        reactivateId,
+        userId,
+        toUserId,
+        toUserId,
+        userId,
+        userId,
+        dayAgoSec,
+        MAX_REQUESTS_PER_DAY
+      ).run();
+
+      if (result.meta.changes === 1) {
+        return new Response(JSON.stringify({ success: true, id: reactivateId }), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      const id = crypto.randomUUID();
+      const result = await (env as Env).DB.prepare(
+        `INSERT INTO connection_requests (id, from_user_id, to_user_id, status, created_at, responded_at)
+         SELECT ?, ?, ?, 'pending', ?, NULL
+         WHERE NOT EXISTS (
+           SELECT 1 FROM connection_requests
+           WHERE (from_user_id = ? AND to_user_id = ?)
+              OR (from_user_id = ? AND to_user_id = ?)
+         )
+           AND EXISTS (
+             SELECT 1 FROM users
+             WHERE id = ? AND contact_visibility IN ('public', 'on-request')
+           )
+           AND (SELECT COUNT(*) FROM connection_requests
+                WHERE from_user_id = ? AND created_at > ?) < ?`
+      ).bind(
+        id,
+        userId,
+        toUserId,
+        nowSec,
+        userId,
+        toUserId,
+        toUserId,
+        userId,
+        toUserId,
+        userId,
+        dayAgoSec,
+        MAX_REQUESTS_PER_DAY
+      ).run();
+
+      if (result.meta.changes === 1) {
+        return new Response(JSON.stringify({ success: true, id }), {
+          status: 201,
           headers: { 'Content-Type': 'application/json' },
         });
       }
     }
 
-    // Rate limit: max 5 requests per day.
-    // created_at is stored as INTEGER (Unix epoch seconds), so compare numerically.
-    const dayAgoSec = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000);
+    // A conditional write can lose either to an existing relationship or to a
+    // request that filled the quota. Resolve the client-facing outcome only
+    // after the failed write; it does not participate in enforcing invariants.
+    const [currentRecipient] = await db
+      .select({ contactVisibility: users.contactVisibility })
+      .from(users)
+      .where(eq(users.id, toUserId))
+      .limit(1);
+    if (!currentRecipient || !acceptsConnectionRequests(currentRecipient.contactVisibility)) {
+      return hiddenRecipientResponse();
+    }
+
+    const relationship = await db
+      .select({ status: connectionRequests.status })
+      .from(connectionRequests)
+      .where(
+        or(
+          and(
+            eq(connectionRequests.fromUserId, userId),
+            eq(connectionRequests.toUserId, toUserId)
+          ),
+          and(
+            eq(connectionRequests.fromUserId, toUserId),
+            eq(connectionRequests.toUserId, userId)
+          )
+        )
+      )
+      .limit(1);
+    if (relationship.some((request) => request.status !== 'declined')) {
+      return new Response(JSON.stringify({ error: 'Connection request already exists' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const recentRequests = await db
       .select({ count: sql<number>`count(*)` })
       .from(connectionRequests)
@@ -169,7 +314,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
           sql`${connectionRequests.createdAt} > ${dayAgoSec}`
         )
       );
-
     if (recentRequests[0]?.count >= MAX_REQUESTS_PER_DAY) {
       return new Response(
         JSON.stringify({ error: `Maximum ${MAX_REQUESTS_PER_DAY} requests per day` }),
@@ -177,51 +321,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // Create the request. The existence check above can be raced by a
-    // concurrent request (double-click, or A and B in the same tick), so the
-    // insert is made resilient by the connection_requests_pair_unique index +
-    // onConflictDoNothing(). `returning()` is empty when the insert was a no-op
-    // due to that conflict, in which case the row already exists.
-    // Reactivate a stale-declined request in place rather than inserting a
-    // duplicate that would collide with the unique (from,to) index.
-    if (reactivateId) {
-      await db
-        .update(connectionRequests)
-        .set({ status: 'pending', createdAt: new Date(), respondedAt: null })
-        .where(eq(connectionRequests.id, reactivateId));
-      return new Response(JSON.stringify({ success: true, id: reactivateId }), {
-        status: 201,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const id = crypto.randomUUID();
-    const inserted = await db
-      .insert(connectionRequests)
-      .values({
-        id,
-        fromUserId: userId,
-        toUserId,
-        status: 'pending',
-        createdAt: new Date(),
-      })
-      .onConflictDoNothing()
-      .returning({ id: connectionRequests.id });
-
-    if (inserted.length === 0) {
-      // Lost the race: an identical (from, to) request already exists.
+    return new Response(JSON.stringify({ error: 'Connection request already exists' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (e) {
+    console.error('Create connection error:', e);
+    if (isConnectionPairConstraintError(e)) {
       return new Response(JSON.stringify({ error: 'Connection request already exists' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
-
-    return new Response(JSON.stringify({ success: true, id }), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (e) {
-    console.error('Create connection error:', e);
     return new Response(JSON.stringify({ error: 'Server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CURATED_TOPICS } from '../stores/topics';
-  import { localizeTopicLabel, useTranslations, type Lang } from '../i18n';
+  import { localizePath, localizeTopicLabel, useTranslations, type Lang } from '../i18n';
 
   interface Props {
     onSuccess?: (storeId: string) => void;
@@ -9,6 +9,7 @@
 
   let { onSuccess, lang = 'en' as Lang }: Props = $props();
   const t = $derived(useTranslations(lang).stores);
+  const matchesT = $derived(useTranslations(lang).matches.card);
 
   let name = $state('');
   let neighborhood = $state('');
@@ -19,6 +20,7 @@
   let loading = $state(false);
   let error = $state('');
   let success = $state(false);
+  let createdStoreId = $state<string | null>(null);
 
   const MONTREAL_NEIGHBORHOODS = [
     'Mile End',
@@ -80,6 +82,7 @@
       }
 
       const data: { id: string } = await res.json();
+      createdStoreId = data.id;
       success = true;
 
       if (onSuccess) {
@@ -101,6 +104,7 @@
     phone = '';
     selectedSpecialties = [];
     success = false;
+    createdStoreId = null;
     error = '';
   }
 </script>
@@ -114,7 +118,14 @@
     <div class="success-message">
       <span class="icon" aria-hidden="true">✓</span>
       <p>{t.form.successMessage}</p>
-      <button type="button" class="btn btn-tinted" onclick={reset}>{t.form.addAnother}</button>
+      <div class="success-actions">
+        {#if createdStoreId}
+          <a class="btn btn-filled" href={localizePath(`/store/${createdStoreId}`, lang)}>
+            {matchesT.viewStoreDetails}
+          </a>
+        {/if}
+        <button type="button" class="btn btn-tinted" onclick={reset}>{t.form.addAnother}</button>
+      </div>
     </div>
   {:else}
     <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
@@ -300,5 +311,12 @@
     margin: 0 0 var(--s-5);
     font-family: var(--font-ui);
     color: var(--ink);
+  }
+
+  .success-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--s-3);
   }
 </style>

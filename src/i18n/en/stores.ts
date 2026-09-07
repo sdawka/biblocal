@@ -17,7 +17,7 @@ export default {
     more: '+{n} more',
   },
   nav: {
-    backToMatches: '← Back to matches',
+    backToMatches: '← Back to Local',
   },
   form: {
     eyebrow: 'Local',
@@ -44,6 +44,8 @@ export default {
     errorGeneric: 'Something went wrong',
   },
   detail: {
+    retry: "Try again",
+    notFound: "This bookstore could not be found.",
     loading: 'Loading store...',
     errorLoadFailed: 'Failed to load store',
     errorGeneric: 'Something went wrong',

@@ -31,7 +31,9 @@ afterEach(() => {
 function seedUserWithContact(db: D1Shim, id: string, name: string): void {
   const now = Date.now();
   db.prepare(
-    'INSERT INTO users (id, email, name, contact_value, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
+    `INSERT INTO users
+      (id, email, name, contact_value, contact_visibility, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 'on-request', ?, ?)`
   ).bind(id, `${id}@test.local`, name, 'contact@example.com', now, now).run();
 }
 

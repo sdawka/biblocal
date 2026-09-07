@@ -184,7 +184,7 @@ describe('LocalPanel', () => {
       props: { ...baseProps(), panel: 'books', onOwner: (id: string) => (ownerId = id) },
     });
     await fireEvent.click(screen.getByText('Dune'));
-    await fireEvent.click(screen.getByRole('button', { name: /see jane reader nearby/i }));
+    await fireEvent.click(screen.getByRole('button', { name: /^see jane reader$/i }));
     expect(ownerId).toBe('jane');
   });
 

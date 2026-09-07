@@ -3,10 +3,13 @@
   import { formatDistance } from '../lib/geo';
   import { safeExternalUrl } from '../lib/url';
   import {
+    authorizedContacts,
     connectionRequests,
     getConnectionStatus,
+    loadAuthorizedContact,
     sendConnectionRequest,
   } from '../stores/connections';
+  import { currentUserId } from '../stores/auth';
   import { connectButtonState } from '../lib/connection-ui';
   import { localizePath, localizeTopicLabel, useTranslations, type Lang } from '../i18n';
 
@@ -23,11 +26,19 @@
   // Connection request state for this match's user.
   let requesting = $state(false);
   let requestError = $state<string | null>(null);
+  let contactLoading = $state(false);
+  let contactError = $state<string | null>(null);
 
   // Subscribe to the connections store so the button label tracks status changes
   // (e.g. after the request succeeds and loadConnections() refreshes the list).
   let connections = $state($connectionRequests);
   $effect(() => connectionRequests.subscribe((c) => { connections = c; }));
+  let contacts = $state($authorizedContacts);
+  $effect(() => authorizedContacts.subscribe((c) => { contacts = c; }));
+  $effect(() => currentUserId.subscribe(() => {
+    contactLoading = false;
+    contactError = null;
+  }));
 
   // `connections` is referenced so this re-derives whenever the store updates.
   let connectState = $derived(
@@ -44,6 +55,8 @@
   let connectLabel = $derived(
     (t.connect as Record<string, string>)[connectState.label] ?? connectState.label
   );
+  let contact = $derived(contacts[match.user.id]);
+  let isAccepted = $derived(getConnectionStatus(match.user.id) === 'accepted');
 
   async function handleConnect(e: MouseEvent) {
     e.stopPropagation();
@@ -55,6 +68,19 @@
     if (!result.success) {
       requestError = t.failedToSend;
     }
+  }
+
+  async function handleViewContact(e: MouseEvent) {
+    e.stopPropagation();
+    if (contactLoading) return;
+    const viewerId = currentUserId.get();
+    contactLoading = true;
+    contactError = null;
+    const result = await loadAuthorizedContact(match.user.id);
+    // A resolved request from a prior session must not update this card.
+    if (currentUserId.get() !== viewerId) return;
+    contactLoading = false;
+    if (!result.success) contactError = t.contactUnavailable;
   }
 
   let distanceDisplay = $derived(
@@ -204,14 +230,45 @@
           {/if}
         </p>
       {:else}
-        <button
-          class="btn btn-filled btn-connect"
-          onclick={handleConnect}
-          disabled={!connectState.actionable}
-          aria-busy={requesting}
-        >
-          {connectLabel}
-        </button>
+        {#if isAccepted}
+          <button class="btn btn-connect" disabled aria-disabled="true">{connectLabel}</button>
+          {#if contact}
+            <p class="contact-info">
+              {#if contact.method === 'email'}
+                <a href={`mailto:${contact.value}`} onclick={(e) => e.stopPropagation()}>
+                  📧 {contact.value}
+                </a>
+              {:else if safeExternalUrl(contact.value)}
+                <a href={safeExternalUrl(contact.value)} target="_blank" rel="noopener noreferrer" onclick={(e) => e.stopPropagation()}>
+                  {contact.value}
+                </a>
+              {:else}
+                {contact.value}
+              {/if}
+            </p>
+          {:else}
+            <button
+              class="btn btn-filled btn-connect view-contact"
+              onclick={handleViewContact}
+              disabled={contactLoading}
+              aria-busy={contactLoading}
+            >
+              {contactLoading ? t.loadingContact : t.viewContact}
+            </button>
+          {/if}
+          {#if contactError}
+            <p class="connect-error" role="alert">{contactError}</p>
+          {/if}
+        {:else}
+          <button
+            class="btn btn-filled btn-connect"
+            onclick={handleConnect}
+            disabled={!connectState.actionable}
+            aria-busy={requesting}
+          >
+            {connectLabel}
+          </button>
+        {/if}
         {#if requestError}
           <p class="connect-error" role="alert">{requestError}</p>
         {/if}

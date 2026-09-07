@@ -8,6 +8,7 @@ export default {
     heading: 'Votre profil',
   },
   edit: {
+    saving: "Enregistrement…",
     heading: 'Modifier le profil',
     done: 'Terminé',
     saved: 'Enregistré',

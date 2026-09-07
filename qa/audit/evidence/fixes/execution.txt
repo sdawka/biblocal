@@ -1,0 +1,43 @@
+Surgical follow-up — 2026-09-07
+
+Final integrated npm run test:run
+Test Files: 80 passed (80)
+Tests: 851 passed (851)
+Start: 16:50:52; Duration: 9.49s
+All eight originally failing audit regression cases now pass.
+
+npm run check:svelte
+Exit 0: 0 errors, 3 existing warnings in 2 files
+
+npx astro check
+Exit 0: 136 files, 0 errors, 0 warnings, 6 existing hints
+
+npm run build
+Exit 0: Server built in 6.09s; Complete at 16:51:41
+
+Connected browser runner: 5/5 pass (browser-results.json).
+Manual creation survives reload; keyboard CSV chooser is reachable;
+EN/FR/ES hero text/control bounds fit at 390px.
+Additional visual verification: FR hero at 320px, desktop Local at 1440px.
+
+Additional running-app checks:
+- Book -> owner -> accepted contact exposes a mailto link in mobile People.
+- Empty query state offers Clear search and restores results.
+- OSM map displays loaded 256px tiles, markers and visible attribution.
+- Invalid profile edit + Done retains edit mode; corrected edit survives reload.
+- Final combined Done save persists after a document reload.
+- Created store link opens its persisted detail page.
+- Missing store gives explicit not-found text and directory recovery in EN/FR.
+- Local Cloudflare/D1 runtime: six concurrent requests -> five 201 and one 429;
+  hidden recipient -> 403; subsequent read confirms five outgoing rows.
+
+Independent terra-high reviews approved the backend and UI recovery fixes after
+corrections for legacy declined history, invalid JSON shapes, stale sessions,
+contact cache eviction and save ordering/Done races. Store type-check errors and
+two obsolete owner-button test labels were corrected during integration.
+
+Unexecuted release checks: real Clerk two-account login/accept/revoke/logout,
+actual CSV transfer (extension permission), camera/geolocation permission flows,
+independent deployed D1 concurrency and production smoke.
+No migration, remote database write, merge or deployment performed.
+The local audit server was stopped and browser viewport restored.

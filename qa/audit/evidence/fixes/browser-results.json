@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Manual book creation survives a document reload",
+    "status": "passed"
+  },
+  {
+    "name": "CSV upload has a keyboard-reachable control",
+    "status": "passed"
+  },
+  {
+    "name": "en landing hero text and controls fit at 390px",
+    "status": "passed"
+  },
+  {
+    "name": "fr landing hero text and controls fit at 390px",
+    "status": "passed"
+  },
+  {
+    "name": "es landing hero text and controls fit at 390px",
+    "status": "passed"
+  }
+]

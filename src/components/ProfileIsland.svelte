@@ -16,11 +16,25 @@
   let personalityInput = $state('');
   let showSaved = $state(false);
   let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  let saveGeneration = 0;
+  let draftGeneration = 0;
+  let draftNeedsPersistence = $state(false);
+  let latestSaveResult = $state<boolean | null>(null);
+  let pendingSaveCount = $state(0);
+  let finishingEdit = $state(false);
+  const pendingSaveTasks = new Set<Promise<boolean>>();
 
   function showSavedIndicator() {
     if (saveTimeout) clearTimeout(saveTimeout);
     showSaved = true;
     saveTimeout = setTimeout(() => { showSaved = false; }, 2000);
+  }
+
+  function markDraftChanged() {
+    draftGeneration += 1;
+    draftNeedsPersistence = true;
+    latestSaveResult = null;
+    showSaved = false;
   }
 
   // Clear the pending saved-indicator timer if the component is destroyed.
@@ -54,12 +68,14 @@
   // and auto-cleans, no manual subscribe/unsubscribe to leak).
   $effect(() => {
     const p = $profile;
-    profileData = { ...p };
-    borrowStyle = p.borrowStyle ?? '';
-    obsessions = p.currentObsessions?.join(', ') ?? '';
-    contactMethod = p.contactMethod ?? '';
-    contactValue = p.contactValue ?? '';
-    contactVisibility = p.contactVisibility ?? 'hidden';
+    if (!isEditing) {
+      profileData = { ...p };
+      borrowStyle = p.borrowStyle ?? '';
+      obsessions = p.currentObsessions?.join(', ') ?? '';
+      contactMethod = p.contactMethod ?? '';
+      contactValue = p.contactValue ?? '';
+      contactVisibility = p.contactVisibility ?? 'hidden';
+    }
   });
 
   // Keep the store's inferred topics in sync with what the shelf currently
@@ -94,9 +110,10 @@
     editingPersonality = true;
   }
 
-  function savePersonality() {
-    updateLendingPersonality(personalityInput, true);
-    editingPersonality = false;
+  async function savePersonality() {
+    if (await updateLendingPersonality(personalityInput, true)) {
+      editingPersonality = false;
+    }
   }
 
   function clearPersonalityOverride() {
@@ -118,15 +135,83 @@
     }
   }
 
-  function handleContactSave() {
-    if (contactMethod && contactValue) {
-      updateContactInfo(contactMethod as ContactMethod, contactValue, contactVisibility);
-      showSavedIndicator();
+  async function save(result: Promise<boolean>): Promise<boolean> {
+    const generation = ++saveGeneration;
+    const draftAtStart = draftGeneration;
+    showSaved = false;
+    pendingSaveCount += 1;
+    const task = (async () => {
+      try {
+        const saved = await result;
+        if (generation === saveGeneration && draftAtStart === draftGeneration) {
+          latestSaveResult = saved;
+          if (saved) showSavedIndicator();
+        }
+        return saved;
+      } finally {
+        pendingSaveCount -= 1;
+      }
+    })();
+    pendingSaveTasks.add(task);
+    void task.finally(() => pendingSaveTasks.delete(task));
+    return task;
+  }
+
+  async function finishEditing() {
+    if (finishingEdit) return;
+    const draftAtStart = draftGeneration;
+    if (pendingSaveTasks.size === 0) {
+      if (latestSaveResult === false) return;
+      if (!draftNeedsPersistence) {
+        isEditing = false;
+        return;
+      }
+    } else {
+      finishingEdit = true;
+      while (pendingSaveTasks.size > 0) {
+        await Promise.all([...pendingSaveTasks]);
+      }
+      finishingEdit = false;
+    }
+    if (draftGeneration !== draftAtStart) return;
+    if (latestSaveResult === false) return;
+    if (draftNeedsPersistence) {
+      const finalDraftGeneration = draftGeneration;
+      const saved = await save(updateProfile({
+        name: profileData.name,
+        city: profileData.city,
+        radiusKm: profileData.radiusKm,
+        borrowStyle: borrowStyle || undefined,
+        currentObsessions: obsessions
+          ? obsessions.split(',').map((s) => s.trim())
+          : undefined,
+        ...(contactMethod && contactValue
+          ? {
+              contactMethod: contactMethod as ContactMethod,
+              contactValue,
+              contactVisibility,
+            }
+          : {}),
+      }));
+      if (saved && draftGeneration === finalDraftGeneration) {
+        draftNeedsPersistence = false;
+        isEditing = false;
+      }
+      return;
+    }
+    if (latestSaveResult === true) {
+      isEditing = false;
     }
   }
 
-  function handleSave() {
-    updateProfile({
+  async function handleContactSave() {
+    if (contactMethod && contactValue) {
+      await save(updateContactInfo(contactMethod as ContactMethod, contactValue, contactVisibility));
+    }
+  }
+
+  async function handleSave() {
+    await save(updateProfile({
       name: profileData.name,
       city: profileData.city,
       radiusKm: profileData.radiusKm,
@@ -134,8 +219,7 @@
       currentObsessions: obsessions
         ? obsessions.split(',').map((s) => s.trim())
         : undefined,
-    });
-    showSavedIndicator();
+    }));
   }
 
   const CITIES = [
@@ -162,7 +246,9 @@
           {#if showSaved}
             <span class="saved-indicator" role="status">{t.edit.saved}</span>
           {/if}
-          <button class="btn btn-tinted btn-sm" onclick={() => isEditing = false}>{t.edit.done}</button>
+          <button class="btn btn-tinted btn-sm" onclick={finishEditing} disabled={finishingEdit} aria-busy={pendingSaveCount > 0}>
+            {finishingEdit ? t.edit.saving : t.edit.done}
+          </button>
         </div>
       </div>
 
@@ -172,14 +258,16 @@
           id="name"
           class="input"
           type="text"
+          maxlength="120"
           bind:value={profileData.name}
+          oninput={markDraftChanged}
           onblur={handleSave}
         />
       </div>
 
       <div class="field">
         <label class="label" for="city">{t.edit.cityLabel}</label>
-        <select id="city" class="select" bind:value={profileData.city} onchange={handleSave}>
+        <select id="city" class="select" bind:value={profileData.city} onchange={() => { markDraftChanged(); handleSave(); }}>
           {#each CITIES as city}
             <option value={city}>{city}</option>
           {/each}
@@ -195,7 +283,7 @@
           min="1"
           max="20"
           bind:value={profileData.radiusKm}
-          onchange={handleSave}
+          onchange={() => { markDraftChanged(); handleSave(); }}
         />
       </div>
 
@@ -232,7 +320,7 @@
 
       <div class="field">
         <label class="label" for="contact-method">{t.contact.methodLabel}</label>
-        <select id="contact-method" class="select" bind:value={contactMethod} onchange={handleContactSave}>
+        <select id="contact-method" class="select" bind:value={contactMethod} onchange={() => { markDraftChanged(); handleContactSave(); }}>
           <option value="">{t.contact.methodSelect}</option>
           <option value="email">{t.contact.methodEmail}</option>
           <option value="social">{t.contact.methodSocial}</option>
@@ -254,13 +342,14 @@
             type="text"
             bind:value={contactValue}
             placeholder={contactMethod === 'email' ? t.contact.placeholderEmail : contactMethod === 'social' ? t.contact.placeholderSocial : t.contact.placeholderCustom}
+            oninput={markDraftChanged}
             onblur={handleContactSave}
           />
         </div>
 
         <div class="field">
           <label class="label" for="contact-visibility">{t.contact.visibilityLabel}</label>
-          <select id="contact-visibility" class="select" bind:value={contactVisibility} onchange={handleContactSave}>
+          <select id="contact-visibility" class="select" bind:value={contactVisibility} onchange={() => { markDraftChanged(); handleContactSave(); }}>
             <option value="hidden">{t.contact.visibilityHidden}</option>
             <option value="on-request">{t.contact.visibilityOnRequest}</option>
             <option value="public">{t.contact.visibilityPublic}</option>
@@ -295,6 +384,7 @@
           type="text"
           bind:value={borrowStyle}
           placeholder={t.optional.lendingStylePlaceholder}
+          oninput={markDraftChanged}
           onblur={handleSave}
         />
       </div>
@@ -307,6 +397,7 @@
           type="text"
           bind:value={obsessions}
           placeholder={t.optional.obsessionsPlaceholder}
+          oninput={markDraftChanged}
           onblur={handleSave}
         />
       </div>
