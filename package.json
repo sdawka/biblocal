@@ -24,7 +24,7 @@
     "seed:stores": "curl -X POST http://localhost:4321/api/seed-stores"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^13.3.1",
+    "@astrojs/cloudflare": "^13.7.0",
     "@astrojs/mdx": "^6.0.3",
     "@astrojs/sitemap": "^3.7.3",
     "@astrojs/svelte": "^8.1.0",
@@ -32,7 +32,7 @@
     "@clerk/localizations": "^4.15.7",
     "@ericblade/quagga2": "^1.12.1",
     "@nanostores/persistent": "^1.3.4",
-    "astro": "^6.2.2",
+    "astro": "^6.4.8",
     "drizzle-orm": "^0.45.2",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
