@@ -43,6 +43,10 @@ export default {
     authorPlaceholder: 'Autor',
     authorAriaLabel: 'Nombre del autor',
     previewBook: 'Vista previa del libro',
+    possibleMatch: {
+      guidance: 'Encontramos una posible coincidencia. Confirma el título y el autor antes de añadirla.',
+      source: 'Ver la fuente de la posible coincidencia',
+    },
     noCover: 'Sin portada',
     ownership: {
       prompt: 'Yo…',

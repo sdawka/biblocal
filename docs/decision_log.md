@@ -8,3 +8,5 @@
 - 2026-09-07T22:55:09-04:00 — Put book scanning in a dedicated modal and deepen ISBN lookup to improve matches for custom books that have an ISBN.
 - 2026-09-07T23:00:43-04:00 — Approved the scan modal and broader ISBN lookup design, including equivalent ISBN forms and a Google Books fallback. Remove the brainstorming skill for now.
 - 2026-09-08T07:24:56-04:00 — Review, merge, and deploy the scanner modal and deeper ISBN lookup changes in PR #70.
+- 2026-09-08T09:02:18-04:00 — Use the supplied private SearXNG service as an ISBN lookup fallback, with proper error handling.
+- 2026-09-08T09:13:14-04:00 — Remove the redundant shelf hover state for books without covers and strengthen the hover background for readable text on books with covers.

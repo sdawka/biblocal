@@ -9,6 +9,14 @@
   }
 
   let { book, lang = 'en' as Lang, onOpen }: Props = $props();
+  let coverFailed = $state(false);
+
+  // A reused component can receive a different book; give its new cover a
+  // chance to load after a previous image error.
+  $effect(() => {
+    book.coverUrl;
+    coverFailed = false;
+  });
 
   const t = $derived(useTranslations(lang).shelf.card);
   const intentLabels = $derived(useTranslations(lang).shelf.intents.labels);
@@ -28,30 +36,32 @@
 
 <button
   class="spine"
-  class:no-cover={!book.coverUrl}
+  class:no-cover={!book.coverUrl || coverFailed}
   class:seeking={book.ownership === 'seeking'}
   data-book-id={book.id}
   onclick={() => onOpen(book.id)}
   aria-label={openLabel}
   aria-haspopup="dialog"
 >
-  {#if book.coverUrl}
-    <img class="cover" src={book.coverUrl} alt="" width="300" height="450" loading="lazy" decoding="async" />
+  {#if book.coverUrl && !coverFailed}
+    <img class="cover" src={book.coverUrl} alt="" width="300" height="450" loading="lazy" decoding="async" onerror={() => coverFailed = true} />
   {:else}
     <span class="binding">
       <span class="binding-title serif">{book.title}</span>
       <span class="binding-author muted">{book.author}</span>
     </span>
   {/if}
-  <span class="peek" aria-hidden="true">
-    <span class="peek-title serif">{book.title}</span>
-    <span class="peek-author">{book.author}</span>
-    <span class="peek-dots">
-      {#each book.intents as intent}
-        <span class="dot" data-status={intent}></span>
-      {/each}
+  {#if book.coverUrl && !coverFailed}
+    <span class="peek" aria-hidden="true">
+      <span class="peek-title serif">{book.title}</span>
+      <span class="peek-author">{book.author}</span>
+      <span class="peek-dots">
+        {#each book.intents as intent}
+          <span class="dot" data-status={intent}></span>
+        {/each}
+      </span>
     </span>
-  </span>
+  {/if}
 </button>
 
 <style>
@@ -103,10 +113,15 @@
     pointer-events: none;
   }
 
-  .spine:hover,
+  .spine:not(.no-cover):hover,
   .spine:focus-visible {
     transform: translateY(-4px);
     box-shadow: var(--shadow-4);
+  }
+
+  .spine:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
   }
 
   .spine .cover {
@@ -155,13 +170,13 @@
     gap: 2px;
     padding: var(--s-2) var(--s-3) var(--s-3);
     color: #fff;
-    background: linear-gradient(to top, oklch(0 0 0 / 0.78), oklch(0 0 0 / 0.5) 55%, transparent);
+    background: oklch(0 0 0 / 0.9);
     opacity: 0;
     transform: translateY(4px);
     transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
   }
 
-  .spine:hover .peek,
+  .spine:not(.no-cover):hover .peek,
   .spine:focus-visible .peek {
     opacity: 1;
     transform: translateY(0);

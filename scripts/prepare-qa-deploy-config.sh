@@ -7,6 +7,7 @@ jq '.name = "biblocal-qa" |
     .vars.QA_MODE = "true" |
     .vars.ENVIRONMENT = "qa" |
     .vars.QA_USER_ID = "qa-test-user" |
+    .ratelimits = (.ratelimits | map(if .name == "ISBN_SEARCH_LIMIT" then .namespace_id = "1002" else . end)) |
     .vars.PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_aHVtYW5lLWxvbmdob3JuLTY2LmNsZXJrLmFjY291bnRzLmRldiQ" |
     .d1_databases[0].database_name = "biblocal-qa-db" |
     .d1_databases[0].database_id = "44e7e517-033b-40ea-a540-ca66ee777ea1"' \

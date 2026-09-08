@@ -38,6 +38,13 @@ All commands are run from the root of the project, from a terminal:
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help` | Get help using the Astro CLI                     |
 
+ISBN lookup uses the private `SEARXNG` VPC service only after the book catalogs
+miss. For local testing with the real tunnel, run
+`BIBLOCAL_REMOTE_BINDINGS=true npm run dev:qa`. Ordinary builds and development
+do not connect to remote bindings. The ISBN endpoint requires authentication,
+limits each reader to 10 requests per minute per Cloudflare location, and returns
+web matches for manual confirmation. SearXNG must enable JSON in `search.formats`.
+
 ## 👀 Want to learn more?
 
 Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).

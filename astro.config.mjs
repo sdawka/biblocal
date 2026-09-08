@@ -43,6 +43,9 @@ export default defineConfig({
       },
     }),
   ],
-  adapter: cloudflare(),
+  adapter: cloudflare({
+    // Builds and ordinary local work must not depend on the private tunnel.
+    remoteBindings: process.env.BIBLOCAL_REMOTE_BINDINGS === 'true',
+  }),
   output: 'server',
 });
