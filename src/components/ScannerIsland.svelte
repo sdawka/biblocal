@@ -3,6 +3,9 @@
   // permission. Reopening the sheet should not make the browser prompt again
   // unless the reader deliberately asks us to retry.
   let cameraAccess: 'unknown' | 'granted' | 'denied' = 'unknown';
+  // Serialize initialization across rapid close/reopen cycles: Quagga owns
+  // a single camera, and a late init must be stopped before the next starts.
+  let cameraInitQueue: Promise<void> = Promise.resolve();
 </script>
 
 <script lang="ts">
@@ -24,7 +27,7 @@
 
   let videoRef: HTMLDivElement | null = $state(null);
   let fileInputRef: HTMLInputElement | null = $state(null);
-  let dialogRef: HTMLDivElement | null = $state(null);
+  let dialogRef: HTMLDialogElement | null = $state(null);
   let hasCamera = $state(cameraAccess !== 'denied');
   let cameraDenied = $state(cameraAccess === 'denied');
   let shouldStartCamera = $state(cameraAccess !== 'denied');
@@ -44,6 +47,7 @@
   let confirmCount = 0;
 
   let mounted = false;
+  let scanCommitted = false;
 
   // Quagga is a module singleton, so a handler left registered would survive
   // this component and re-fire onScan the next time the scanner opens. Keep a
@@ -63,28 +67,39 @@
       error = t.errors.permissionDenied;
     }
     if (shouldStartCamera && videoRef) {
-      initScanner(videoRef);
+      const target = videoRef;
+      cameraInitQueue = cameraInitQueue.then(async () => {
+        if (mounted) await initScanner(target);
+      });
     }
     return () => {
       mounted = false;
       removeDetectionHandler();
-      Quagga.stop();
+      const stopped = Quagga.stop();
+      cameraInitQueue = cameraInitQueue.then(() => stopped);
     };
   });
 
   // Focus trap and restoration
   $effect(() => {
+    if (!dialogRef) return;
+    const dialog = dialogRef;
     previousActiveElement = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = 'hidden';
 
     // Focus the first focusable element in the dialog
     const focusableElements = dialogRef?.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      'button:not([disabled]), [href], input:not([disabled]):not([hidden]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     );
     if (focusableElements && focusableElements.length > 0) {
       focusableElements[0].focus();
     }
 
     return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
       // Restore focus on close
       if (previousActiveElement && previousActiveElement instanceof HTMLElement) {
         previousActiveElement.focus();
@@ -94,13 +109,15 @@
 
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
       onClose();
       return;
     }
 
     if (event.key === 'Tab' && dialogRef) {
       const focusableElements = dialogRef.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        'button:not([disabled]), [href], input:not([disabled]):not([hidden]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
       );
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
@@ -137,17 +154,20 @@
 
       // The component may have been destroyed while init() was awaiting; bail
       // before start() so we don't leak the camera MediaStream.
-      if (!mounted) return;
+      if (!mounted) {
+        await Quagga.stop();
+        return;
+      }
 
       cameraAccess = 'granted';
       cameraDenied = false;
       error = '';
       Quagga.start();
 
-      const handler = (result: QuaggaJSResultObject) => {
+      const handler = async (result: QuaggaJSResultObject) => {
         // Ignore live detections while a photo decode is in flight so the two
         // paths can't race each other into onScan.
-        if (decoding) return;
+        if (!mounted || decoding || scanCommitted) return;
 
         const code = result?.codeResult?.code;
         if (!code) return;
@@ -177,14 +197,16 @@
           confirmCount = 1;
         }
         if (confirmCount >= REQUIRED_CONFIRMATIONS) {
+          scanCommitted = true;
           removeDetectionHandler();
-          Quagga.stop();
-          onScan(code);
+          await Quagga.stop();
+          if (mounted) onScan(code);
         }
       };
       detectionHandler = handler;
       Quagga.onDetected(handler);
     } catch (err) {
+      if (!mounted) return;
       hasCamera = false;
       const name = err instanceof Error ? err.name : '';
       if (name === 'NotAllowedError') {
@@ -215,6 +237,7 @@
 
     const reader = new FileReader();
     reader.onload = (e) => {
+      if (!mounted) return;
       const imageSrc = e.target?.result as string;
       decodeFromImage(imageSrc);
     };
@@ -222,7 +245,7 @@
   }
 
   async function decodeFromImage(imageSrc: string) {
-    if (decoding) return;
+    if (!mounted || decoding || scanCommitted) return;
     decoding = true;
     error = '';
     try {
@@ -234,11 +257,13 @@
         },
         locate: true,
       });
+      if (!mounted) return;
       const code = result?.codeResult?.code;
       if (code && isBookEan13(code)) {
+        scanCommitted = true;
         removeDetectionHandler();
-        Quagga.stop();
-        onScan(code);
+        await Quagga.stop();
+        if (mounted) onScan(code);
       } else if (code) {
         error = t.errors.notIsbn;
       } else {
@@ -264,19 +289,17 @@
   }
 </script>
 
-<div
+<dialog
   class="scanner-backdrop"
   onclick={handleBackdropClick}
   onkeydown={handleKeyDown}
-  role="dialog"
+  oncancel={(event) => { event.preventDefault(); onClose(); }}
   aria-modal="true"
   aria-labelledby="scanner-title"
-  tabindex="-1"
   bind:this={dialogRef}
 >
-  <div class="scanner-sheet glass" role="document">
-    <h2 id="scanner-title" class="visually-hidden">{t.title}</h2>
-    <div class="drag-handle"></div>
+  <div class="scanner-sheet" role="document">
+    <h2 id="scanner-title">{t.title}</h2>
 
     {#if hasCamera}
       <div class="viewfinder" bind:this={videoRef}>
@@ -338,50 +361,50 @@
       hidden
     />
   </div>
-</div>
+</dialog>
 
 <style>
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
   .scanner-backdrop {
     position: fixed;
     inset: 0;
-    background: oklch(0.20 0.012 60 / 0.5);
-    z-index: 1000;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
+    width: 100%;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: max(var(--s-4), env(safe-area-inset-top)) max(var(--s-4), env(safe-area-inset-right)) max(var(--s-4), env(safe-area-inset-bottom)) max(var(--s-4), env(safe-area-inset-left));
+    box-sizing: border-box;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    overflow: auto;
     animation: fadeIn var(--dur-2) var(--ease-soft);
+  }
+
+  .scanner-backdrop[open] {
+    display: grid;
+    place-items: center;
+  }
+
+  .scanner-backdrop::backdrop {
+    background: oklch(0.20 0.012 60 / 0.65);
   }
 
   .scanner-sheet {
     width: 100%;
     max-width: 500px;
+    min-width: 0;
+    box-sizing: border-box;
     background: var(--surface);
     border: 1px solid var(--hairline);
-    border-bottom: none;
-    border-radius: var(--r-xl) var(--r-xl) 0 0;
-    padding: var(--s-4) var(--s-5) var(--s-6);
+    border-radius: var(--r-xl);
+    padding: clamp(16px, 4vw, 24px);
     box-shadow: var(--shadow-4);
-    animation: sheetUp var(--dur-3) var(--ease-out);
   }
 
-  .drag-handle {
-    width: 40px;
-    height: 4px;
-    background: var(--hairline-strong);
-    border-radius: var(--r-full);
-    margin: 0 auto var(--s-4);
+  h2 {
+    margin: 0 0 var(--s-4);
+    font-size: 1.25rem;
   }
 
   .viewfinder {
@@ -397,6 +420,14 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  .viewfinder :global(canvas) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
   }
 
   .targeting-frame {
@@ -470,23 +501,21 @@
 
   .actions {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--s-3);
     margin-top: var(--s-4);
   }
 
   .upload-btn,
+  .retry-btn,
   .cancel-btn {
-    flex: 1;
+    flex: 1 1 120px;
+    white-space: normal;
   }
 
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-  }
-
-  @keyframes sheetUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,19 @@
-import { describe, it, expect } from 'vitest';
-import { isBookEan13, isValidIsbn } from '../../src/lib/openLibrary';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+import {
+  fetchByIsbn,
+  isBookEan13,
+  isValidIsbn,
+  OpenLibraryNetworkError,
+} from '../../src/lib/openLibrary';
+
+function response(ok: boolean, body: unknown, status = ok ? 200 : 404): Response {
+  return { ok, status, json: async () => body } as Response;
+}
+
+beforeEach(() => {
+  localStorage.clear();
+  vi.mocked(fetch).mockReset();
+});
 
 describe('isValidIsbn', () => {
   it('accepts a 13-digit ISBN', () => {
@@ -55,5 +69,213 @@ describe('isBookEan13', () => {
 
   it('tolerates hyphens and spaces', () => {
     expect(isBookEan13('978-0-465-02656-2')).toBe(true);
+  });
+});
+
+describe('fetchByIsbn', () => {
+  it('tries an ISBN-10 equivalent when Open Library lacks the scanned ISBN-13', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      const value = String(url);
+      if (value.includes('/isbn/9780439420891.json')) return response(false, {});
+      if (value.includes('/isbn/043942089X.json')) {
+        return response(true, { title: 'The Tales of Beedle the Bard' });
+      }
+      return response(true, {});
+    });
+
+    await expect(fetchByIsbn('9780439420891')).resolves.toMatchObject({
+      isbn: '9780439420891',
+      title: 'The Tales of Beedle the Bard',
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      'https://openlibrary.org/isbn/043942089X.json',
+      expect.objectContaining({ signal: expect.anything() }),
+    );
+  });
+
+  it('tries an ISBN-13 equivalent when Open Library lacks a valid ISBN-10', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      const value = String(url);
+      if (value.includes('/isbn/043942089X.json')) return response(false, {});
+      if (value.includes('/isbn/9780439420891.json')) return response(true, { title: 'The Tales of Beedle the Bard' });
+      return response(true, {});
+    });
+
+    await expect(fetchByIsbn('043942089X')).resolves.toMatchObject({ title: 'The Tales of Beedle the Bard' });
+    expect(fetch).toHaveBeenCalledWith(
+      'https://openlibrary.org/isbn/9780439420891.json',
+      expect.objectContaining({ signal: expect.anything() }),
+    );
+  });
+
+  it('does not derive an ISBN-10 form for a 979 ISBN-13', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).includes('openlibrary.org')) return response(true, { title: '979 edition' });
+      throw new Error('Google should not be needed');
+    });
+
+    await fetchByIsbn('9791234567896');
+    const openLibraryCalls = vi.mocked(fetch).mock.calls.filter(([url]) => String(url).includes('openlibrary.org/isbn/'));
+    expect(openLibraryCalls).toHaveLength(1);
+    expect(String(openLibraryCalls[0][0])).toContain('/isbn/9791234567896.json');
+  });
+
+  it('does not derive a second ISBN form from an invalid checksum', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).includes('openlibrary.org')) return response(false, {});
+      return response(true, { totalItems: 0, items: [] });
+    });
+
+    await fetchByIsbn('9780439420892');
+    const openLibraryCalls = vi.mocked(fetch).mock.calls.filter(([url]) => String(url).includes('openlibrary.org/isbn/'));
+    expect(openLibraryCalls).toHaveLength(1);
+  });
+
+  it('falls back to an exact Google Books ISBN result when Open Library has no record', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      const value = String(url);
+      if (value.includes('openlibrary.org')) return response(false, {});
+      if (value.includes('www.googleapis.com/books/v1/volumes')) {
+        return response(true, {
+          items: [{
+            volumeInfo: {
+              title: 'Small Press Book',
+              authors: ['A. Writer'],
+              industryIdentifiers: [{ type: 'ISBN_13', identifier: '9780439420891' }],
+              imageLinks: { thumbnail: 'http://books.google.test/cover.jpg' },
+              categories: ['Independent publishing'],
+            },
+          }],
+        });
+      }
+      throw new Error(`Unexpected request: ${value}`);
+    });
+
+    await expect(fetchByIsbn('9780439420891')).resolves.toEqual({
+      isbn: '9780439420891',
+      title: 'Small Press Book',
+      author: 'A. Writer',
+      coverUrl: 'https://books.google.test/cover.jpg',
+      subjects: ['Independent publishing'],
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('q=isbn%3A9780439420891'),
+      expect.objectContaining({ signal: expect.anything() }),
+    );
+  });
+
+  it('uses an exact Open Library search result before trying Google Books', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      const value = String(url);
+      if (value.includes('/isbn/')) return response(false, {});
+      if (value.includes('/search.json')) {
+        return response(true, {
+          numFound: 1,
+          docs: [{
+            title: 'Indexed custom edition',
+            author_name: ['Small Press Author'],
+            isbn: ['9780439420891'],
+            cover_i: 12345,
+            subject: ['Local publishing'],
+          }],
+        });
+      }
+      throw new Error('Google should not be needed');
+    });
+
+    await expect(fetchByIsbn('9780439420891')).resolves.toEqual({
+      isbn: '9780439420891',
+      title: 'Indexed custom edition',
+      author: 'Small Press Author',
+      coverUrl: 'https://covers.openlibrary.org/b/id/12345-M.jpg',
+      subjects: ['Local publishing'],
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/search.json?isbn=9780439420891&fields=title%2Cauthor_name%2Ccover_i%2Csubject%2Cisbn&limit=10'),
+      expect.objectContaining({ signal: expect.anything() }),
+    );
+  });
+
+  it('rejects an Open Library search document that does not declare the ISBN', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).includes('/isbn/')) return response(false, {});
+      if (String(url).includes('/search.json')) {
+        return response(true, { numFound: 1, docs: [{ title: 'Unrelated result', isbn: ['9780000000000'] }] });
+      }
+      return response(true, { totalItems: 0, items: [] });
+    });
+
+    await expect(fetchByIsbn('9780439420891')).resolves.toBeNull();
+  });
+
+  it('does not accept a Google Books search result with a different ISBN', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).includes('openlibrary.org')) return response(false, {});
+      return response(true, {
+        items: [{ volumeInfo: { title: 'Wrong edition', industryIdentifiers: [{ identifier: '9780000000000' }] } }],
+      });
+    });
+
+    await expect(fetchByIsbn('9780439420891')).resolves.toBeNull();
+  });
+
+  it('reports an outage only after both providers are unavailable', async () => {
+    vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await expect(fetchByIsbn('9780439420891')).rejects.toBeInstanceOf(OpenLibraryNetworkError);
+  });
+
+  it('keeps the error retryable when one provider is down even if the other finds no match', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).includes('openlibrary.org')) throw new TypeError('Failed to fetch');
+      return response(true, { totalItems: 0, items: [] });
+    });
+
+    await expect(fetchByIsbn('9780439420891')).rejects.toBeInstanceOf(OpenLibraryNetworkError);
+  });
+
+  it('uses Google Books when Open Library is unavailable and Google finds an exact ISBN', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).includes('openlibrary.org')) throw new TypeError('Failed to fetch');
+      return response(true, { totalItems: 1, items: [{ volumeInfo: {
+        title: 'Fallback title',
+        industryIdentifiers: [{ identifier: '9780439420891' }],
+      } }] });
+    });
+
+    await expect(fetchByIsbn('9780439420891')).resolves.toMatchObject({ title: 'Fallback title' });
+  });
+
+  it.each([429, 503])('treats a provider HTTP %i response as unresolved', async (status) => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).includes('openlibrary.org')) return response(false, {}, status);
+      return response(true, { totalItems: 0, items: [] });
+    });
+
+    await expect(fetchByIsbn('9780439420891')).rejects.toBeInstanceOf(OpenLibraryNetworkError);
+  });
+
+  it('treats malformed provider data as unresolved', async () => {
+    vi.mocked(fetch).mockImplementation(async () => response(true, { unexpected: true }));
+
+    await expect(fetchByIsbn('9780439420891')).rejects.toBeInstanceOf(OpenLibraryNetworkError);
+  });
+
+  it('caches a successful fallback lookup', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).includes('openlibrary.org')) return response(false, {});
+      return response(true, {
+        items: [{ volumeInfo: {
+          title: 'Cached book',
+          authors: ['Reader'],
+          industryIdentifiers: [{ identifier: '9780439420891' }],
+        } }],
+      });
+    });
+
+    await fetchByIsbn('9780439420891');
+    const callsAfterFirstLookup = vi.mocked(fetch).mock.calls.length;
+    await fetchByIsbn('9780439420891');
+    expect(fetch).toHaveBeenCalledTimes(callsAfterFirstLookup);
   });
 });

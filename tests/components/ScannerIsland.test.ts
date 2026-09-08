@@ -12,7 +12,7 @@
  * self-asserts presence. Negative checks use `queryByText` with `.toBeNull()`.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 
 vi.mock('@ericblade/quagga2', () => ({
@@ -38,7 +38,7 @@ const ISBN_B = '9780465026562'; // Gödel, Escher, Bach
 // Valid EAN-13 check digit but no 978/979 prefix — a store/price barcode.
 const NON_ISBN_EAN = '4006381333931';
 
-type DetectionHandler = (result: unknown) => void;
+type DetectionHandler = (result: unknown) => Promise<void>;
 
 /** Quagga detection result with per-segment decode errors under the
  *  confidence threshold (MAX_AVG_ERROR = 0.25) unless overridden. */
@@ -73,6 +73,12 @@ function makeInitError(name: string): Error {
 // ─── Test suite ───────────────────────────────────────────────────────────────
 
 describe('ScannerIsland', () => {
+  beforeAll(() => {
+    // jsdom has no top layer; real-browser checks cover inertness and layout.
+    HTMLDialogElement.prototype.showModal = function () { this.open = true; };
+    HTMLDialogElement.prototype.close = function () { this.open = false; };
+  });
+
   beforeEach(() => {
     // vi.clearAllMocks() (setup.ts beforeEach) clears call history but not
     // implementations; re-set defaults so one test's override can't leak.
@@ -118,14 +124,27 @@ describe('ScannerIsland', () => {
   // ── 2. Two-consecutive-frame confirmation ────────────────────────────────
 
   describe('detection confirmation logic', () => {
+    it('commits only once when another detection arrives during camera release', async () => {
+      const { onScan } = renderScanner();
+      const handler = await getDetectionHandler();
+      await handler(makeDetection(ISBN_A));
+      let finishStop!: () => void;
+      vi.mocked(Quagga.stop).mockImplementationOnce(() => new Promise<void>((resolve) => { finishStop = resolve; }));
+      const committing = handler(makeDetection(ISBN_A));
+      const queued = handler(makeDetection(ISBN_A));
+      finishStop();
+      await Promise.all([committing, queued]);
+      expect(onScan).toHaveBeenCalledTimes(1);
+    });
+
     it('does not fire onScan on a single frame; fires after the same code on two consecutive frames', async () => {
       const { onScan } = renderScanner();
       const handler = await getDetectionHandler();
 
-      handler(makeDetection(ISBN_A));
+      await handler(makeDetection(ISBN_A));
       expect(onScan).not.toHaveBeenCalled();
 
-      handler(makeDetection(ISBN_A));
+      await handler(makeDetection(ISBN_A));
       expect(onScan).toHaveBeenCalledTimes(1);
       expect(onScan).toHaveBeenCalledWith(ISBN_A);
 
@@ -139,11 +158,11 @@ describe('ScannerIsland', () => {
       const { onScan } = renderScanner();
       const handler = await getDetectionHandler();
 
-      handler(makeDetection(ISBN_A));
-      handler(makeDetection(ISBN_B));
+      await handler(makeDetection(ISBN_A));
+      await handler(makeDetection(ISBN_B));
       expect(onScan).not.toHaveBeenCalled();
 
-      handler(makeDetection(ISBN_B));
+      await handler(makeDetection(ISBN_B));
       expect(onScan).toHaveBeenCalledWith(ISBN_B);
     });
 
@@ -151,9 +170,9 @@ describe('ScannerIsland', () => {
       const { onScan } = renderScanner();
       const handler = await getDetectionHandler();
 
-      handler(makeDetection(NON_ISBN_EAN));
-      handler(makeDetection(NON_ISBN_EAN));
-      handler(makeDetection(NON_ISBN_EAN));
+      await handler(makeDetection(NON_ISBN_EAN));
+      await handler(makeDetection(NON_ISBN_EAN));
+      await handler(makeDetection(NON_ISBN_EAN));
       expect(onScan).not.toHaveBeenCalled();
     });
 
@@ -161,15 +180,15 @@ describe('ScannerIsland', () => {
       const { onScan } = renderScanner();
       const handler = await getDetectionHandler();
 
-      handler(makeDetection(ISBN_A, 0.5));
-      handler(makeDetection(ISBN_A, 0.5));
+      await handler(makeDetection(ISBN_A, 0.5));
+      await handler(makeDetection(ISBN_A, 0.5));
       expect(onScan).not.toHaveBeenCalled();
 
       // A noisy frame also resets the streak: one clean frame after it is
       // not enough on its own.
-      handler(makeDetection(ISBN_A));
+      await handler(makeDetection(ISBN_A));
       expect(onScan).not.toHaveBeenCalled();
-      handler(makeDetection(ISBN_A));
+      await handler(makeDetection(ISBN_A));
       expect(onScan).toHaveBeenCalledWith(ISBN_A);
     });
   });
@@ -177,6 +196,50 @@ describe('ScannerIsland', () => {
   // ── 3. Cleanup on destroy ────────────────────────────────────────────────
 
   describe('cleanup on destroy', () => {
+    it('waits for camera release before initializing a reopened scanner', async () => {
+      const first = renderScanner();
+      await getDetectionHandler();
+      let finishStop!: () => void;
+      vi.mocked(Quagga.stop).mockImplementationOnce(() => new Promise<void>((resolve) => { finishStop = resolve; }));
+      first.unmount();
+      const second = renderScanner();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(Quagga.init).toHaveBeenCalledTimes(1);
+      finishStop();
+      await waitFor(() => expect(Quagga.init).toHaveBeenCalledTimes(2));
+      second.unmount();
+    });
+
+    it('opens a modal, locks scrolling, and restores focus and overflow on unmount', async () => {
+      const trigger = document.createElement('button');
+      document.body.append(trigger);
+      trigger.focus();
+      document.body.style.overflow = 'clip';
+      const { unmount } = renderScanner();
+      await getDetectionHandler();
+      const dialog = screen.getByRole('dialog') as HTMLDialogElement;
+      expect(dialog.open).toBe(true);
+      expect(document.body.style.overflow).toBe('hidden');
+      expect(dialog.contains(document.activeElement)).toBe(true);
+      unmount();
+      expect(document.body.style.overflow).toBe('clip');
+      expect(document.activeElement).toBe(trigger);
+      trigger.remove();
+      document.body.style.overflow = '';
+    });
+
+    it('releases a camera that finishes initializing after the modal closes', async () => {
+      let finishInit!: () => void;
+      vi.mocked(Quagga.init).mockImplementation(() => new Promise<void>((resolve) => { finishInit = resolve; }) as never);
+      const { unmount } = renderScanner();
+      await waitFor(() => expect(finishInit).toBeTypeOf('function'));
+      unmount();
+      vi.mocked(Quagga.stop).mockClear();
+      finishInit();
+      await waitFor(() => expect(Quagga.stop).toHaveBeenCalled());
+      expect(Quagga.start).not.toHaveBeenCalled();
+    });
+
     it('calls Quagga.offDetected with the registered handler and stops the camera on unmount', async () => {
       const { unmount } = renderScanner();
       const handler = await getDetectionHandler();
@@ -198,6 +261,19 @@ describe('ScannerIsland', () => {
       const file = new File(['fake-image-bytes'], 'barcode.jpg', { type: 'image/jpeg' });
       return fireEvent.change(input, { target: { files: [file] } });
     }
+
+    it('ignores a photo result that arrives after closing the modal', async () => {
+      let finishDecode!: (result: never) => void;
+      vi.mocked(Quagga.decodeSingle).mockImplementation(() => new Promise((resolve) => { finishDecode = resolve; }) as never);
+      const { onScan, container, unmount } = renderScanner();
+      await getDetectionHandler();
+      await uploadPhoto(container);
+      await waitFor(() => expect(finishDecode).toBeTypeOf('function'));
+      unmount();
+      finishDecode(makeDetection(ISBN_A) as never);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(onScan).not.toHaveBeenCalled();
+    });
 
     it('decode success with a book ISBN → fires onScan and detaches the live handler', async () => {
       vi.mocked(Quagga.decodeSingle).mockResolvedValue(makeDetection(ISBN_A) as never);
@@ -271,6 +347,18 @@ describe('ScannerIsland', () => {
   // ── 5. Cancel / close ────────────────────────────────────────────────────
 
   describe('cancel', () => {
+    it('wraps keyboard focus through visible controls without targeting the hidden photo input', async () => {
+      renderScanner();
+      await getDetectionHandler();
+      const upload = screen.getByRole('button', { name: 'Upload a photo of ISBN barcode' });
+      const cancel = screen.getByRole('button', { name: 'Close scanner' });
+      upload.focus();
+      await fireEvent.keyDown(upload, { key: 'Tab', shiftKey: true });
+      expect(document.activeElement).toBe(cancel);
+      await fireEvent.keyDown(cancel, { key: 'Tab' });
+      expect(document.activeElement).toBe(upload);
+    });
+
     it('the Cancel button calls onClose', async () => {
       const { onClose } = renderScanner();
       await getDetectionHandler();

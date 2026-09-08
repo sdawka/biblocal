@@ -45,9 +45,18 @@ function makeRes(ok: boolean, data: unknown = {}): Response {
   const body = JSON.stringify(data);
   return {
     ok,
+    status: ok ? 200 : 404,
     json: async () => data,
     text: async () => body,
   } as unknown as Response;
+}
+
+function googleNotFoundResponse(): Response {
+  return makeRes(true, { totalItems: 0, items: [] });
+}
+
+function openLibrarySearchNotFoundResponse(): Response {
+  return makeRes(true, { numFound: 0, docs: [] });
 }
 
 /**
@@ -443,6 +452,8 @@ describe('AddBookIsland', () => {
         if (String(url).includes('openlibrary.org/isbn/')) {
           return makeRes(false);
         }
+        if (String(url).includes('openlibrary.org/search.json')) return openLibrarySearchNotFoundResponse();
+        if (String(url).includes('www.googleapis.com/books/v1/volumes')) return googleNotFoundResponse();
         return makeRes(true);
       });
 
@@ -469,6 +480,8 @@ describe('AddBookIsland', () => {
         if (String(url).includes('openlibrary.org/isbn/')) {
           throw new TypeError('Failed to fetch');
         }
+        if (String(url).includes('openlibrary.org/search.json')) return openLibrarySearchNotFoundResponse();
+        if (String(url).includes('www.googleapis.com/books/v1/volumes')) return googleNotFoundResponse();
         return makeRes(true);
       });
 
@@ -500,6 +513,8 @@ describe('AddBookIsland', () => {
         if (String(url).includes('openlibrary.org/isbn/')) {
           return makeRes(false);
         }
+        if (String(url).includes('openlibrary.org/search.json')) return openLibrarySearchNotFoundResponse();
+        if (String(url).includes('www.googleapis.com/books/v1/volumes')) return googleNotFoundResponse();
         return makeRes(true);
       });
 
@@ -573,6 +588,8 @@ describe('AddBookIsland', () => {
         if (String(url).includes('openlibrary.org/isbn/')) {
           return makeRes(false);
         }
+        if (String(url).includes('openlibrary.org/search.json')) return openLibrarySearchNotFoundResponse();
+        if (String(url).includes('www.googleapis.com/books/v1/volumes')) return googleNotFoundResponse();
         return makeRes(true);
       });
 
