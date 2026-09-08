@@ -7,7 +7,7 @@ const t = useTranslations(lang);
 const signedInUrl = localizePath('/biblio', lang);
 ---
 
-<section id="signin-section" class="signin-section" aria-labelledby="signin-title">
+<section id="signin-section" class="signin-section" aria-labelledby="signin-title" data-signed-in-url={signedInUrl}>
   <div class="spines" aria-hidden="true">
     <span class="spine"></span>
     <span class="spine"></span>
@@ -37,14 +37,27 @@ const signedInUrl = localizePath('/biblio', lang);
       <Show when="signed-out">
         <div class="clerk-container">
           <SignIn
-            fallbackRedirectUrl={signedInUrl}
-            signUpFallbackRedirectUrl={signedInUrl}
+            forceRedirectUrl={signedInUrl}
+            signUpForceRedirectUrl={signedInUrl}
           />
         </div>
       </Show>
     </div>
   </div>
 </section>
+
+<script>
+  import { $isLoadedStore, $sessionStore } from '@clerk/astro/client';
+  import { watchSignInRedirect } from '../lib/signInRedirect';
+
+  const target = document.querySelector<HTMLElement>('[data-signed-in-url]')?.dataset.signedInUrl;
+  if (target) {
+    // The server-rendered landing page can outlive a sign-in in another tab
+    // or Clerk's client initialization. Re-enter SSR with the active session
+    // instead of leaving the reader on the homepage until a manual refresh.
+    watchSignInRedirect($isLoadedStore, $sessionStore, () => window.location.replace(target));
+  }
+</script>
 
 <style>
   .signin-section {
