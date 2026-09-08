@@ -447,6 +447,58 @@ describe('AddBookIsland', () => {
   // ── 6. Open Library lookup failure ──────────────────────────────────────
 
   describe('Open Library lookup failure', () => {
+    it('ignores a lookup that resolves after the reader switches entry modes', async () => {
+      let resolveLookup: ((value: Response) => void) | undefined;
+      vi.mocked(fetch).mockImplementation(async () => new Promise<Response>((resolve) => {
+        resolveLookup = resolve;
+      }));
+
+      render(AddBookIsland, { props: { lang: 'en' } });
+      const isbnInput = screen.getByPlaceholderText('Enter ISBN (e.g., 9780465026562)');
+      fireEvent.input(isbnInput, { target: { value: VALID_ISBN } });
+      fireEvent.submit(isbnInput.closest('form')!);
+
+      expect((screen.getByText('Scan barcode') as HTMLButtonElement).disabled).toBe(true);
+      fireEvent.click(screen.getByText('Manual Entry'));
+      resolveLookup?.(makeRes(true, { title: 'Late catalogue result' }));
+      await tick();
+
+      expect(screen.getByText('Preview Book')).toBeTruthy();
+      expect(screen.queryByText('Late catalogue result')).toBeNull();
+      expect(screen.queryByText('Looking up…')).toBeNull();
+    });
+
+    it('requires author confirmation for a private-search possible match before previewing it', async () => {
+      vi.mocked(fetch).mockImplementation(async (url: string | URL | Request) => {
+        const value = String(url);
+        if (value.includes('openlibrary.org/isbn/')) return makeRes(false);
+        if (value.includes('openlibrary.org/search.json')) return openLibrarySearchNotFoundResponse();
+        if (value.includes('www.googleapis.com/books/v1/volumes')) return googleNotFoundResponse();
+        if (value.startsWith('/api/books/isbn-search?')) {
+          return makeRes(true, { candidate: { title: 'A Local Edition', url: 'https://example.test/book' } });
+        }
+        return makeRes(true);
+      });
+
+      render(AddBookIsland, { props: { lang: 'en' } });
+      const isbnInput = screen.getByPlaceholderText('Enter ISBN (e.g., 9780465026562)');
+      fireEvent.input(isbnInput, { target: { value: VALID_ISBN } });
+      fireEvent.submit(isbnInput.closest('form')!);
+
+      await waitFor(() => {
+        expect(screen.getByText('We found a possible match. Confirm its title and author before adding it.')).toBeTruthy();
+        expect((screen.getByPlaceholderText('Book title') as HTMLInputElement).value).toBe('A Local Edition');
+        expect((screen.getByPlaceholderText('Author') as HTMLInputElement).value).toBe('');
+      });
+
+      const source = screen.getByRole('link', { name: 'View possible match source' });
+      expect(source.getAttribute('href')).toBe('https://example.test/book');
+      expect(source.getAttribute('rel')).toBe('noopener noreferrer');
+
+      fireEvent.submit(screen.getByPlaceholderText('Book title').closest('form')!);
+      expect(screen.getByText('Title and author are required')).toBeTruthy();
+    });
+
     it('shows "Book not found" and switches to manual mode when OL returns a non-ok response', async () => {
       vi.mocked(fetch).mockImplementation(async (url: string | URL | Request) => {
         if (String(url).includes('openlibrary.org/isbn/')) {
@@ -454,6 +506,7 @@ describe('AddBookIsland', () => {
         }
         if (String(url).includes('openlibrary.org/search.json')) return openLibrarySearchNotFoundResponse();
         if (String(url).includes('www.googleapis.com/books/v1/volumes')) return googleNotFoundResponse();
+        if (String(url).startsWith('/api/books/isbn-search?')) return makeRes(true, { candidate: null });
         return makeRes(true);
       });
 
@@ -515,6 +568,7 @@ describe('AddBookIsland', () => {
         }
         if (String(url).includes('openlibrary.org/search.json')) return openLibrarySearchNotFoundResponse();
         if (String(url).includes('www.googleapis.com/books/v1/volumes')) return googleNotFoundResponse();
+        if (String(url).startsWith('/api/books/isbn-search?')) return makeRes(true, { candidate: null });
         return makeRes(true);
       });
 
@@ -590,6 +644,7 @@ describe('AddBookIsland', () => {
         }
         if (String(url).includes('openlibrary.org/search.json')) return openLibrarySearchNotFoundResponse();
         if (String(url).includes('www.googleapis.com/books/v1/volumes')) return googleNotFoundResponse();
+        if (String(url).startsWith('/api/books/isbn-search?')) return makeRes(true, { candidate: null });
         return makeRes(true);
       });
 

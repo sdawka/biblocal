@@ -202,6 +202,7 @@ describe('fetchByIsbn', () => {
       if (String(url).includes('/search.json')) {
         return response(true, { numFound: 1, docs: [{ title: 'Unrelated result', isbn: ['9780000000000'] }] });
       }
+      if (String(url).startsWith('/api/books/isbn-search?')) return response(true, { candidate: null });
       return response(true, { totalItems: 0, items: [] });
     });
 
@@ -211,6 +212,7 @@ describe('fetchByIsbn', () => {
   it('does not accept a Google Books search result with a different ISBN', async () => {
     vi.mocked(fetch).mockImplementation(async (url) => {
       if (String(url).includes('openlibrary.org')) return response(false, {});
+      if (String(url).startsWith('/api/books/isbn-search?')) return response(true, { candidate: null });
       return response(true, {
         items: [{ volumeInfo: { title: 'Wrong edition', industryIdentifiers: [{ identifier: '9780000000000' }] } }],
       });
@@ -277,5 +279,41 @@ describe('fetchByIsbn', () => {
     const callsAfterFirstLookup = vi.mocked(fetch).mock.calls.length;
     await fetchByIsbn('9780439420891');
     expect(fetch).toHaveBeenCalledTimes(callsAfterFirstLookup);
+  });
+
+  it('uses the private ISBN search only after catalogues miss, without caching its possible match', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      const value = String(url);
+      if (value.includes('openlibrary.org/isbn/')) return response(false, {});
+      if (value.includes('openlibrary.org/search.json')) return response(true, { numFound: 0, docs: [] });
+      if (value.includes('www.googleapis.com/books/v1/volumes')) return response(true, { totalItems: 0, items: [] });
+      if (value.startsWith('/api/books/isbn-search?')) {
+        return response(true, { candidate: { title: 'Small Press Title', url: 'https://example.test/result' } });
+      }
+      throw new Error(`Unexpected request: ${value}`);
+    });
+
+    await expect(fetchByIsbn('9780439420891')).resolves.toEqual({
+      isbn: '9780439420891',
+      title: 'Small Press Title',
+      author: '',
+      webMatch: { url: 'https://example.test/result' },
+    });
+
+    const callsAfterFirstLookup = vi.mocked(fetch).mock.calls.length;
+    await fetchByIsbn('9780439420891');
+    expect(fetch).toHaveBeenCalledTimes(callsAfterFirstLookup * 2);
+  });
+
+  it('keeps a malformed private-search candidate retryable', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      const value = String(url);
+      if (value.includes('openlibrary.org/isbn/')) return response(false, {});
+      if (value.includes('openlibrary.org/search.json')) return response(true, { numFound: 0, docs: [] });
+      if (value.includes('www.googleapis.com/books/v1/volumes')) return response(true, { totalItems: 0, items: [] });
+      return response(true, { candidate: { title: 'Unsafe', url: 'javascript:alert(1)' } });
+    });
+
+    await expect(fetchByIsbn('9780439420891')).rejects.toBeInstanceOf(OpenLibraryNetworkError);
   });
 });

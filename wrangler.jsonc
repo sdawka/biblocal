@@ -1,7 +1,10 @@
 {
 	"account_id": "1bae12d5089e4c2ee5c0e62c021a117f",
 	"compatibility_date": "2026-05-05",
-	"compatibility_flags": ["nodejs_compat", "disable_nodejs_process_v2"],
+	"compatibility_flags": [
+		"nodejs_compat",
+		"disable_nodejs_process_v2"
+	],
 	"name": "biblocal",
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"assets": {
@@ -45,7 +48,41 @@
 			],
 			"images": {
 				"binding": "IMAGES"
+			},
+			"vpc_services": [
+				{
+					"binding": "SEARXNG",
+					"service_id": "01a080c5-448b-7e72-bfb3-feac420889bf",
+					"remote": true
+				}
+			],
+			"ratelimits": [
+				{
+					"name": "ISBN_SEARCH_LIMIT",
+					"namespace_id": "1002",
+					"simple": {
+						"limit": 10,
+						"period": 60
+					}
+				}
+			]
+		}
+	},
+	"vpc_services": [
+		{
+			"binding": "SEARXNG",
+			"service_id": "01a080c5-448b-7e72-bfb3-feac420889bf",
+			"remote": true
+		}
+	],
+	"ratelimits": [
+		{
+			"name": "ISBN_SEARCH_LIMIT",
+			"namespace_id": "1001",
+			"simple": {
+				"limit": 10,
+				"period": 60
 			}
 		}
-	}
+	]
 }

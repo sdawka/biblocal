@@ -1,7 +1,8 @@
 /**
  * Shape fetchByIsbn actually produces: isbn/title/author are always set
- * (author falls back to 'Unknown Author'); cover and subjects only when
- * the lookup providers have them.
+ * (author falls back to 'Unknown Author' for catalogue records); cover and
+ * subjects only when the lookup providers have them. A webMatch is deliberately
+ * not a catalogue record: it asks the reader to confirm the metadata.
  */
 export interface FetchedBook {
   isbn: string;
@@ -9,6 +10,7 @@ export interface FetchedBook {
   author: string;
   coverUrl?: string;
   subjects?: string[];
+  webMatch?: { url: string };
 }
 
 interface OpenLibraryBook {
@@ -73,7 +75,7 @@ async function fetchAuthorName(authorKey: string): Promise<string> {
   }
 }
 
-function normalizeIsbn(isbn: string): string {
+export function normalizeIsbn(isbn: string): string {
   return isbn.replace(/[-\s]/g, '').toUpperCase();
 }
 
@@ -94,20 +96,21 @@ function isbn10CheckDigit(firstNineDigits: string): string {
   return remainder === 10 ? 'X' : remainder === 11 ? '0' : String(remainder);
 }
 
-function hasValidIsbnChecksum(isbn: string): boolean {
-  if (/^\d{13}$/.test(isbn)) {
-    return isbn13CheckDigit(isbn.slice(0, 12)) === isbn[12];
+export function hasValidIsbnChecksum(isbn: string): boolean {
+  const clean = normalizeIsbn(isbn);
+  if (/^\d{13}$/.test(clean)) {
+    return isbn13CheckDigit(clean.slice(0, 12)) === clean[12];
   }
-  if (!/^\d{9}[\dX]$/.test(isbn)) return false;
-  const sum = isbn.slice(0, 9).split('').reduce(
+  if (!/^\d{9}[\dX]$/.test(clean)) return false;
+  const sum = clean.slice(0, 9).split('').reduce(
     (total, digit, index) => total + Number(digit) * (10 - index),
     0,
-  ) + (isbn[9] === 'X' ? 10 : Number(isbn[9]));
+  ) + (clean[9] === 'X' ? 10 : Number(clean[9]));
   return sum % 11 === 0;
 }
 
 /** ISBN-10 has a 978-prefixed ISBN-13 equivalent. 979 ISBNs do not. */
-function isbnVariants(isbn: string): string[] {
+export function isbnVariants(isbn: string): string[] {
   const clean = normalizeIsbn(isbn);
   const variants = [clean];
 
@@ -258,6 +261,48 @@ async function fetchGoogleBook(isbn: string, validIsbns: Set<string>): Promise<F
   }
 }
 
+type WebSearchResult = FetchedBook | null | 'unavailable';
+
+/**
+ * The Worker owns the private search binding. Keep its result separate from
+ * catalogue metadata: web results are only a lead for the reader to confirm.
+ */
+async function fetchPrivateIsbnSearch(isbn: string): Promise<WebSearchResult> {
+  let res: Response;
+  try {
+    const params = new URLSearchParams({ isbn });
+    res = await fetch(`/api/books/isbn-search?${params}`, {
+      signal: AbortSignal.timeout(7000),
+    });
+  } catch {
+    return 'unavailable';
+  }
+
+  if (!res.ok) return 'unavailable';
+
+  try {
+    const data: unknown = await res.json();
+    if (!data || typeof data !== 'object' || !('candidate' in data)) return 'unavailable';
+    const candidate = data.candidate;
+    if (candidate === null) return null;
+    if (!candidate || typeof candidate !== 'object') return 'unavailable';
+
+    const { title, url } = candidate as { title?: unknown; url?: unknown };
+    if (typeof title !== 'string' || !title.trim() || typeof url !== 'string') return 'unavailable';
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') return 'unavailable';
+
+    return {
+      isbn,
+      title: title.trim(),
+      author: '',
+      webMatch: { url: parsedUrl.href },
+    };
+  } catch {
+    return 'unavailable';
+  }
+}
+
 /**
  * Looks an ISBN up using Open Library's edition and indexed search APIs, then
  * Google Books. It also tries a convertible ISBN-10/ISBN-13 form, because
@@ -303,6 +348,14 @@ export async function fetchByIsbn(isbn: string): Promise<FetchedBook | null> {
       setCache(cleanIsbn, book);
       return book;
     }
+  }
+
+  // A checksum-invalid string may still be typed into the ISBN form for the
+  // public catalogue lookups, but must never reach the private web search.
+  if (hasValidIsbnChecksum(cleanIsbn)) {
+    const result = await fetchPrivateIsbnSearch(cleanIsbn);
+    if (result === 'unavailable') sawUnavailableResult = true;
+    if (result && result !== 'unavailable') return result;
   }
 
   if (sawUnavailableResult) throw new OpenLibraryNetworkError();

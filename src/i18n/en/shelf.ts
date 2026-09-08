@@ -46,6 +46,10 @@ export default {
     authorPlaceholder: 'Author',
     authorAriaLabel: 'Author name',
     previewBook: 'Preview Book',
+    possibleMatch: {
+      guidance: 'We found a possible match. Confirm its title and author before adding it.',
+      source: 'View possible match source',
+    },
     noCover: 'No Cover',
     ownership: {
       prompt: 'I…',

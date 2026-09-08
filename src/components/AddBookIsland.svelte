@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { addBook, findDuplicate, clearAllFilters } from '../stores/shelf';
   import { fetchByIsbn, isValidIsbn } from '../lib/openLibrary';
   import type { Book, BookVisibility, BookOwnership, BookIntent } from '../lib/types';
@@ -25,6 +26,9 @@
   let loading = $state(false);
   let error = $state('');
   let showScanner = $state(false);
+  let webMatchUrl = $state<string | null>(null);
+  let lookupGeneration = 0;
+  let disposed = false;
 
   // New three-dimension model state
   let visibility: BookVisibility = $state('visible');
@@ -32,6 +36,11 @@
   let intents: BookIntent[] = $state([]);
   let previewBook: { title: string; author: string; coverUrl?: string; isbn?: string; subjects?: string[] } | null = $state(null);
   let duplicateBook: Book | null = $state(null);
+
+  onDestroy(() => {
+    disposed = true;
+    lookupGeneration += 1;
+  });
 
   function toggleIntent(intent: BookIntent) {
     if (intents.includes(intent)) {
@@ -48,6 +57,8 @@
   }
 
   function resetForm() {
+    lookupGeneration += 1;
+    loading = false;
     isbn = '';
     isbnSource = 'manual';
     title = '';
@@ -58,6 +69,7 @@
     intents = [];
     previewBook = null;
     duplicateBook = null;
+    webMatchUrl = null;
     mode = 'isbn';
   }
 
@@ -67,13 +79,23 @@
       return;
     }
 
+    const generation = ++lookupGeneration;
     loading = true;
     error = '';
+    webMatchUrl = null;
 
     try {
       const bookData = await fetchByIsbn(isbn);
+      if (disposed || generation !== lookupGeneration || mode !== 'isbn') return;
 
       if (bookData) {
+        if (bookData.webMatch) {
+          title = bookData.title;
+          author = '';
+          webMatchUrl = bookData.webMatch.url;
+          mode = 'manual';
+          return;
+        }
         previewBook = {
           title: bookData.title,
           author: bookData.author,
@@ -88,12 +110,13 @@
         mode = 'manual';
       }
     } catch {
+      if (disposed || generation !== lookupGeneration || mode !== 'isbn') return;
       // fetchByIsbn throws OpenLibraryNetworkError when the request itself
       // failed (offline/timeout) — the book may well exist, so stay in ISBN
       // mode and let the user retry rather than telling them it wasn't found.
       error = t.errors.networkError;
     } finally {
-      loading = false;
+      if (!disposed && generation === lookupGeneration) loading = false;
     }
   }
 
@@ -190,11 +213,15 @@
   }
 
   function switchMode(newMode: Mode) {
+    lookupGeneration += 1;
+    loading = false;
     mode = newMode;
     error = '';
+    webMatchUrl = null;
   }
 
   function handleScanResult(scannedIsbn: string) {
+    lookupGeneration += 1;
     isbn = scannedIsbn;
     isbnSource = 'scan';
     showScanner = false;
@@ -202,6 +229,7 @@
   }
 
   async function openScanner() {
+    if (loading) return;
     if (!ScannerComponent) {
       const mod = await import('./ScannerIsland.svelte');
       ScannerComponent = mod.default;
@@ -334,7 +362,7 @@
           handleIsbnSubmit();
         }}
       >
-        <button type="button" class="btn btn-filled scan-primary" onclick={openScanner}>
+        <button type="button" class="btn btn-filled scan-primary" onclick={openScanner} disabled={loading}>
           {t.scanBarcode}
         </button>
         <div class="isbn-row">
@@ -352,6 +380,7 @@
             type="button"
             class="scan-btn"
             onclick={openScanner}
+            disabled={loading}
             aria-label={t.scanAriaLabel}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -365,6 +394,12 @@
         </button>
       </form>
     {:else}
+      {#if webMatchUrl}
+        <p class="possible-match" role="status">
+          {t.possibleMatch.guidance}
+          <a href={webMatchUrl} target="_blank" rel="noopener noreferrer">{t.possibleMatch.source}</a>
+        </p>
+      {/if}
       <form
         onsubmit={(e) => {
           e.preventDefault();
@@ -421,6 +456,16 @@
     border: 1px solid var(--hairline);
     border-radius: var(--r-md);
     margin-bottom: var(--s-5);
+  }
+
+  .possible-match {
+    margin: 0 0 var(--s-4);
+    color: var(--ink-muted);
+    font-size: 0.9rem;
+  }
+
+  .possible-match a {
+    margin-left: var(--s-1);
   }
 
   .preview-cover {

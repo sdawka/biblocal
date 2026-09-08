@@ -85,12 +85,30 @@ describe('BookSpine', () => {
     expect(spine?.classList.contains('seeking')).toBe(true);
   });
 
-  it('renders a status dot per intent', () => {
-    const book = makeBook({ intents: ['borrowable', 'discussable'] });
+  it('renders a status dot per intent on a covered book', () => {
+    const book = makeBook({ coverUrl: 'https://example.com/cover.jpg', intents: ['borrowable', 'discussable'] });
     const { container } = render(BookSpine, { props: { book, lang: 'en', onOpen: vi.fn() } });
 
     expect(container.querySelector('.peek-dots .dot[data-status="borrowable"]')).toBeTruthy();
     expect(container.querySelector('.peek-dots .dot[data-status="discussable"]')).toBeTruthy();
+  });
+
+  it('does not render a redundant peek for a book without a cover', () => {
+    const { container } = render(BookSpine, { props: { book: makeBook(), lang: 'en', onOpen: vi.fn() } });
+
+    expect(container.querySelector('.peek')).toBeNull();
+  });
+
+  it('uses the no-cover binding without a peek after its cover fails to load', () => {
+    const { container } = render(BookSpine, {
+      props: { book: makeBook({ coverUrl: 'https://example.com/missing.jpg' }), lang: 'en', onOpen: vi.fn() },
+    });
+
+    fireEvent.error(container.querySelector('img.cover')!);
+
+    expect(container.querySelector('.spine')?.classList.contains('no-cover')).toBe(true);
+    expect(container.querySelector('.binding')).toBeTruthy();
+    expect(container.querySelector('.peek')).toBeNull();
   });
 
   it('aria-label is just the title when there is no status to report', () => {
