@@ -5,3 +5,5 @@
 - 2026-09-07T18:34:40-04:00 — Review and merge the fixes with all CI checks green; discuss remaining product decisions directly in chat.
 - 2026-09-07T18:42:34-04:00 — Approved city/radius-first Local discovery with optional worldwide browsing, multi-city bookstore contributions with an explicit city field, and session-preserved unfinished book edits. Keep rejecting incoming requests when contact is hidden.
 - 2026-09-07T19:37:12-04:00 — Deploy the merged application to both production and QA.
+- 2026-09-07T22:55:09-04:00 — Put book scanning in a dedicated modal and deepen ISBN lookup to improve matches for custom books that have an ISBN.
+- 2026-09-07T23:00:43-04:00 — Approved the scan modal and broader ISBN lookup design, including equivalent ISBN forms and a Google Books fallback. Remove the brainstorming skill for now.
