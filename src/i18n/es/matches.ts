@@ -23,6 +23,7 @@ export default {
   },
   local: {
     sameArea: 'Misma zona',
+    approximateDistance: 'A unos {distance}',
     search: 'Buscar por título o autor',
     fit: 'afinidad',
     seeOwner: 'Ver a {name}',
@@ -69,6 +70,7 @@ export default {
   },
   card: {
     sameArea: 'Misma zona',
+    approximateDistance: 'A unos {distance}',
     viewContact: "Ver contacto",
     loadingContact: "Cargando contacto…",
     contactUnavailable: "El contacto no está disponible. Inténtalo de nuevo.",

@@ -25,6 +25,7 @@ export default {
   },
   local: {
     sameArea: 'Same area',
+    approximateDistance: 'About {distance}',
     search: 'Search title or author',
     fit: 'fit',
     seeOwner: 'See {name}',
@@ -71,6 +72,7 @@ export default {
   },
   card: {
     sameArea: 'Same area',
+    approximateDistance: 'About {distance}',
     viewContact: "View contact",
     loadingContact: "Loading contact…",
     contactUnavailable: "Contact is unavailable. Try again.",

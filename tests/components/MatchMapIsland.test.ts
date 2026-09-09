@@ -138,6 +138,23 @@ describe('LocalPanel', () => {
     expect(screen.queryByText('0 m')).toBeNull();
   });
 
+  it('marks an exact owner distance as approximate when the viewer only shares an approximate city scope', () => {
+    const exactOwner = makeUser({ id: 'exact-owner', locationPrecision: 'exact' });
+    const exactBook = makeBook(exactOwner, 'Approximate Source Book', 2.4);
+    render(LocalPanel, {
+      props: {
+        ...baseProps(),
+        panel: 'books',
+        bookGroups: groupByIntent([exactBook]),
+        viewerLocationApproximate: true,
+      },
+    });
+
+    expect(screen.getByText((content, element) =>
+      element?.classList.contains('owner') === true && content.includes('About 2.4 km')
+    )).toBeTruthy();
+  });
+
   it('calls onPanelChange when a toggle button is clicked', async () => {
     let selected: string | null = null;
     render(LocalPanel, {

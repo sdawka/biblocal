@@ -88,6 +88,8 @@
     distanceLabel ?? (match.distanceKm != null
       ? match.user.locationPrecision === 'city'
         ? match.distanceKm === 0 ? t.sameArea : match.user.city || t.sameArea
+        : match.user.locationPrecision === 'approximate'
+          ? t.approximateDistance.replace('{distance}', formatDistance(match.distanceKm))
         : formatDistance(match.distanceKm)
       : match.user.city || '')
   );

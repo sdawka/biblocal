@@ -169,9 +169,14 @@
   function discoveryDistanceLabel(user: Match['user'], distanceKm: number | undefined): string {
     if (distanceKm == null) return '';
     const cityPrecision = user.locationPrecision === 'city' || profileData.locationPrecision === 'city';
-    if (!cityPrecision) return formatDistance(distanceKm);
-    if (distanceKm === 0) return matchesT.card.sameArea;
-    return user.locationPrecision === 'city' ? user.city || matchesT.card.sameArea : profileData.city || matchesT.card.sameArea;
+    if (cityPrecision) {
+      if (distanceKm === 0) return matchesT.card.sameArea;
+      return user.locationPrecision === 'city' ? user.city || matchesT.card.sameArea : profileData.city || matchesT.card.sameArea;
+    }
+    if (localScope?.approximate || user.locationPrecision === 'approximate') {
+      return matchesT.card.approximateDistance.replace('{distance}', formatDistance(distanceKm));
+    }
+    return formatDistance(distanceKm);
   }
 
   // Pin colors derived from theme tokens (accent + status family), not hardcoded.
@@ -534,6 +539,7 @@
       profileError={profileError !== null}
       onRetry={retryDiscovery}
       viewerLocationPrecision={profileData.locationPrecision}
+      viewerLocationApproximate={localScope?.approximate === true || profileData.locationPrecision === 'approximate'}
       viewerCity={profileData.city}
       {expandedId}
       onToggle={toggleExpanded}

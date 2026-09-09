@@ -15,6 +15,8 @@
       ? t.sameArea
       : row.owner.locationPrecision === 'city'
         ? row.owner.city || t.sameArea
+      : row.owner.locationPrecision === 'approximate' && row.distanceKm != null
+        ? t.approximateDistance.replace('{distance}', formatDistance(row.distanceKm))
       : row.distanceKm != null
         ? formatDistance(row.distanceKm)
         : '')

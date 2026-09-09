@@ -57,6 +57,16 @@ describe('MatchCardIsland', () => {
     expect(screen.queryByText('350 m')).toBeNull();
   });
 
+  it('marks a distance from an approximate location as approximate', () => {
+    const match = makeMatch(
+      { id: 'jane', name: 'Jane Reader', type: 'person', locationPrecision: 'approximate' },
+      { distanceKm: 2.4 }
+    );
+    render(MatchCardIsland, { props: { match } });
+
+    expect(screen.getByText('About 2.4 km')).toBeTruthy();
+  });
+
   it('shows a "why you match" summary of the top facets for a person match', () => {
     const match = makeMatch({ id: 'jane', name: 'Jane Reader', type: 'person' }, { distanceKm: 2.4 });
     render(MatchCardIsland, { props: { match } });
