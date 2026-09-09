@@ -10,3 +10,4 @@
 - 2026-09-08T07:24:56-04:00 — Review, merge, and deploy the scanner modal and deeper ISBN lookup changes in PR #70.
 - 2026-09-08T09:02:18-04:00 — Use the supplied private SearXNG service as an ISBN lookup fallback, with proper error handling.
 - 2026-09-08T09:13:14-04:00 — Remove the redundant shelf hover state for books without covers and strengthen the hover background for readable text on books with covers.
+- 2026-09-08T20:33:47-04:00 — Fix the discovered location issues and other verified bugs using Terra and Sol agents, with the primary agent orchestrating; review, create PRs, merge only with all CI green, then deploy the changes.

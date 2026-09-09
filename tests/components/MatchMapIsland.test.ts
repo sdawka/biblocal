@@ -81,6 +81,9 @@ function baseProps() {
     scopeMode: 'local' as const,
     onScopeChange: () => {},
     needsLocation: false,
+    profileLoading: false,
+    profileError: false,
+    onRetry: () => {},
     expandedId: null,
     onToggle: () => {},
     onOwner: () => {},
@@ -116,6 +119,40 @@ describe('LocalPanel', () => {
     render(LocalPanel, { props: { ...baseProps(), panel: 'books' } });
     expect(screen.getByText('Dune')).toBeTruthy();
     expect(screen.getByText('To borrow')).toBeTruthy();
+  });
+
+  it('labels a zero-distance city-precision book owner as the same area', () => {
+    const cityOwner = makeUser({ id: 'city-owner', locationPrecision: 'city' });
+    const cityBook = makeBook(cityOwner, 'City Book', 0);
+    render(LocalPanel, {
+      props: {
+        ...baseProps(),
+        panel: 'books',
+        bookGroups: groupByIntent([cityBook]),
+      },
+    });
+
+    expect(screen.getByText((content, element) =>
+      element?.classList.contains('owner') === true && content.includes('Same area')
+    )).toBeTruthy();
+    expect(screen.queryByText('0 m')).toBeNull();
+  });
+
+  it('marks an exact owner distance as approximate when the viewer only shares an approximate city scope', () => {
+    const exactOwner = makeUser({ id: 'exact-owner', locationPrecision: 'exact' });
+    const exactBook = makeBook(exactOwner, 'Approximate Source Book', 2.4);
+    render(LocalPanel, {
+      props: {
+        ...baseProps(),
+        panel: 'books',
+        bookGroups: groupByIntent([exactBook]),
+        viewerLocationApproximate: true,
+      },
+    });
+
+    expect(screen.getByText((content, element) =>
+      element?.classList.contains('owner') === true && content.includes('About 2.4 km')
+    )).toBeTruthy();
   });
 
   it('calls onPanelChange when a toggle button is clicked', async () => {
@@ -156,6 +193,60 @@ describe('LocalPanel', () => {
     expect(screen.getByRole('link', { name: 'Modifier le profil' }).getAttribute('href')).toBe('/fr/profile');
     await fireEvent.click(screen.getByRole('button', { name: /explorer le monde entier/i }));
     expect(scope).toBe('worldwide');
+  });
+
+  it('keeps location setup and empty results hidden while the signed-in profile is loading', () => {
+    render(LocalPanel, {
+      props: {
+        ...baseProps(),
+        scopeLabel: 'Add a city or location in your profile to browse locally.',
+        needsLocation: true,
+        profileLoading: true,
+        loading: false,
+        hasAnyData: false,
+        bookGroups: [],
+      },
+    });
+
+    expect(screen.queryByText('Add a city or location in your profile to browse locally.')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Edit Profile' })).toBeNull();
+    expect(screen.queryByLabelText(/Add a city or location/)).toBeNull();
+    expect(screen.getAllByText(/finding what.?s nearby/i)).toHaveLength(2);
+  });
+
+  it('shows a retryable profile error instead of a missing-location prompt', async () => {
+    let retried = false;
+    render(LocalPanel, {
+      props: {
+        ...baseProps(),
+        scopeLabel: 'Add a city or location in your profile to browse locally.',
+        needsLocation: false,
+        profileError: true,
+        hasAnyData: false,
+        bookGroups: [],
+        onRetry: () => (retried = true),
+      },
+    });
+
+    expect(screen.getByRole('alert').textContent).toContain("Couldn't load your profile. Try again.");
+    expect(screen.queryByText('Add a city or location in your profile to browse locally.')).toBeNull();
+    await fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(retried).toBe(true);
+  });
+
+  it('keeps a profile retry available alongside cached discovery results', async () => {
+    let retried = false;
+    render(LocalPanel, {
+      props: {
+        ...baseProps(),
+        profileError: true,
+        onRetry: () => (retried = true),
+      },
+    });
+
+    expect(screen.queryByLabelText(/Within 5 km of Montreal/)).toBeNull();
+    await fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(retried).toBe(true);
   });
 
   it('lets an explicit worldwide browse return to local scope', async () => {

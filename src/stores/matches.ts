@@ -9,8 +9,8 @@ import { resolveDiscoveryLocation } from '../lib/localHub';
 import type { Match, LocalBook } from '../lib/types';
 
 export const matches = computed(
-  [shelf, profile, discoveryUsers],
-  (shelfData, profileData, users): Match[] => {
+  [shelf, profile, discoveryUsers, currentUserId],
+  (shelfData, profileData, users, viewerId): Match[] => {
     const myBooks = Object.values(shelfData);
     const myTopics = [
       ...(profileData.topics?.curated ?? []),
@@ -18,7 +18,7 @@ export const matches = computed(
       ...(profileData.topics?.freeform ?? []),
     ];
 
-    return calculateMatches(myBooks, myTopics, users);
+    return calculateMatches(myBooks, myTopics, users.filter((user) => user.id !== viewerId));
   }
 );
 
@@ -42,8 +42,8 @@ currentUserId.subscribe((userId) => {
 // Broader than `matches`: also includes people sharing books with no taste
 // overlap, and people without a location. Powers the discovery map.
 export const discovery = computed(
-  [shelf, profile, discoveryUsers, discoveryScope],
-  (shelfData, profileData, users, scope): Match[] => {
+  [shelf, profile, discoveryUsers, discoveryScope, currentUserId],
+  (shelfData, profileData, users, scope, viewerId): Match[] => {
     const myBooks = Object.values(shelfData);
     const myTopics = [
       ...(profileData.topics?.curated ?? []),
@@ -51,13 +51,15 @@ export const discovery = computed(
       ...(profileData.topics?.freeform ?? []),
     ];
 
+    const candidates = users.filter((user) => user.id !== viewerId);
+
     if (scope === 'worldwide') {
-      return calculateDiscovery(myBooks, myTopics, users);
+      return calculateDiscovery(myBooks, myTopics, candidates);
     }
 
     const location = resolveDiscoveryLocation(profileData);
     if (!location) return [];
-    return calculateDiscovery(myBooks, myTopics, users, location);
+    return calculateDiscovery(myBooks, myTopics, candidates, location);
   }
 );
 

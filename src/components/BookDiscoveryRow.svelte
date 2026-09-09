@@ -7,8 +7,20 @@
     row,
     lang = 'en' as Lang,
     onOwner,
-  }: { row: LocalBook; lang?: Lang; onOwner?: (ownerId: string) => void } = $props();
+    distanceLabel,
+  }: { row: LocalBook; lang?: Lang; onOwner?: (ownerId: string) => void; distanceLabel?: string } = $props();
   const t = $derived(useTranslations(lang).matches.local);
+  const distanceDisplay = $derived(
+    distanceLabel ?? (row.distanceKm === 0 && row.owner.locationPrecision === 'city'
+      ? t.sameArea
+      : row.owner.locationPrecision === 'city'
+        ? row.owner.city || t.sameArea
+      : row.owner.locationPrecision === 'approximate' && row.distanceKm != null
+        ? t.approximateDistance.replace('{distance}', formatDistance(row.distanceKm))
+      : row.distanceKm != null
+        ? formatDistance(row.distanceKm)
+        : '')
+  );
   let open = $state(false);
 </script>
 
@@ -24,7 +36,7 @@
       <span class="author">{row.book.author}</span>
       <span class="owner">
         {row.owner.name}
-        {#if row.distanceKm != null}· {formatDistance(row.distanceKm)}{/if}
+        {#if distanceDisplay}· {distanceDisplay}{/if}
         {#if row.isTasteMatch}· <span class="star">★ {t.fit}</span>{/if}
       </span>
     </span>

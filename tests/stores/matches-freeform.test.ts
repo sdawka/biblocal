@@ -3,6 +3,7 @@ import { shelf } from '../../src/stores/shelf';
 import { profile, DEFAULT_PROFILE } from '../../src/stores/profile';
 import { discoveryUsers } from '../../src/stores/users';
 import { matches, discovery, discoveryScope } from '../../src/stores/matches';
+import { currentUserId } from '../../src/stores/auth';
 import type { UserProfile } from '../../src/lib/types';
 
 function otherUserWithTopic(topic: string): UserProfile {
@@ -21,6 +22,7 @@ describe('freeform topics produce discussion matches', () => {
     profile.set(DEFAULT_PROFILE);
     discoveryUsers.set([]);
     discoveryScope.set('worldwide');
+    currentUserId.set(null);
   });
 
   it('a freeform-only topic yields a discussionMatch facet in `matches`', () => {
@@ -63,5 +65,18 @@ describe('freeform topics produce discussion matches', () => {
     expect(match!.facets.discussionMatch.items).toContain('Cybernetics');
 
     unsub();
+  });
+
+  it('excludes the active reader even if a stale candidate feed contains them', () => {
+    currentUserId.set('other-user');
+    discoveryUsers.set([otherUserWithTopic('Cybernetics')]);
+    profile.set({
+      ...DEFAULT_PROFILE,
+      id: 'other-user',
+      topics: { curated: [], freeform: ['Cybernetics'], inferred: [] },
+    });
+
+    expect(matches.get()).toEqual([]);
+    expect(discovery.get()).toEqual([]);
   });
 });

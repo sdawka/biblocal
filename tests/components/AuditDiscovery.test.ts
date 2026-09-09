@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import MatchMapIsland from '../../src/components/MatchMapIsland.svelte';
-import { profile } from '../../src/stores/profile';
+import { profile, profileHydrated } from '../../src/stores/profile';
 import { shelf } from '../../src/stores/shelf';
 import { discoveryUsers, discoveryUsersLoaded, usersError, usersLoading } from '../../src/stores/users';
 import { discoveryScope } from '../../src/stores/matches';
@@ -31,6 +31,7 @@ function makeRemoteReader(id: string, name: string, city: string, latitude: numb
 
 describe('discovery scope audit', () => {
   let priorProfile: ReturnType<typeof profile.get>;
+  let priorProfileHydrated: boolean;
   let priorShelf: ReturnType<typeof shelf.get>;
   let priorDiscoveryUsers: ReturnType<typeof discoveryUsers.get>;
   let priorDiscoveryLoaded: boolean;
@@ -41,6 +42,7 @@ describe('discovery scope audit', () => {
 
   beforeEach(() => {
     priorProfile = profile.get();
+    priorProfileHydrated = profileHydrated.get();
     priorShelf = shelf.get();
     priorDiscoveryUsers = discoveryUsers.get();
     priorDiscoveryLoaded = discoveryUsersLoaded.get();
@@ -65,6 +67,7 @@ describe('discovery scope audit', () => {
       radiusKm: 5,
       topics: { curated: [], freeform: [], inferred: [] },
     });
+    profileHydrated.set(true);
     shelf.set({});
     discoveryUsers.set([
       makeRemoteReader('tokyo-reader', 'Yuki', 'Tokyo', 35.6762, 139.6503),
@@ -78,6 +81,7 @@ describe('discovery scope audit', () => {
 
   afterEach(() => {
     profile.set(priorProfile);
+    profileHydrated.set(priorProfileHydrated);
     shelf.set(priorShelf);
     discoveryUsers.set(priorDiscoveryUsers);
     discoveryUsersLoaded.set(priorDiscoveryLoaded);

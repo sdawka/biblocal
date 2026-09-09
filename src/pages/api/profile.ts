@@ -74,7 +74,7 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     const updates = (await request.json()) as Record<string, unknown>;
 
     // Validate enum fields before processing
-    if (updates.contactVisibility !== undefined) {
+    if (updates.contactVisibility !== undefined && updates.contactVisibility !== null) {
       const valid = validateEnum(updates.contactVisibility, VALID_CONTACT_VISIBILITY);
       if (valid === null) {
         return new Response(
@@ -83,7 +83,7 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
         );
       }
     }
-    if (updates.contactMethod !== undefined) {
+    if (updates.contactMethod !== undefined && updates.contactMethod !== null) {
       const valid = validateEnum(updates.contactMethod, VALID_CONTACT_METHOD);
       if (valid === null) {
         return badRequest(`Invalid contactMethod value. Must be one of: ${VALID_CONTACT_METHOD.join(', ')}`);

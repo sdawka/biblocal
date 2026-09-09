@@ -24,6 +24,8 @@ export default {
     books: 'No books nearby yet',
   },
   local: {
+    sameArea: 'Same area',
+    approximateDistance: 'About {distance}',
     search: 'Search title or author',
     fit: 'fit',
     seeOwner: 'See {name}',
@@ -63,11 +65,14 @@ export default {
     search: 'Search title, author, or name',
     loading: 'Finding what’s nearby…',
     errorTitle: "Couldn't load nearby matches.",
+    profileErrorTitle: "Couldn't load your profile. Try again.",
     emptyBooks: "No books in this area yet.",
     emptyPeople: "No people in this area yet.",
     emptyStores: "No bookstores in this area yet.",
   },
   card: {
+    sameArea: 'Same area',
+    approximateDistance: 'About {distance}',
     viewContact: "View contact",
     loadingContact: "Loading contact…",
     contactUnavailable: "Contact is unavailable. Try again.",

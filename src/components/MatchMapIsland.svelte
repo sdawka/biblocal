@@ -7,7 +7,7 @@
   import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
   import { discovery, discoveryBooks, discoveryScope, type DiscoveryScope } from '../stores/matches';
   import { loadConnections } from '../stores/connections';
-  import { profile } from '../stores/profile';
+  import { loadProfileFromServer, profile, profileHydrated, profileLoadError } from '../stores/profile';
   import { loadDiscoveryUsers, usersLoading, usersError } from '../stores/users';
   import type { Match, LocalBook } from '../lib/types';
   import { CITY_COORDINATES, formatDistance } from '../lib/geo';
@@ -44,6 +44,8 @@
   let loadError = $state<string | null>(usersError.get());
   let expandedId = $state<string | null>(null);
   let profileData = $state(profile.get());
+  let profileReady = $state(profileHydrated.get());
+  let profileError = $state(profileLoadError.get());
   let activeScope = $state<DiscoveryScope>(discoveryScope.get());
   const localScope = $derived(resolveDiscoveryLocation(profileData));
   const canRenderMap = $derived(activeScope === 'worldwide' || localScope?.kind === 'radius');
@@ -164,6 +166,19 @@
     return CITY_COORDINATES['Montreal'];
   }
 
+  function discoveryDistanceLabel(user: Match['user'], distanceKm: number | undefined): string {
+    if (distanceKm == null) return '';
+    const cityPrecision = user.locationPrecision === 'city' || profileData.locationPrecision === 'city';
+    if (cityPrecision) {
+      if (distanceKm === 0) return matchesT.card.sameArea;
+      return user.locationPrecision === 'city' ? user.city || matchesT.card.sameArea : profileData.city || matchesT.card.sameArea;
+    }
+    if (localScope?.approximate || user.locationPrecision === 'approximate') {
+      return matchesT.card.approximateDistance.replace('{distance}', formatDistance(distanceKm));
+    }
+    return formatDistance(distanceKm);
+  }
+
   // Pin colors derived from theme tokens (accent + status family), not hardcoded.
   function pinColors(isStore: boolean) {
     return isStore
@@ -215,7 +230,7 @@
 
       const isStore = user.type === 'bookstore';
       const baseRadius = isStore ? 10 : 8;
-      const distanceLabel = match.distanceKm != null ? ` (${formatDistance(match.distanceKm)})` : '';
+      const distanceLabel = match.distanceKm != null ? ` (${discoveryDistanceLabel(user, match.distanceKm)})` : '';
       const colors = pinColors(isStore);
 
       const marker = L.circleMarker([user.latitude, user.longitude], {
@@ -317,6 +332,8 @@
     // Profile inbox having mounted first. Retry once for a transient reload.
     loadConnections({ retries: 1 });
     const unsubProfile = profile.subscribe((p) => (profileData = p));
+    const unsubProfileHydrated = profileHydrated.subscribe((ready) => (profileReady = ready));
+    const unsubProfileError = profileLoadError.subscribe((error) => (profileError = error));
     const unsubScope = discoveryScope.subscribe((scope) => {
       activeScope = scope;
       if ((!isMobile || mobileView === 'map') && canRenderMap) ensureMap();
@@ -333,6 +350,8 @@
       unsubMatches();
       unsubBooks();
       unsubProfile();
+      unsubProfileHydrated();
+      unsubProfileError();
       unsubScope();
       destroyMap();
     };
@@ -462,6 +481,11 @@
   function showListFromMapError() {
     mobileView = 'list';
   }
+
+  function retryDiscovery() {
+    void loadProfileFromServer();
+    void loadDiscoveryUsers();
+  }
 </script>
 
 <div class="match-map" class:map-unavailable={!canRenderMap}>
@@ -510,11 +534,17 @@
       {scopeLabel}
       scopeMode={activeScope}
       onScopeChange={(scope) => discoveryScope.set(scope)}
-      needsLocation={activeScope === 'local' && localScope === null}
+      needsLocation={activeScope === 'local' && localScope === null && !profileError}
+      profileLoading={!profileReady}
+      profileError={profileError !== null}
+      onRetry={retryDiscovery}
+      viewerLocationPrecision={profileData.locationPrecision}
+      viewerLocationApproximate={localScope?.approximate === true || profileData.locationPrecision === 'approximate'}
+      viewerCity={profileData.city}
       {expandedId}
       onToggle={toggleExpanded}
       onOwner={focusFromRow}
-      loading={loadingUsers}
+      loading={loadingUsers || !profileReady}
       error={loadError}
       hasAnyData={matchList.length > 0}
       {lang}

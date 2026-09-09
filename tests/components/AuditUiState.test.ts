@@ -254,4 +254,90 @@ describe('UI state audit', () => {
       expect(profile.get().name).toBe('Grace Hopper');
     });
   });
+
+  it('clears optional profile details instead of leaving the saved values behind', async () => {
+    profile.set({
+      ...profile.get(),
+      borrowStyle: 'Careful with dog-eared pages',
+      currentObsessions: ['Bookbinding'],
+    });
+    render(ProfileIsland, { props: { lang: 'en' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await fireEvent.input(screen.getByLabelText('Lending style'), { target: { value: '' } });
+    await fireEvent.input(screen.getByLabelText('Current obsessions (comma-separated)'), { target: { value: '' } });
+    await fireEvent.blur(screen.getByLabelText('Current obsessions (comma-separated)'));
+
+    await waitFor(() => {
+      expect(profile.get().borrowStyle).toBe('');
+      expect(profile.get().currentObsessions).toEqual([]);
+    });
+    expect(fetch).toHaveBeenCalledWith('/api/profile', expect.objectContaining({
+      body: expect.stringContaining('"borrowStyle":""'),
+    }));
+    expect(fetch).toHaveBeenCalledWith('/api/profile', expect.objectContaining({
+      body: expect.stringContaining('"currentObsessions":[]'),
+    }));
+  });
+
+  it('removes persisted contact details when the contact method is cleared', async () => {
+    profile.set({
+      ...profile.get(),
+      contactMethod: 'email',
+      contactValue: 'ada@example.com',
+      contactVisibility: 'public',
+    });
+    render(ProfileIsland, { props: { lang: 'en' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await fireEvent.change(screen.getByLabelText('How can people reach you?'), { target: { value: '' } });
+
+    await waitFor(() => {
+      expect(profile.get().contactMethod).toBeUndefined();
+      expect(profile.get().contactValue).toBeUndefined();
+      expect(profile.get().contactVisibility).toBe('hidden');
+    });
+    expect(fetch).toHaveBeenCalledWith('/api/profile', expect.objectContaining({
+      body: expect.stringContaining('"contactMethod":null'),
+    }));
+  });
+
+  it('does not replace a failed location request with a city-center save', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, text: async () => 'offline' } as Response));
+    vi.stubGlobal('navigator', {
+      geolocation: {
+        getCurrentPosition: (success: PositionCallback) => {
+          success({ coords: { latitude: 45.5, longitude: -73.5 } } as GeolocationPosition);
+        },
+      },
+    });
+    render(ProfileIsland, { props: { lang: 'en' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Enable precise location' }));
+
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Could not get location'));
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not save an old editor city after the viewer changes during location lookup', async () => {
+    let succeed!: PositionCallback;
+    vi.stubGlobal('fetch', vi.fn());
+    vi.stubGlobal('navigator', {
+      geolocation: {
+        getCurrentPosition: (success: PositionCallback) => {
+          succeed = success;
+        },
+      },
+    });
+    render(ProfileIsland, { props: { lang: 'en' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Enable precise location' }));
+    authState.userId = 'other-user';
+    succeed({ coords: { latitude: 45.5, longitude: -73.5 } } as GeolocationPosition);
+
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Could not get location'));
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

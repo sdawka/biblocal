@@ -31,6 +31,19 @@ function stringArray(value: string | null): string[] {
   return safeJsonArray(value).filter((item): item is string => typeof item === 'string');
 }
 
+function hasValidCoordinates(
+  user: Pick<DiscoveryUserRow, 'latitude' | 'longitude'>
+): user is Pick<DiscoveryUserRow, 'latitude' | 'longitude'> & { latitude: number; longitude: number } {
+  return (
+    Number.isFinite(user.latitude) &&
+    Number.isFinite(user.longitude) &&
+    user.latitude! >= -90 &&
+    user.latitude! <= 90 &&
+    user.longitude! >= -180 &&
+    user.longitude! <= 180
+  );
+}
+
 function projectBook(book: DiscoveryBookRow): Book {
   return {
     id: book.id,
@@ -69,14 +82,16 @@ function projectUser(user: DiscoveryUserRow, shelf: Book[]): UserProfile {
     profile.address = user.address ?? undefined;
     profile.website = user.website ?? undefined;
     profile.specialties = stringArray(user.specialties);
-    profile.latitude = user.latitude ?? undefined;
-    profile.longitude = user.longitude ?? undefined;
-    profile.locationPrecision =
-      user.locationPrecision === 'exact' || user.locationPrecision === 'approximate' || user.locationPrecision === 'city'
-        ? user.locationPrecision
-        : undefined;
+    if (hasValidCoordinates(user)) {
+      profile.latitude = user.latitude;
+      profile.longitude = user.longitude;
+      profile.locationPrecision =
+        user.locationPrecision === 'exact' || user.locationPrecision === 'approximate' || user.locationPrecision === 'city'
+          ? user.locationPrecision
+          : undefined;
+    }
   } else {
-    if (user.latitude !== null && user.longitude !== null) {
+    if (hasValidCoordinates(user)) {
       const cityCoordinates = getCityCoordinates(profile.city);
       if (cityCoordinates) {
         profile.latitude = cityCoordinates.lat;
