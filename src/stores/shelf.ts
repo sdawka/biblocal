@@ -1505,10 +1505,10 @@ export async function loadBooksFromServer(): Promise<void> {
   } finally {
     finishPersistedLoad(persistedLoad);
     clearConfirmedPersistedDeletions(loadingFor);
-    // Settle hydration on both success and failure so the UI never hangs on
-    // a loading skeleton. Safe even on a stale mid-flight bail: the newer
-    // load for the current user will also finish and set this again.
-    shelfHydrated.set(true);
+    // Only the active user's request can settle this shared UI flag. A stale
+    // request after an account switch must not make the new, still-loading
+    // shelf appear empty-but-loaded.
+    if (isCurrentUserSession(loadingSession)) shelfHydrated.set(true);
   }
 }
 
