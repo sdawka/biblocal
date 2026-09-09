@@ -74,6 +74,27 @@ describe('shelfHydrated', () => {
     await loadBooksFromServer();
     expect(shelfHydrated.get()).toBe(true);
   });
+
+  it('does not settle the current user hydration from a stale user load', async () => {
+    let resolveFirst!: (response: Response) => void;
+    let resolveSecond!: (response: Response) => void;
+    vi.stubGlobal('fetch', vi.fn()
+      .mockImplementationOnce(() => new Promise<Response>((resolve) => { resolveFirst = resolve; }))
+      .mockImplementationOnce(() => new Promise<Response>((resolve) => { resolveSecond = resolve; })));
+
+    _mockUserId = 'user-A';
+    const staleLoad = loadBooksFromServer();
+    _mockUserId = 'user-B';
+    const currentLoad = loadBooksFromServer();
+
+    resolveFirst({ ok: true, json: async () => ({ books: [] }) } as Response);
+    await staleLoad;
+    expect(shelfHydrated.get()).toBe(false);
+
+    resolveSecond({ ok: true, json: async () => ({ books: [] }) } as Response);
+    await currentLoad;
+    expect(shelfHydrated.get()).toBe(true);
+  });
 });
 
 // shelfHydrated's initial value is seeded once, at module load, directly from
