@@ -24,6 +24,7 @@ export default {
   },
   local: {
     sameArea: 'Même secteur',
+    approximateDistance: 'Environ {distance}',
     search: 'Rechercher par titre ou auteur',
     fit: 'affinité',
     seeOwner: 'Voir {name}',
@@ -70,6 +71,7 @@ export default {
   },
   card: {
     sameArea: 'Même secteur',
+    approximateDistance: 'Environ {distance}',
     viewContact: "Voir le contact",
     loadingContact: "Chargement du contact…",
     contactUnavailable: "Le contact est indisponible. Réessayez.",

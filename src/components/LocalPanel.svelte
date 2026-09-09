@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { LocalBookGroup, LocationPrecision, Match, UserProfile } from '../lib/types';
+  import { formatDistance } from '../lib/geo';
   import BookDiscoveryRow from './BookDiscoveryRow.svelte';
   import MatchCardIsland from './MatchCardIsland.svelte';
   import { localizePath, useTranslations, type Lang } from '../i18n';
@@ -27,6 +28,7 @@
     profileError: boolean;
     onRetry: () => void;
     viewerLocationPrecision?: LocationPrecision;
+    viewerLocationApproximate?: boolean;
     viewerCity?: string;
     expandedId: string | null;
     onToggle: (id: string) => void;
@@ -57,6 +59,7 @@
     profileError,
     onRetry,
     viewerLocationPrecision,
+    viewerLocationApproximate = false,
     viewerCity,
     expandedId,
     onToggle,
@@ -80,9 +83,14 @@
   function cityDistanceLabel(user: UserProfile, distanceKm: number | undefined): string | undefined {
     if (distanceKm == null) return undefined;
     const cityPrecision = user.locationPrecision === 'city' || viewerLocationPrecision === 'city';
-    if (!cityPrecision) return undefined;
-    if (distanceKm === 0) return t.local.sameArea;
-    return user.locationPrecision === 'city' ? user.city || t.local.sameArea : viewerCity || t.local.sameArea;
+    if (cityPrecision) {
+      if (distanceKm === 0) return t.local.sameArea;
+      return user.locationPrecision === 'city' ? user.city || t.local.sameArea : viewerCity || t.local.sameArea;
+    }
+    if (user.locationPrecision === 'approximate' || viewerLocationApproximate) {
+      return t.local.approximateDistance.replace('{distance}', formatDistance(distanceKm));
+    }
+    return undefined;
   }
 </script>
 
