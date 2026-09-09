@@ -6,12 +6,20 @@ import {
   usersError,
   usersLoading,
 } from '../../src/stores/users';
+import { currentUserId } from '../../src/stores/auth';
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => { resolve = done; });
+  return { promise, resolve };
+}
 
 beforeEach(() => {
   discoveryUsers.set([]);
   discoveryUsersLoaded.set(false);
   usersError.set(null);
   usersLoading.set(false);
+  currentUserId.set(null);
 });
 
 afterEach(() => vi.unstubAllGlobals());
@@ -45,5 +53,29 @@ describe('loadDiscoveryUsers', () => {
     expect(usersError.get()).toBeNull();
     expect(fetchMock).toHaveBeenCalledTimes(2);
     errorSpy.mockRestore();
+  });
+
+  it('reloads for a changed reader and ignores the prior readers late response', async () => {
+    const first = deferred<Response>();
+    const second = deferred<Response>();
+    const fetchMock = vi.fn()
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    vi.stubGlobal('fetch', fetchMock);
+
+    currentUserId.set('reader-a');
+    const firstLoad = loadDiscoveryUsers();
+    currentUserId.set('reader-b');
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    second.resolve(new Response('[{"id":"reader-a"}]'));
+    await vi.waitFor(() => expect(discoveryUsers.get()).toEqual([{ id: 'reader-a' }]));
+
+    first.resolve(new Response('[{"id":"reader-b"}]'));
+    await firstLoad;
+
+    expect(discoveryUsers.get()).toEqual([{ id: 'reader-a' }]);
+    expect(discoveryUsersLoaded.get()).toBe(true);
+    expect(usersLoading.get()).toBe(false);
   });
 });

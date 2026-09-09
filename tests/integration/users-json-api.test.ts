@@ -125,6 +125,36 @@ describe('GET /api/users.json', () => {
     expect(users[0].locationPrecision).toBeUndefined();
   });
 
+  it('does not project malformed stored coordinates into discovery', async () => {
+    insertUser('store', {
+      type: 'bookstore',
+      latitude: 95,
+      longitude: -181,
+      locationPrecision: 'exact',
+    });
+
+    const users = await fetchUsers();
+
+    expect(users[0].latitude).toBeUndefined();
+    expect(users[0].longitude).toBeUndefined();
+    expect(users[0].locationPrecision).toBeUndefined();
+  });
+
+  it('anonymizes person coordinates for a normalized known city name', async () => {
+    insertUser('reader', {
+      city: '  montreal  ',
+      latitude: 45.523456,
+      longitude: -73.581234,
+      locationPrecision: 'exact',
+    });
+
+    const users = await fetchUsers();
+
+    expect(users[0].latitude).toBe(45.5017);
+    expect(users[0].longitude).toBe(-73.5673);
+    expect(users[0].locationPrecision).toBe('city');
+  });
+
   it('projects only map-safe fields and public contact details', async () => {
     insertUser('reader', {
       email: 'raw@example.test', phone: '555-private', addedBy: 'import-batch',

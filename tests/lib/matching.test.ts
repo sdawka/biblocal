@@ -499,7 +499,74 @@ describe('calculateDiscovery', () => {
       lat: 45.5017,
       lng: -73.5673,
       radiusKm: 8,
+      city: 'Montreal',
     }).map((match) => match.user.id)).toEqual(['nearby', 'unlocated']);
+  });
+
+  it('does not turn a coordinate-only radius into a global unlocated feed', () => {
+    const nearby = makeUser({
+      id: 'nearby',
+      latitude: 45.52,
+      longitude: -73.58,
+      shelf: [makeBook({ title: 'Nearby offer', intents: ['borrowable'] })],
+    });
+    const unlocated = makeUser({
+      id: 'unlocated',
+      city: 'Elsewhere',
+      shelf: [makeBook({ title: 'Unlocated offer', intents: ['borrowable'] })],
+    });
+
+    expect(calculateDiscovery([], [], [nearby, unlocated], {
+      lat: 45.5017,
+      lng: -73.5673,
+      radiusKm: 8,
+    }).map((match) => match.user.id)).toEqual(['nearby']);
+  });
+
+  it('does not let malformed candidate coordinates bypass a local radius', () => {
+    const malformed = makeUser({
+      id: 'malformed',
+      city: 'Tokyo',
+      latitude: Number.NaN,
+      longitude: Number.NaN,
+      shelf: [makeBook({ title: 'Malformed offer', intents: ['borrowable'] })],
+    });
+
+    expect(calculateDiscovery([], [], [malformed], {
+      lat: 45.5017,
+      lng: -73.5673,
+      radiusKm: 8,
+      city: 'Montreal',
+    })).toEqual([]);
+  });
+
+  it('keeps same-city city-precision readers without inventing an exact distance', () => {
+    const sameCity = makeUser({
+      id: 'same-city',
+      city: 'Montreal',
+      latitude: 45.5017,
+      longitude: -73.5673,
+      locationPrecision: 'city',
+      shelf: [makeBook({ title: 'Same-city offer', intents: ['borrowable'] })],
+    });
+    const otherCity = makeUser({
+      id: 'other-city',
+      city: 'Toronto',
+      latitude: 43.6532,
+      longitude: -79.3832,
+      locationPrecision: 'city',
+      shelf: [makeBook({ title: 'Other-city offer', intents: ['borrowable'] })],
+    });
+
+    const result = calculateDiscovery([], [], [sameCity, otherCity], {
+      lat: 45.61,
+      lng: -73.72,
+      radiusKm: 8,
+      city: 'Montreal',
+    });
+
+    expect(result.map((match) => match.user.id)).toEqual(['same-city']);
+    expect(result[0].distanceKm).toBeUndefined();
   });
 
   it('matches the same city when no city coordinates are available', () => {

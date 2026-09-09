@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { profile, updateProfile, updateTopics, deriveLendingPersonality, updateLendingPersonality, requestGeolocation, setLocationFromCity, updateContactInfo } from '../stores/profile';
+  import { profile, updateProfile, updateTopics, deriveLendingPersonality, updateLendingPersonality, requestGeolocation, updateContactInfo, clearContactInfo } from '../stores/profile';
   import { shelf, getInferredTopics } from '../stores/shelf';
   import type { UserProfile, ContactMethod, ContactVisibility } from '../lib/types';
   import TopicPickerIsland from './TopicPickerIsland.svelte';
@@ -128,10 +128,6 @@
     requestingLocation = false;
     if (!result.success) {
       locationError = t.edit.couldNotGetLocation;
-      // Fall back to city center
-      if (profileData.city) {
-        setLocationFromCity(profileData.city);
-      }
     }
   }
 
@@ -177,14 +173,17 @@
     if (latestSaveResult === false) return;
     if (draftNeedsPersistence) {
       const finalDraftGeneration = draftGeneration;
+      if ((!contactMethod || !contactValue) && (profile.get().contactMethod || profile.get().contactValue)) {
+        if (!await save(clearContactInfo())) return;
+      }
       const saved = await save(updateProfile({
         name: profileData.name,
         city: profileData.city,
         radiusKm: profileData.radiusKm,
-        borrowStyle: borrowStyle || undefined,
+        borrowStyle,
         currentObsessions: obsessions
           ? obsessions.split(',').map((s) => s.trim())
-          : undefined,
+          : [],
         ...(contactMethod && contactValue
           ? {
               contactMethod: contactMethod as ContactMethod,
@@ -207,6 +206,8 @@
   async function handleContactSave() {
     if (contactMethod && contactValue) {
       await save(updateContactInfo(contactMethod as ContactMethod, contactValue, contactVisibility));
+    } else if (profile.get().contactMethod || profile.get().contactValue) {
+      await save(clearContactInfo());
     }
   }
 
@@ -215,10 +216,10 @@
       name: profileData.name,
       city: profileData.city,
       radiusKm: profileData.radiusKm,
-      borrowStyle: borrowStyle || undefined,
+      borrowStyle,
       currentObsessions: obsessions
         ? obsessions.split(',').map((s) => s.trim())
-        : undefined,
+        : [],
     }));
   }
 

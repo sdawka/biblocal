@@ -14,7 +14,59 @@ function sameCity(left: string | undefined, right: string | undefined): boolean 
 }
 
 function hasRadius(location: LocationFilter): location is LocationFilter & Required<Pick<LocationFilter, 'lat' | 'lng' | 'radiusKm'>> {
-  return location.lat != null && location.lng != null && location.radiusKm != null;
+  return (
+    Number.isFinite(location.lat) &&
+    Number.isFinite(location.lng) &&
+    Number.isFinite(location.radiusKm) &&
+    location.lat! >= -90 &&
+    location.lat! <= 90 &&
+    location.lng! >= -180 &&
+    location.lng! <= 180 &&
+    location.radiusKm! > 0
+  );
+}
+
+function hasValidCoordinates(user: UserProfile): user is UserProfile & Required<Pick<UserProfile, 'latitude' | 'longitude'>> {
+  return (
+    Number.isFinite(user.latitude) &&
+    Number.isFinite(user.longitude) &&
+    user.latitude! >= -90 &&
+    user.latitude! <= 90 &&
+    user.longitude! >= -180 &&
+    user.longitude! <= 180
+  );
+}
+
+function applyLocationFilter(
+  user: UserProfile,
+  location: LocationFilter | undefined
+): { included: boolean; distanceKm?: number } {
+  if (!location) return { included: true };
+
+  // The public feed deliberately snaps people to a city centre. Treating that
+  // privacy projection as an exact point would exclude same-city readers based
+  // on their distance from downtown and expose a distance we do not know.
+  if (user.locationPrecision === 'city') {
+    return { included: Boolean(location.city && sameCity(location.city, user.city)) };
+  }
+
+  if (hasRadius(location) && hasValidCoordinates(user)) {
+    const distanceKm = haversineDistance(
+      location.lat,
+      location.lng,
+      user.latitude,
+      user.longitude
+    );
+    return { included: distanceKm <= location.radiusKm, distanceKm };
+  }
+
+  if (location.city) {
+    return { included: sameCity(location.city, user.city) };
+  }
+
+  // A coordinate-only radius cannot establish locality for an unlocated
+  // candidate. Keep these readers for explicit worldwide discovery instead.
+  return { included: false };
 }
 
 const WEIGHTS = {
@@ -149,23 +201,9 @@ export function calculateMatches(
   const myVisibleBooks = filterVisible(myBooks);
 
   for (const user of users) {
-    // Filter by distance if location provided
-    let distanceKm: number | undefined;
-    if (location && hasRadius(location) && user.latitude != null && user.longitude != null) {
-      distanceKm = haversineDistance(
-        location.lat,
-        location.lng,
-        user.latitude,
-        user.longitude
-      );
-      if (distanceKm > location.radiusKm) {
-        continue;
-      }
-    } else if (location?.city && !sameCity(location.city, user.city)) {
-      // A profile without coordinates can still participate in its stated
-      // city, but it must never turn a local request into a global feed.
-      continue;
-    }
+    const locationResult = applyLocationFilter(user, location);
+    if (!locationResult.included) continue;
+    const { distanceKm } = locationResult;
 
     // Filter out private books from their shelf to prevent titles leaking
     const theirBooks = filterVisible(user.shelf);
@@ -216,22 +254,9 @@ export function calculateDiscovery(
   const results: Match[] = [];
 
   for (const user of users) {
-    let distanceKm: number | undefined;
-    if (location && hasRadius(location) && user.latitude != null && user.longitude != null) {
-      distanceKm = haversineDistance(
-        location.lat,
-        location.lng,
-        user.latitude,
-        user.longitude
-      );
-      if (distanceKm > location.radiusKm) {
-        continue;
-      }
-    } else if (location?.city && !sameCity(location.city, user.city)) {
-      // Unlocated readers are surfaced separately by the Local UI when their
-      // stated city matches; other cities remain outside a local scope.
-      continue;
-    }
+    const locationResult = applyLocationFilter(user, location);
+    if (!locationResult.included) continue;
+    const { distanceKm } = locationResult;
 
     const theirBooks = filterVisible(user.shelf);
     const theirTopics = [

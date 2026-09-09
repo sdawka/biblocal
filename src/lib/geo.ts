@@ -95,11 +95,16 @@ export function roundCoordinates(
 
 export function formatDistance(km: number): string {
   if (km < 1) {
-    return `${Math.round(km * 1000)} m`;
+    const meters = Math.round(km * 1000);
+    return meters === 0 && km > 0 ? '< 1 m' : `${meters} m`;
   }
   return `${km.toFixed(1)} km`;
 }
 
 export function getCityCoordinates(city: string): { lat: number; lng: number } | null {
-  return CITY_COORDINATES[city] ?? null;
+  const normalized = city.trim().toLocaleLowerCase();
+  const knownCity = Object.keys(CITY_COORDINATES).find(
+    (candidate) => candidate.toLocaleLowerCase() === normalized
+  );
+  return knownCity ? CITY_COORDINATES[knownCity] : null;
 }

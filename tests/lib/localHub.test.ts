@@ -90,6 +90,17 @@ it('uses a known city centre as an explicitly approximate local scope', () => {
   });
 });
 
+it('recognizes a known city regardless of casing and surrounding whitespace', () => {
+  expect(resolveDiscoveryLocation(user('me', { city: '  montreal  ', radiusKm: 8 }))).toEqual({
+    kind: 'radius',
+    lat: 45.5017,
+    lng: -73.5673,
+    radiusKm: 8,
+    city: 'montreal',
+    approximate: true,
+  });
+});
+
 it('keeps an unknown city local by matching its exact city name', () => {
   expect(resolveDiscoveryLocation(user('me', { city: 'North Star', radiusKm: 8 }))).toEqual({
     kind: 'city',

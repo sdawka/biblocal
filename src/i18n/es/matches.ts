@@ -22,6 +22,7 @@ export default {
     books: 'Aún no hay libros cerca',
   },
   local: {
+    sameArea: 'Misma zona',
     search: 'Buscar por título o autor',
     fit: 'afinidad',
     seeOwner: 'Ver a {name}',
@@ -61,11 +62,13 @@ export default {
     search: 'Buscar por título, autor o nombre',
     loading: 'Buscando lo que hay cerca…',
     errorTitle: 'No se pudieron cargar las coincidencias cercanas.',
+    profileErrorTitle: 'No se pudo cargar tu perfil. Inténtalo de nuevo.',
     emptyBooks: "Aún no hay libros en esta zona.",
     emptyPeople: "Aún no hay personas en esta zona.",
     emptyStores: "Aún no hay librerías en esta zona.",
   },
   card: {
+    sameArea: 'Misma zona',
     viewContact: "Ver contacto",
     loadingContact: "Cargando contacto…",
     contactUnavailable: "El contacto no está disponible. Inténtalo de nuevo.",

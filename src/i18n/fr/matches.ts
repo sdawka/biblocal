@@ -23,6 +23,7 @@ export default {
     books: 'Aucun livre à proximité',
   },
   local: {
+    sameArea: 'Même secteur',
     search: 'Rechercher par titre ou auteur',
     fit: 'affinité',
     seeOwner: 'Voir {name}',
@@ -62,11 +63,13 @@ export default {
     search: 'Rechercher par titre, auteur ou nom',
     loading: 'Recherche de ce qui est à proximité…',
     errorTitle: 'Impossible de charger les correspondances à proximité.',
+    profileErrorTitle: 'Impossible de charger votre profil. Réessayez.',
     emptyBooks: "Aucun livre dans cette zone pour le moment.",
     emptyPeople: "Aucune personne dans cette zone pour le moment.",
     emptyStores: "Aucune librairie dans cette zone pour le moment.",
   },
   card: {
+    sameArea: 'Même secteur',
     viewContact: "Voir le contact",
     loadingContact: "Chargement du contact…",
     contactUnavailable: "Le contact est indisponible. Réessayez.",

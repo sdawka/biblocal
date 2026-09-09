@@ -1,3 +1,4 @@
+import { atom } from 'nanostores';
 import { persistentAtom } from '@nanostores/persistent';
 import type { UserProfile, UserTopics, BookIntent, LocationPrecision, ContactMethod, ContactVisibility } from '../lib/types';
 import { currentUserId } from './auth';
@@ -34,6 +35,12 @@ export const profile = persistentAtom<UserProfile>('biblocal:profile:v1', DEFAUL
   decode: safeJsonDecode(DEFAULT_PROFILE),
 });
 
+// A signed-in route must not interpret DEFAULT_PROFILE as a loaded profile.
+// This is deliberately session-scoped: a new user starts unready even when a
+// prior user's persistent profile was available in this browser.
+export const profileHydrated = atom<boolean>(false);
+export const profileLoadError = atom<'load-failed' | null>(null);
+
 export const dismissedPrompts = persistentAtom<string[]>('biblocal:dismissed:v1', [], {
   encode: JSON.stringify,
   decode: safeJsonDecode([]),
@@ -47,7 +54,15 @@ interface UserSession {
 }
 
 type ProfileField = Exclude<keyof UserProfile, 'topics'> | 'topics.curated' | 'topics.freeform';
-type ProfileUpdates = Omit<Partial<UserProfile>, 'topics'> & { topics?: Partial<UserTopics> };
+type ProfileUpdates = Omit<
+  Partial<UserProfile>,
+  'topics' | 'contactMethod' | 'contactValue' | 'contactVisibility'
+> & {
+  topics?: Partial<UserTopics>;
+  contactMethod?: ContactMethod | null;
+  contactValue?: string | null;
+  contactVisibility?: ContactVisibility | null;
+};
 
 interface ProfileFieldMutation {
   token: symbol;
@@ -89,6 +104,8 @@ function observeUser(userId: string | null): void {
   observedUserId = userId;
   userSessionGeneration += 1;
   resetProfileMutationState();
+  profileHydrated.set(false);
+  profileLoadError.set(null);
 }
 
 const subscribeToUserId = (currentUserId as unknown as {
@@ -136,7 +153,7 @@ function mutationFields(prior: UserProfile, updates: ProfileUpdates): Map<Profil
       confirmed: fieldValue(prior, field),
       mutations: [],
     };
-    provenance.mutations.push({ token, value: updates[field], status: 'pending' });
+    provenance.mutations.push({ token, value: profileValueForUpdate(field, updates[field]), status: 'pending' });
     profileFieldProvenance.set(field, provenance);
     fields.set(field, token);
   }
@@ -153,6 +170,13 @@ function mutationFields(prior: UserProfile, updates: ProfileUpdates): Map<Profil
     fields.set(field, token);
   }
   return fields;
+}
+
+function profileValueForUpdate(field: ProfileField, value: unknown): unknown {
+  if (value !== null) return value;
+  if (field === 'contactVisibility') return 'hidden';
+  if (field === 'contactMethod' || field === 'contactValue') return undefined;
+  return value;
 }
 
 function latestProfileFieldValue(provenance: ProfileFieldProvenance): unknown {
@@ -333,10 +357,15 @@ export async function loadProfileFromServer(): Promise<void> {
   // the newer user's freshly-loaded profile.
   const loadingFor = captureUserSession();
   if (!loadingFor) return;
+  profileHydrated.set(false);
+  profileLoadError.set(null);
   try {
     const res = await fetch('/api/profile');
     if (!isCurrentUserSession(loadingFor)) return;
-    if (!res.ok) return;
+    if (!res.ok) {
+      profileLoadError.set('load-failed');
+      return;
+    }
     const data = await res.json() as { profile: ServerProfile };
     if (!isCurrentUserSession(loadingFor)) return;
     const sp = data.profile;
@@ -374,6 +403,12 @@ export async function loadProfileFromServer(): Promise<void> {
     });
   } catch (e) {
     console.error('Failed to load profile from server:', e);
+    if (isCurrentUserSession(loadingFor)) profileLoadError.set('load-failed');
+  } finally {
+    // A failed request still settles the page into its retryable load-error
+    // state rather than an indefinite loading shell. The session check
+    // prevents a stale prior-user response doing this for the next account.
+    if (isCurrentUserSession(loadingFor)) profileHydrated.set(true);
   }
 }
 
@@ -447,19 +482,33 @@ export async function requestGeolocation(precision: LocationPrecision = 'approxi
     return { success: false, error: 'Geolocation not supported' };
   }
 
+  // Geolocation callbacks can arrive long after the signed-in identity has
+  // changed. Capture the generation now and verify it both before and after
+  // persistence so a former account can never update the current profile.
+  const session = captureUserSession();
+  if (!session) return { success: false, error: 'Not signed in' };
+
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
+        if (!isCurrentUserSession(session)) {
+          resolve({ success: false, error: 'Session changed' });
+          return;
+        }
         const coords = roundCoordinates(
           position.coords.latitude,
           position.coords.longitude,
           precision
         );
-        updateProfile({
+        const saved = await updateProfile({
           latitude: coords.lat,
           longitude: coords.lng,
           locationPrecision: precision,
         });
+        if (!saved || !isCurrentUserSession(session)) {
+          resolve({ success: false, error: 'Could not save location' });
+          return;
+        }
         resolve({ success: true, lat: coords.lat, lng: coords.lng });
       },
       (error) => {
@@ -492,4 +541,23 @@ export function updateContactInfo(
     contactValue: value,
     contactVisibility: visibility,
   });
+}
+
+/** Clear all stored contact fields while preserving the safe hidden default. */
+export function clearContactInfo(): Promise<boolean> {
+  const current = profile.get();
+  const session = captureUserSession();
+  const updates: ProfileUpdates = {
+    contactMethod: null,
+    contactValue: null,
+    contactVisibility: null,
+  };
+  const fields = mutationFields(current, updates);
+  profile.set({
+    ...current,
+    contactMethod: undefined,
+    contactValue: undefined,
+    contactVisibility: 'hidden',
+  });
+  return syncProfile(updates, session, fields);
 }

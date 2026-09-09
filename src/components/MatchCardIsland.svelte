@@ -17,10 +17,11 @@
     match: Match;
     expanded?: boolean;
     onToggle?: () => void;
+    distanceLabel?: string;
     lang?: Lang;
   }
 
-  let { match, expanded = false, onToggle, lang = 'en' as Lang }: Props = $props();
+  let { match, expanded = false, onToggle, distanceLabel, lang = 'en' as Lang }: Props = $props();
   const t = $derived(useTranslations(lang).matches.card);
 
   // Connection request state for this match's user.
@@ -84,9 +85,11 @@
   }
 
   let distanceDisplay = $derived(
-    match.distanceKm != null
-      ? formatDistance(match.distanceKm)
-      : match.user.city || ''
+    distanceLabel ?? (match.distanceKm != null
+      ? match.user.locationPrecision === 'city'
+        ? match.distanceKm === 0 ? t.sameArea : match.user.city || t.sameArea
+        : formatDistance(match.distanceKm)
+      : match.user.city || '')
   );
 
   let isStore = $derived(match.user.type === 'bookstore');

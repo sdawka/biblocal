@@ -80,6 +80,29 @@ describe('PATCH /api/profile', () => {
     expect(row?.latitude).toBe(45.5);
   });
 
+  it('clears persisted contact details with explicit nulls', async () => {
+    await patchAs(USER_A, {
+      contactMethod: 'email',
+      contactValue: 'alice@example.com',
+      contactVisibility: 'public',
+    });
+
+    const { status, json } = await patchAs(USER_A, {
+      contactMethod: null,
+      contactValue: null,
+      contactVisibility: null,
+    });
+
+    expect(status).toBe(200);
+    expect((json as { profile: Record<string, unknown> }).profile.contactMethod).toBeNull();
+    expect((json as { profile: Record<string, unknown> }).profile.contactValue).toBeNull();
+    expect((json as { profile: Record<string, unknown> }).profile.contactVisibility).toBeNull();
+    const row = await userRow(USER_A);
+    expect(row?.contact_method).toBeNull();
+    expect(row?.contact_value).toBeNull();
+    expect(row?.contact_visibility).toBeNull();
+  });
+
   it('serializes array fields to JSON', async () => {
     const { status } = await patchAs(USER_A, {
       topicsCurated: ['fiction', 'history'],

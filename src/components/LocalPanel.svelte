@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { LocalBookGroup, Match } from '../lib/types';
+  import type { LocalBookGroup, LocationPrecision, Match, UserProfile } from '../lib/types';
   import BookDiscoveryRow from './BookDiscoveryRow.svelte';
   import MatchCardIsland from './MatchCardIsland.svelte';
   import { localizePath, useTranslations, type Lang } from '../i18n';
@@ -23,6 +23,11 @@
     scopeMode: DiscoveryScope;
     onScopeChange: (scope: DiscoveryScope) => void;
     needsLocation: boolean;
+    profileLoading: boolean;
+    profileError: boolean;
+    onRetry: () => void;
+    viewerLocationPrecision?: LocationPrecision;
+    viewerCity?: string;
     expandedId: string | null;
     onToggle: (id: string) => void;
     onOwner: (ownerId: string) => void;
@@ -48,6 +53,11 @@
     scopeMode,
     onScopeChange,
     needsLocation,
+    profileLoading,
+    profileError,
+    onRetry,
+    viewerLocationPrecision,
+    viewerCity,
     expandedId,
     onToggle,
     onOwner,
@@ -66,6 +76,14 @@
     panel === 'books' ? th.emptyBooks : panel === 'people' ? th.emptyPeople : th.emptyStores
   );
   const hasSearch = $derived(query.trim().length > 0);
+
+  function cityDistanceLabel(user: UserProfile, distanceKm: number | undefined): string | undefined {
+    if (distanceKm == null) return undefined;
+    const cityPrecision = user.locationPrecision === 'city' || viewerLocationPrecision === 'city';
+    if (!cityPrecision) return undefined;
+    if (distanceKm === 0) return t.local.sameArea;
+    return user.locationPrecision === 'city' ? user.city || t.local.sameArea : viewerCity || t.local.sameArea;
+  }
 </script>
 
 <div class="panel-head">
@@ -105,22 +123,28 @@
   />
 
   <div class="scope-row">
-    <span class="scope-label">{scopeLabel}</span>
-    <span class="in-view-count" aria-label={`${inViewCount} ${scopeLabel}`}>{inViewCount}</span>
-    {#if needsLocation}
+    <span class="scope-label">{profileLoading ? th.loading : profileError ? th.profileErrorTitle : scopeLabel}</span>
+    {#if !profileLoading && !profileError}
+      <span class="in-view-count" aria-label={`${inViewCount} ${scopeLabel}`}>{inViewCount}</span>
+    {/if}
+    {#if needsLocation && !profileLoading && !profileError}
       <a class="scope-profile" href={profilePath}>{t.prompts.editProfile}</a>
     {/if}
-    <button
-      class="scope-action"
-      type="button"
-      onclick={() => onScopeChange(scopeMode === 'local' ? 'worldwide' : 'local')}
-    >
-      {scopeMode === 'local' ? th.browseWorldwide : th.showLocal}
-    </button>
+    {#if profileError}
+      <button class="scope-action" type="button" onclick={onRetry}>{t.requests.retry}</button>
+    {:else}
+      <button
+        class="scope-action"
+        type="button"
+        onclick={() => onScopeChange(scopeMode === 'local' ? 'worldwide' : 'local')}
+      >
+        {scopeMode === 'local' ? th.browseWorldwide : th.showLocal}
+      </button>
+    {/if}
   </div>
 </div>
 
-{#if loading && !hasAnyData}
+{#if (loading || profileLoading) && !hasAnyData}
   <div class="panel-state" aria-live="polite">
     <div class="skeleton-list">
       <div class="skeleton-card"></div>
@@ -129,9 +153,12 @@
     </div>
     <p class="state-note">{th.loading}</p>
   </div>
-{:else if error && !hasAnyData}
+{:else if (error || profileError) && !hasAnyData}
   <div class="panel-state error" role="alert">
-    <p>{th.errorTitle}</p>
+    <p>{profileError ? th.profileErrorTitle : th.errorTitle}</p>
+    {#if !profileError}
+      <button class="btn btn-sm" type="button" onclick={onRetry}>{t.requests.retry}</button>
+    {/if}
   </div>
 {:else if panel === 'books'}
   {#if bookGroups.length === 0 && bookGroupsUnlocated.length === 0}
@@ -150,7 +177,7 @@
             <span class="count">{group.books.length}</span>
           </div>
           {#each group.books as row (row.owner.id + row.book.id + row.intent)}
-            <BookDiscoveryRow {row} {lang} onOwner={(id) => onOwner(id)} />
+            <BookDiscoveryRow {row} {lang} distanceLabel={cityDistanceLabel(row.owner, row.distanceKm)} onOwner={(id) => onOwner(id)} />
           {/each}
         </section>
       {/each}
@@ -164,7 +191,7 @@
           </div>
           {#each bookGroupsUnlocated as group (group.intent)}
             {#each group.books as row (row.owner.id + row.book.id + row.intent)}
-              <BookDiscoveryRow {row} {lang} onOwner={(id) => onOwner(id)} />
+              <BookDiscoveryRow {row} {lang} distanceLabel={cityDistanceLabel(row.owner, row.distanceKm)} onOwner={(id) => onOwner(id)} />
             {/each}
           {/each}
         </section>
@@ -186,6 +213,7 @@
           <MatchCardIsland
             {match}
             {lang}
+            distanceLabel={cityDistanceLabel(match.user, match.distanceKm)}
             expanded={expandedId === match.user.id}
             onToggle={() => onToggle(match.user.id)}
           />
@@ -202,6 +230,7 @@
               <MatchCardIsland
                 {match}
                 {lang}
+                distanceLabel={cityDistanceLabel(match.user, match.distanceKm)}
                 expanded={expandedId === match.user.id}
                 onToggle={() => onToggle(match.user.id)}
               />
@@ -225,6 +254,7 @@
         <MatchCardIsland
           {match}
           {lang}
+          distanceLabel={cityDistanceLabel(match.user, match.distanceKm)}
           expanded={expandedId === match.user.id}
           onToggle={() => onToggle(match.user.id)}
         />
@@ -241,6 +271,7 @@
             <MatchCardIsland
               {match}
               {lang}
+              distanceLabel={cityDistanceLabel(match.user, match.distanceKm)}
               expanded={expandedId === match.user.id}
               onToggle={() => onToggle(match.user.id)}
             />

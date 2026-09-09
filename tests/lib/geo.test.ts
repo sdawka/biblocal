@@ -128,6 +128,10 @@ describe('formatDistance', () => {
     expect(formatDistance(0.1)).toBe('100 m');
   });
 
+  it('does not round a nonzero sub-meter distance down to zero', () => {
+    expect(formatDistance(0.0004)).toBe('< 1 m');
+  });
+
   it('formats distances over 1km with one decimal', () => {
     expect(formatDistance(1.5)).toBe('1.5 km');
     expect(formatDistance(10.25)).toBe('10.3 km');
@@ -143,6 +147,10 @@ describe('getCityCoordinates', () => {
   it('returns null for unknown city', () => {
     const result = getCityCoordinates('Atlantis');
     expect(result).toBeNull();
+  });
+
+  it('normalizes casing and surrounding whitespace for known cities', () => {
+    expect(getCityCoordinates('  montreal  ')).toEqual(CITY_COORDINATES.Montreal);
   });
 
   it.each(['New York', 'London', 'Paris', 'Lyon', 'Tokyo'])('returns the QA city center for %s', (city) => {
