@@ -10,7 +10,7 @@ import { getDb } from '../../../../db/client';
 import { users, books } from '../../../../db/schema';
 import { getUserId } from '../../../../lib/auth';
 import { validateEnum, validateIntents, VALID_OWNERSHIP, VALID_STATUS } from '../../../../lib/validation';
-import { isHostedCoverUrl } from '../../../../lib/coverImages';
+import { isUploadedCoverUrl } from '../../../../lib/coverImages';
 import { readJsonBody } from '../../../../lib/request';
 
 interface AddBookBody {
@@ -107,7 +107,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       isbn: body.isbn || null,
       // Hosted delivery URLs may only originate from the owner cover-upload
       // endpoint; rejecting them here keeps cleanup paths unspoofable.
-      coverUrl: body.coverUrl && !isHostedCoverUrl(body.coverUrl) ? body.coverUrl : null,
+      coverUrl: body.coverUrl && !isUploadedCoverUrl(body.coverUrl) ? body.coverUrl : null,
       status,
       // New three-dimension model.
       // Store inventory is inherently public — force visible regardless of input.

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Book, BookIntent, BookVisibility, BookOwnership } from '../lib/types';
   import { useTranslations, type Lang } from '../i18n';
-  import { isHostedCoverUrl } from '../lib/coverImages';
+  import { isUploadedCoverUrl } from '../lib/coverImages';
   import {
     clearBookDetailDraft,
     isCurrentBookDetailDraftSession,
@@ -65,7 +65,7 @@
     deleteDraftSession = startBookDetailDraftSession(book.id);
     uploading = false;
   });
-  const canReset = $derived(!!book.fetchedCoverUrl && isHostedCoverUrl(book.coverUrl));
+  const canReset = $derived(!!book.fetchedCoverUrl && isUploadedCoverUrl(book.coverUrl));
 
   async function handleFileChange(event: Event) {
     const input = event.currentTarget as HTMLInputElement;

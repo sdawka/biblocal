@@ -192,7 +192,7 @@ describe('POST /api/stores/:id/books', () => {
     expect(book.ownership).toBe('have');
   });
 
-  it('rejects hosted-cover delivery URLs supplied by the client', async () => {
+  it('rejects uploaded-cover URLs supplied by the client', async () => {
     const { status, json } = await callApiAs(OWNER, postStoreBookHandler, {
       method: 'POST',
       url: `${BASE}/api/stores/${STORE}/books`,
@@ -200,7 +200,7 @@ describe('POST /api/stores/:id/books', () => {
       body: {
         title: 'Dune',
         author: 'Frank Herbert',
-        coverUrl: 'https://imagedelivery.net/acct-hash/some-image-id/public',
+        coverUrl: 'https://biblocal.com/api/covers/some-book/some-cover',
       },
     });
 

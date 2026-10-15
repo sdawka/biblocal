@@ -10,5 +10,6 @@ jq '.name = "biblocal-qa" |
     .ratelimits = (.ratelimits | map(if .name == "ISBN_SEARCH_LIMIT" then .namespace_id = "1002" else . end)) |
     .vars.PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_aHVtYW5lLWxvbmdob3JuLTY2LmNsZXJrLmFjY291bnRzLmRldiQ" |
     .d1_databases[0].database_name = "biblocal-qa-db" |
-    .d1_databases[0].database_id = "44e7e517-033b-40ea-a540-ca66ee777ea1"' \
+    .d1_databases[0].database_id = "44e7e517-033b-40ea-a540-ca66ee777ea1" |
+    .r2_buckets[0].bucket_name = "biblocal-qa-covers"' \
     dist/server/wrangler.json > dist/server/wrangler-qa.json

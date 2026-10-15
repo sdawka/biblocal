@@ -29,6 +29,12 @@
 	"images": {
 		"binding": "IMAGES"
 	},
+	"r2_buckets": [
+		{
+			"binding": "COVERS",
+			"bucket_name": "biblocal-covers"
+		}
+	],
 	"env": {
 		"qa": {
 			"name": "biblocal-qa",
@@ -49,6 +55,12 @@
 			"images": {
 				"binding": "IMAGES"
 			},
+			"r2_buckets": [
+				{
+					"binding": "COVERS",
+					"bucket_name": "biblocal-qa-covers"
+				}
+			],
 			"vpc_services": [
 				{
 					"binding": "SEARXNG",
