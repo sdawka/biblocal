@@ -49,7 +49,7 @@ describe('uploadCover', () => {
 
   it('POSTs multipart form data and applies the returned URLs', async () => {
     mockFetchOnce(200, {
-      coverUrl: 'https://imagedelivery.net/h/img1/public',
+      coverUrl: 'https://biblocal.com/api/covers/b1/img1',
       fetchedCoverUrl: 'https://covers.openlibrary.org/b/id/1-M.jpg',
     });
     const file = new File(['x'], 'cover.png', { type: 'image/png' });
@@ -61,7 +61,7 @@ describe('uploadCover', () => {
     expect(url).toBe('/api/books/b1/cover');
     expect((init as RequestInit).method).toBe('POST');
     expect((init as RequestInit).body).toBeInstanceOf(FormData);
-    expect(shelf.get()['b1'].coverUrl).toBe('https://imagedelivery.net/h/img1/public');
+    expect(shelf.get()['b1'].coverUrl).toBe('https://biblocal.com/api/covers/b1/img1');
     expect(shelf.get()['b1'].fetchedCoverUrl).toBe('https://covers.openlibrary.org/b/id/1-M.jpg');
   });
 
@@ -92,7 +92,7 @@ describe('uploadCover', () => {
 
   it('sends the file under the "file" form field', async () => {
     mockFetchOnce(200, {
-      coverUrl: 'https://imagedelivery.net/h/img1/public',
+      coverUrl: 'https://biblocal.com/api/covers/b1/img1',
       fetchedCoverUrl: 'https://covers.openlibrary.org/b/id/1-M.jpg',
     });
     const file = new File(['x'], 'cover.png', { type: 'image/png' });
@@ -110,7 +110,7 @@ describe('resetCover', () => {
     shelf.set({
       b1: {
         ...BOOK,
-        coverUrl: 'https://imagedelivery.net/h/img1/public',
+        coverUrl: 'https://biblocal.com/api/covers/b1/img1',
         fetchedCoverUrl: 'https://covers.openlibrary.org/b/id/1-M.jpg',
       },
     });

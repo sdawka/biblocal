@@ -1,44 +1,53 @@
 import { describe, it, expect } from 'vitest';
-import { isHostedCoverUrl, hostedImageIdFromUrl, pickCoverVariant } from '../../src/lib/coverImages';
+import {
+  isUploadedCoverUrl,
+  coverKeyFromUrl,
+  ownedCoverKey,
+  newCoverKey,
+  coverUrlForKey,
+} from '../../src/lib/coverImages';
 
-const HOSTED = 'https://imagedelivery.net/AbC123hash/019a4b2c-uuid/public';
-const OPENLIB = 'https://covers.openlibrary.org/b/id/12345-M.jpg';
+const UPLOADED = 'https://biblocal.com/api/covers/book-1/019a4b2c-uuid';
+const OPENLIB = 'https://covers.openlibrary.org/b/id/123-M.jpg';
 
-describe('isHostedCoverUrl', () => {
-  it('matches imagedelivery.net variant URLs', () => {
-    expect(isHostedCoverUrl(HOSTED)).toBe(true);
+describe('isUploadedCoverUrl', () => {
+  it('matches /api/covers/<bookId>/<id> URLs on any origin', () => {
+    expect(isUploadedCoverUrl(UPLOADED)).toBe(true);
+    expect(isUploadedCoverUrl('http://localhost:4321/api/covers/b/c')).toBe(true);
   });
-  it('rejects OpenLibrary URLs, null, undefined, and empty', () => {
-    expect(isHostedCoverUrl(OPENLIB)).toBe(false);
-    expect(isHostedCoverUrl(null)).toBe(false);
-    expect(isHostedCoverUrl(undefined)).toBe(false);
-    expect(isHostedCoverUrl('')).toBe(false);
+  it('rejects external, nested and empty values', () => {
+    expect(isUploadedCoverUrl(OPENLIB)).toBe(false);
+    expect(isUploadedCoverUrl('https://biblocal.com/api/covers/a/b/c')).toBe(false);
+    expect(isUploadedCoverUrl(null)).toBe(false);
+    expect(isUploadedCoverUrl(undefined)).toBe(false);
+    expect(isUploadedCoverUrl('')).toBe(false);
   });
 });
 
-describe('hostedImageIdFromUrl', () => {
-  it('extracts the image id from a hosted URL', () => {
-    expect(hostedImageIdFromUrl(HOSTED)).toBe('019a4b2c-uuid');
+describe('coverKeyFromUrl', () => {
+  it('extracts the R2 key', () => {
+    expect(coverKeyFromUrl(UPLOADED)).toBe('book-1/019a4b2c-uuid');
   });
-  it('returns null for non-hosted URLs', () => {
-    expect(hostedImageIdFromUrl(OPENLIB)).toBeNull();
+  it('returns null for non-uploaded URLs', () => {
+    expect(coverKeyFromUrl(OPENLIB)).toBeNull();
   });
 });
 
-describe('pickCoverVariant', () => {
-  it('prefers the public variant', () => {
-    const variants = [
-      'https://imagedelivery.net/h/id/thumbnail',
-      'https://imagedelivery.net/h/id/public',
-    ];
-    expect(pickCoverVariant(variants)).toBe('https://imagedelivery.net/h/id/public');
+describe('ownedCoverKey', () => {
+  it('returns the key when it belongs to the book', () => {
+    expect(ownedCoverKey(UPLOADED, 'book-1')).toBe('book-1/019a4b2c-uuid');
   });
-  it('falls back to the first variant', () => {
-    expect(pickCoverVariant(['https://imagedelivery.net/h/id/cover'])).toBe(
-      'https://imagedelivery.net/h/id/cover'
-    );
+  it("refuses another book's key, including prefix look-alikes", () => {
+    expect(ownedCoverKey(UPLOADED, 'book-2')).toBeNull();
+    expect(ownedCoverKey('https://biblocal.com/api/covers/book-10/x', 'book-1')).toBeNull();
   });
-  it('returns null for an empty list', () => {
-    expect(pickCoverVariant([])).toBeNull();
+});
+
+describe('newCoverKey / coverUrlForKey', () => {
+  it('round-trips through coverKeyFromUrl', () => {
+    const key = newCoverKey('book-1');
+    expect(key.startsWith('book-1/')).toBe(true);
+    expect(newCoverKey('book-1')).not.toBe(key);
+    expect(coverKeyFromUrl(coverUrlForKey('https://biblocal.com', key))).toBe(key);
   });
 });

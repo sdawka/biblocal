@@ -58,7 +58,7 @@ vi.mock('../../src/i18n', () => ({
   }),
 }));
 
-const HOSTED_URL = 'https://imagedelivery.net/abc123/image-id/public';
+const UPLOADED_URL = 'https://biblocal.com/api/covers/book-1/cover-id';
 const OTHER_URL = 'https://example.com/cover.jpg';
 
 function makeBook(overrides: Partial<Book> = {}): Book {
@@ -124,7 +124,7 @@ describe('BookDetailSheet', () => {
       const { container } = render(BookDetailSheet, {
         props: {
           book: makeBook({
-            coverUrl: HOSTED_URL,
+            coverUrl: UPLOADED_URL,
             fetchedCoverUrl: OTHER_URL,
             notes: [{ id: 'note-1', text: 'A note', visibility: 'private', createdAt: 1 }],
           }),
@@ -255,7 +255,7 @@ describe('BookDetailSheet', () => {
       const onUploadCover = vi.fn(() => new Promise<boolean>((r) => { resolveUpload = r; }));
       const { container } = render(BookDetailSheet, {
         props: {
-          book: makeBook({ coverUrl: HOSTED_URL, fetchedCoverUrl: OTHER_URL }),
+          book: makeBook({ coverUrl: UPLOADED_URL, fetchedCoverUrl: OTHER_URL }),
           lang: 'en',
           onClose: vi.fn(),
           onUploadCover,
@@ -279,10 +279,10 @@ describe('BookDetailSheet', () => {
   });
 
   describe('reset cover visibility rule', () => {
-    it('shows the reset button when fetchedCoverUrl exists and coverUrl is a hosted URL', () => {
+    it('shows the reset button when fetchedCoverUrl exists and coverUrl is an uploaded cover', () => {
       render(BookDetailSheet, {
         props: {
-          book: makeBook({ coverUrl: HOSTED_URL, fetchedCoverUrl: OTHER_URL }),
+          book: makeBook({ coverUrl: UPLOADED_URL, fetchedCoverUrl: OTHER_URL }),
           lang: 'en',
           onClose: vi.fn(),
           onUploadCover: vi.fn(),
@@ -295,7 +295,7 @@ describe('BookDetailSheet', () => {
     it('hides the reset button when there is no fetchedCoverUrl (never had a fetched cover)', () => {
       render(BookDetailSheet, {
         props: {
-          book: makeBook({ coverUrl: HOSTED_URL, fetchedCoverUrl: undefined }),
+          book: makeBook({ coverUrl: UPLOADED_URL, fetchedCoverUrl: undefined }),
           lang: 'en',
           onClose: vi.fn(),
           onUploadCover: vi.fn(),
@@ -305,7 +305,7 @@ describe('BookDetailSheet', () => {
       expect(screen.queryByRole('button', { name: 'Use original cover' })).toBeNull();
     });
 
-    it('hides the reset button when the current cover is not a hosted URL (already using the fetched cover)', () => {
+    it('hides the reset button when the current cover is not an uploaded cover (already using the fetched cover)', () => {
       render(BookDetailSheet, {
         props: {
           book: makeBook({ coverUrl: OTHER_URL, fetchedCoverUrl: OTHER_URL }),
@@ -321,7 +321,7 @@ describe('BookDetailSheet', () => {
     it('hides the reset button entirely when onResetCover is not provided, even if canReset would be true', () => {
       render(BookDetailSheet, {
         props: {
-          book: makeBook({ coverUrl: HOSTED_URL, fetchedCoverUrl: OTHER_URL }),
+          book: makeBook({ coverUrl: UPLOADED_URL, fetchedCoverUrl: OTHER_URL }),
           lang: 'en',
           onClose: vi.fn(),
           onUploadCover: vi.fn(),
@@ -334,7 +334,7 @@ describe('BookDetailSheet', () => {
       const onResetCover = vi.fn().mockResolvedValue(true);
       render(BookDetailSheet, {
         props: {
-          book: makeBook({ coverUrl: HOSTED_URL, fetchedCoverUrl: OTHER_URL }),
+          book: makeBook({ coverUrl: UPLOADED_URL, fetchedCoverUrl: OTHER_URL }),
           lang: 'en',
           onClose: vi.fn(),
           onUploadCover: vi.fn(),

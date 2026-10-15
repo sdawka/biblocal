@@ -16,7 +16,7 @@ import {
   VALID_STATUS,
   VALID_ADDED_VIA,
 } from '../../../lib/validation';
-import { isHostedCoverUrl } from '../../../lib/coverImages';
+import { isUploadedCoverUrl } from '../../../lib/coverImages';
 import { readJsonBody } from '../../../lib/request';
 
 type Env = { DB: D1Database };
@@ -157,13 +157,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    // Hosted cover URLs are only ever produced by the cover upload endpoint,
-    // which owns the corresponding Cloudflare Images asset. A client-supplied
-    // hosted URL here could later be used to trigger delete-on-change/delete
-    // cleanup against an image the caller doesn't own.
-    if (isHostedCoverUrl(body.coverUrl)) {
+    // Uploaded cover URLs are only ever produced by the cover upload endpoint,
+    // which owns the corresponding R2 object. A client-supplied one here could
+    // later be used to trigger delete-on-change/delete cleanup against an
+    // object the caller doesn't own.
+    if (isUploadedCoverUrl(body.coverUrl)) {
       return new Response(
-        JSON.stringify({ error: 'coverUrl cannot point at hosted images; use the cover upload endpoint' }),
+        JSON.stringify({ error: 'coverUrl cannot point at uploaded covers; use the cover upload endpoint' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }

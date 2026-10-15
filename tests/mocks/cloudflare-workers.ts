@@ -1,5 +1,5 @@
 // Mock for cloudflare:workers module used in vitest
-export const env: { DB: unknown; IMAGES?: unknown } = {
+export const env: { DB: unknown; IMAGES?: unknown; COVERS?: unknown } = {
   DB: {},
 };
 
@@ -13,7 +13,7 @@ export function resetTestDb(): void {
   env.DB = {};
 }
 
-/** Install a test IMAGES binding (hosted-images namespace mock). */
+/** Install a test IMAGES binding (transform mock). */
 export function setTestImages(images: unknown): void {
   env.IMAGES = images;
 }
@@ -21,4 +21,14 @@ export function setTestImages(images: unknown): void {
 /** Remove the IMAGES binding (call in afterEach). */
 export function resetTestImages(): void {
   delete env.IMAGES;
+}
+
+/** Install a test COVERS R2 bucket. */
+export function setTestCovers(covers: unknown): void {
+  env.COVERS = covers;
+}
+
+/** Remove the COVERS binding (call in afterEach). */
+export function resetTestCovers(): void {
+  delete env.COVERS;
 }
