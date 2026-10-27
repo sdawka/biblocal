@@ -28,15 +28,6 @@ vi.mock('@clerk/astro/server', () => ({
       const result = handler(() => ({ userId: clerk.userId }), context);
       return result ?? next();
     },
-  createRouteMatcher: (patterns: string[]) => {
-    const regexes = patterns.map(
-      (p) => new RegExp(`^${p.replace(/\(\.\*\)/g, '.*')}$`)
-    );
-    return (request: Request) => {
-      const path = new URL(request.url).pathname;
-      return regexes.some((r) => r.test(path));
-    };
-  },
 }));
 
 import { onRequest } from '../../src/middleware';
@@ -176,4 +167,25 @@ describe('middleware — Clerk path (QA_MODE off)', () => {
     expect(ctx.redirect).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledOnce();
   });
+
+  it.each(['/about/', '/About', '//about', '/blog/', '/blog/some-post/', '/fr/blog/x'])(
+    'matches public route variant %s like the old Clerk route matcher',
+    async (path) => {
+      const ctx = makeContext(path);
+      const { next } = await run(ctx);
+
+      expect(ctx.redirect).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledOnce();
+    },
+  );
+
+  it.each(['/aboutx', '/about.json', '/api', '/biblio/', '/%E0%A4%A'])(
+    'keeps %s protected',
+    async (path) => {
+      const ctx = makeContext(path);
+      await run(ctx);
+
+      expect(ctx.redirect).toHaveBeenCalled();
+    },
+  );
 });

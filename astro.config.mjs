@@ -48,4 +48,6 @@ export default defineConfig({
     remoteBindings: process.env.BIBLOCAL_REMOTE_BINDINGS === 'true',
   }),
   output: 'server',
+  // Astro 7 defaults to 'jsx', which can drop spaces between inline elements.
+  compressHTML: true,
 });
