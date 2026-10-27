@@ -1,10 +1,10 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/astro/server';
+import { clerkMiddleware } from '@clerk/astro/server';
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
 import { qaBypassAllowed } from './lib/auth';
 import { getLangFromUrl, localizePath } from './i18n';
 
-const isPublicRoute = createRouteMatcher([
+const PUBLIC_ROUTES = [
   '/',
   '/about',
   '/how-it-works',
@@ -22,7 +22,26 @@ const isPublicRoute = createRouteMatcher([
   '/es/how-it-works',
   '/signed-out',
   '/api/(.*)',
-]);
+];
+
+// @clerk/astro 4 removed createRouteMatcher. This keeps its matching rules:
+// case-insensitive, optional trailing slash, `(.*)` matches any suffix, and
+// the path is decodeURI'd with repeated slashes collapsed. It is an allowlist,
+// so anything unrecognised (including malformed paths) stays protected.
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const PUBLIC_ROUTE_REGEXES = PUBLIC_ROUTES.map(
+  (pattern) => new RegExp(`^${pattern.split('(.*)').map(escapeRegExp).join('.*')}/?$`, 'i'),
+);
+
+function isPublicRoute(request: Request): boolean {
+  let pathname: string;
+  try {
+    pathname = decodeURI(new URL(request.url).pathname).replace(/\/\/+/g, '/');
+  } catch {
+    return false;
+  }
+  return PUBLIC_ROUTE_REGEXES.some((regex) => regex.test(pathname));
+}
 
 const clerkAuthMiddleware = clerkMiddleware((auth, context) => {
   const { userId } = auth();
